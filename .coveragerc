@@ -1,0 +1,6 @@
+[run]
+omit =
+    tests/*.py
+    */_version.py
+source =
+    dask_geopandas

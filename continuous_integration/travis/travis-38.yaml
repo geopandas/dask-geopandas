@@ -1,0 +1,11 @@
+name: test-environment
+channels:
+  - conda-forge
+dependencies:
+  # required dependencies
+  - python=3.8
+  - dask
+  - distributed
+  - geopandas
+  # test dependencies
+  - pytest

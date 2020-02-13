@@ -1,0 +1,45 @@
+language: generic
+sudo: false
+dist: trusty
+os: linux
+
+_base_envs:
+  - &test TEST='true'
+  - &test_and_lint TEST='true' LINT='true'
+  - &no_coverage COVERAGE='false'
+
+jobs:
+  fast_finish: true
+  include:
+    - env: &py36_env
+      - PYTHON_VERSION=3.6
+      - ENV_FILE=continuous_integration/travis/travis-36.yaml
+      - *test
+      - *no_coverage
+
+    - env: &py37_env
+      - PYTHON_VERSION=3.7
+      - ENV_FILE=continuous_integration/travis/travis-37.yaml
+      - *test_and_lint
+      - *no_coverage
+
+    - env: &py38_env
+      - PYTHON_VERSION=3.8
+      - ENV_FILE=continuous_integration/travis/travis-38.yaml
+      - *test
+      - *coverage
+
+install:
+  - if [[ $TEST == 'true' ]]; then source continuous_integration/travis/install.sh; fi
+
+script:
+  - if [[ $TEST == 'true' ]]; then source continuous_integration/travis/run_tests.sh; fi
+  - if [[ $LINT == 'true' ]]; then python -m pip install flake8 ; flake8 dask; fi
+  - if [[ $LINT == 'true' ]]; then python -m pip install black ; black dask --check; fi
+
+after_success:
+  - codecov
+  - source continuous_integration/travis/after_success.sh
+
+notifications:
+  email: false

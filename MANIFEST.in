@@ -1,0 +1,8 @@
+recursive-include dask_geopandas *.py
+recursive-include dask_geopandas *.yaml
+
+include versioneer.py
+include setup.py
+include README.rst
+include LICENSE
+include dask_geopandas/_version.py
