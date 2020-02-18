@@ -1,4 +1,4 @@
- set -xe
+set -xe
 
 #!/usr/bin/env bash
 # Install miniconda
