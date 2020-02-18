@@ -1,8 +1,8 @@
-from functools import partialmethod
+from functools import partial
 import numpy as np
 import dask
 import dask.dataframe as dd
-from dask.utils import M, OperatorMethodMixin, derived_from
+from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
 
 import geopandas
 
@@ -23,6 +23,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     divisions : tuple of index values
         Values along which we partition our blocks on the index
     """
+    _partition_type = geopandas.base.GeoPandasBase
+
     def __repr__(self):
         s = "<dask_geopandas.%s | %d tasks | %d npartitions>"
         return s % (type(self).__name__, len(self.dask), self.npartitions)
@@ -31,15 +33,24 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """Create a dask.dataframe object from a dask_geopandas object"""
         return self.map_partitions(M.to_pandas)
 
-    @property
-    @derived_from(geopandas.base.GeoPandasBase)
-    def bounds(self):
-        return self.map_partitions(
-            getattr,
-            "bounds",
-            token=self._name + "-bounds",
-            meta=self._meta.bounds
-        )
+    @classmethod
+    def _bind_property(cls, attr):
+        """Map property to partitions and bind to class"""
+        def prop(self):
+            meta = getattr(self._meta, attr)
+            token = "%s-%s" % (self._name, attr)
+            return self.map_partitions(
+                getattr,
+                attr,
+                token=token,
+                meta=meta
+            )
+        doc = getattr(cls._partition_type, attr).__doc__
+        # Insert disclaimer that this is a copied docstring note that
+        # malformed docs will not get the disclaimer (see #4746).
+        if doc:
+            doc = ignore_warning(doc, cls._partition_type, attr)
+        setattr(cls, name, property(fget=prop, doc=doc))
 
     @property
     @derived_from(geopandas.base.GeoPandasBase)
@@ -77,27 +88,9 @@ def from_dask_dataframe(df):
     return df.map_partitions(geopandas.GeoDataFrame)
 
 
-for name in []:
-    meth = getattr(geopandas.GeoDataFrame, name)
-    GeoDataFrame._bind_operator_method(name, meth)
-
-    meth = getattr(geopandas.GeoSeries, name)
-    GeoSeries._bind_operator_method(name, meth)
-
 for name in [
-    "set_geometry",
-    "rename_geometry",
-    "iterfeatures",
-    "merge",
-    "plot",
-    "dissolve",
-    "explode",
-    "astype",
+    "is_valid",
+    "bounds"
 ]:
-    meth = getattr(geopandas.GeoDataFrame, name)
-    GeoDataFrame._bind_operator_method(name, meth)
+    _Frame._bind_property(name)
 
-for name in []:
-
-    meth = getattr(geopandas.GeoSeries, name)
-    GeoSeries._bind_comparison_method(name, meth)
