@@ -89,8 +89,10 @@ def from_dask_dataframe(df):
 
 
 for name in [
+    "area",
+    "geom_type",
     "is_valid",
-    "bounds"
+    "bounds",
 ]:
     _Frame._bind_property(name)
 
