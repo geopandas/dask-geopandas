@@ -1,9 +1,11 @@
+from functools import partialmethod
+import numpy as np
 import dask
-from dask.utils import M, OperatorMethodMixin
 import dask.dataframe as dd
-from dask.array.utils import meta_from_array
+from dask.utils import M, OperatorMethodMixin, derived_from
 
 import geopandas
+
 
 class _Frame(dd.core._Frame, OperatorMethodMixin):
     """ Superclass for DataFrame and Series
@@ -30,19 +32,33 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         return self.map_partitions(M.to_pandas)
 
     @property
+    @derived_from(geopandas.base.GeoPandasBase)
     def bounds(self):
-        """Bounds of the GeoSeries or GeoDataFrame as a Delayed object.
-
-        Examples
-        --------
-        >>> series.bounds  # doctest: +SKIP
-        dd.DataFrame<size-ag..., dtype=int64>
-        """
         return self.map_partitions(
             getattr,
             "bounds",
             token=self._name + "-bounds",
-            meta = self._meta.bounds
+            meta=self._meta.bounds
+        )
+
+    @property
+    @derived_from(geopandas.base.GeoPandasBase)
+    def total_bounds(self):
+        def agg(concatted):
+            return np.array(
+            (
+                concatted[0::4].min(),  # minx
+                concatted[1::4].min(),  # miny
+                concatted[2::4].max(),  # maxx
+                concatted[3::4].max(),  # maxy
+            )
+        )
+
+        return self.reduction(
+            lambda x: getattr(x, "total_bounds"),
+            token=self._name + "-total_bounds",
+            meta=self._meta.total_bounds,
+            aggregate=agg,
         )
 
 
