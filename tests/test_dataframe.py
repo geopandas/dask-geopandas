@@ -1,7 +1,5 @@
 import pytest
-from shapely.geometry import (
-    Polygon,
-)
+from shapely.geometry import Polygon
 import geopandas
 import dask_geopandas
 
@@ -14,13 +12,30 @@ def geoseries():
     return geopandas.GeoSeries([t1, t2, sq] * 10)
 
 
-@pytest.mark.parametrize("attr", [
-    "area",
-    "geom_type",
-    "is_valid",
-    "bounds",
-    "total_bounds"
-])
+@pytest.mark.parametrize(
+    "attr",
+    [
+        "area",
+        "geom_type",
+        "type",
+        "length",
+        "is_valid",
+        "is_empty",
+        "is_simple",
+        "is_ring",
+        "has_z",
+        "boundary",
+        "centroid",
+        "convex_hull",
+        "envelope",
+        "exterior",
+        "interiors",
+        # "representative_point",
+        "bounds",
+        "total_bounds",
+        # "sindex",
+    ],
+)
 def test_geoseries_properties(geoseries, attr):
     original = getattr(geoseries, attr)
 

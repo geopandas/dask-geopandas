@@ -1,6 +1,4 @@
-from functools import partial
 import numpy as np
-import dask
 import dask.dataframe as dd
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
 
@@ -23,6 +21,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     divisions : tuple of index values
         Values along which we partition our blocks on the index
     """
+
     _partition_type = geopandas.base.GeoPandasBase
 
     def __repr__(self):
@@ -36,15 +35,12 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @classmethod
     def _bind_property(cls, attr):
         """Map property to partitions and bind to class"""
+
         def prop(self):
             meta = getattr(self._meta, attr)
             token = "%s-%s" % (self._name, attr)
-            return self.map_partitions(
-                getattr,
-                attr,
-                token=token,
-                meta=meta
-            )
+            return self.map_partitions(getattr, attr, token=token, meta=meta)
+
         doc = getattr(cls._partition_type, attr).__doc__
         # Insert disclaimer that this is a copied docstring note that
         # malformed docs will not get the disclaimer (see #4746).
@@ -57,13 +53,13 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def total_bounds(self):
         def agg(concatted):
             return np.array(
-            (
-                concatted[0::4].min(),  # minx
-                concatted[1::4].min(),  # miny
-                concatted[2::4].max(),  # maxx
-                concatted[3::4].max(),  # maxy
+                (
+                    concatted[0::4].min(),  # minx
+                    concatted[1::4].min(),  # miny
+                    concatted[2::4].max(),  # maxx
+                    concatted[3::4].max(),  # maxy
+                )
             )
-        )
 
         return self.reduction(
             lambda x: getattr(x, "total_bounds"),
@@ -71,6 +67,11 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             meta=self._meta.total_bounds,
             aggregate=agg,
         )
+
+    @property
+    def unary_union(self):
+        # Would need a dask representation of each shapely.geometry
+        raise NotImplementedError
 
 
 class GeoSeries(_Frame, dd.core.Series):
@@ -91,8 +92,21 @@ def from_dask_dataframe(df):
 for name in [
     "area",
     "geom_type",
+    "type",
+    "length",
     "is_valid",
+    "is_empty",
+    "is_simple",
+    "is_ring",
+    "has_z",
+    "boundary",
+    "centroid",
+    "convex_hull",
+    "envelope",
+    "exterior",
+    "interiors",
+    # "representative_point",
     "bounds",
+    # "sindex",
 ]:
     _Frame._bind_property(name)
-
