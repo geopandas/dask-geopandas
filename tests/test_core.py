@@ -1,6 +1,8 @@
 import pytest
-from shapely.geometry import Polygon
+import pandas as pd
 import geopandas
+from shapely.geometry import Polygon
+import dask.dataframe as dd
 import dask_geopandas
 
 
@@ -45,3 +47,13 @@ def test_geoseries_properties(geoseries, attr):
 
     daskified = getattr(dask_obj, attr)
     assert all(original == daskified.compute())
+
+
+def test_points_from_xy():
+    x = [1, 2, 3]
+    y = [4, 5, 6]
+    expected = geopandas.points_from_xy(x, y)
+    df = dd.from_pandas(pd.DataFrame({"x": x, "y": y}), npartitions=2)
+    actual = dask_geopandas.points_from_xy(df)
+    assert isinstance(actual, dask_geopandas.GeoSeries)
+    list(actual) == list(expected)

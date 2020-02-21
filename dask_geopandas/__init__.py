@@ -1,8 +1,8 @@
 from ._version import get_versions
 
 from . import backends
-from .array import points_from_xy  # noqa
-from .dataframe import (
+from .core import (
+    points_from_xy,
     GeoDataFrame,
     GeoSeries,
     from_geopandas,
@@ -13,7 +13,7 @@ __version__ = get_versions()["version"]
 del get_versions
 
 __all__ = [
-    "points_from_xy"
+    "points_from_xy",
     "GeoDataFrame",
     "GeoSeries",
     "from_geopandas",

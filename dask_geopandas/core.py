@@ -1,4 +1,5 @@
 import numpy as np
+
 import dask.dataframe as dd
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
 
@@ -87,6 +88,19 @@ from_geopandas = dd.from_pandas
 
 def from_dask_dataframe(df):
     return df.map_partitions(geopandas.GeoDataFrame)
+
+
+def points_from_xy(df, x="x", y="y", z="z"):
+    """Convert dask.dataframe of x and y (and optionally z) values to a GeoSeries."""
+
+    def func(data, x, y, z):
+        return geopandas.GeoSeries(
+            geopandas.points_from_xy(
+                data[x], data[y], data[z] if z in df.columns else None
+            )
+        )
+
+    return df.map_partitions(func, x, y, z, meta=geopandas.GeoSeries())
 
 
 for name in [
