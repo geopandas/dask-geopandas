@@ -129,3 +129,10 @@ for name in [
     # "sindex",
 ]:
     _Frame._bind_property(name)
+
+for name in [
+    "geometry",
+    "x",
+    "y",
+]:
+    GeoSeries._bind_property(name)
