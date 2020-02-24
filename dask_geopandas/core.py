@@ -4,6 +4,7 @@ import dask.dataframe as dd
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
 
 import geopandas
+from shapely.geometry.collection import GeometryCollection
 
 
 class _Frame(dd.core._Frame, OperatorMethodMixin):
@@ -76,7 +77,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             lambda x: getattr(x, "unary_union"),
             token=self._name + "-unary_union",
             aggregate=lambda x: getattr(geopandas.GeoSeries(x), "unary_union"),
-            meta=geopandas.GeoSeries(),
+            meta=GeometryCollection(),
         )
 
 

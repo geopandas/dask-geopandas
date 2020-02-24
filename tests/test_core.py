@@ -3,6 +3,7 @@ import pandas as pd
 import geopandas
 from shapely.geometry import Polygon
 import dask.dataframe as dd
+from dask.dataframe.core import Scalar
 import dask_geopandas
 
 
@@ -53,11 +54,8 @@ def test_geoseries_unary_union(geoseries):
 
     dask_obj = dask_geopandas.from_geopandas(geoseries, npartitions=2)
     daskified = dask_obj.unary_union
-    assert isinstance(daskified, dask_geopandas.GeoSeries)
-
-    actual = daskified.compute()
-    assert len(actual) == 1
-    assert original.equals(actual[0])
+    assert isinstance(daskified, Scalar)
+    assert original.equals(daskified.compute())
 
 
 def test_points_from_xy():
