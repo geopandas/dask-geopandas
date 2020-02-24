@@ -70,9 +70,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         )
 
     @property
+    @derived_from(geopandas.base.GeoPandasBase)
     def unary_union(self):
-        # Would need a dask representation of each shapely.geometry
-        raise NotImplementedError
+        return self.reduction(
+            lambda x: getattr(x, "unary_union"),
+            token=self._name + "-unary_union",
+            aggregate=lambda x: getattr(geopandas.GeoSeries(x), "unary_union"),
+            meta=geopandas.GeoSeries(),
+        )
 
 
 class GeoSeries(_Frame, dd.core.Series):
@@ -119,7 +124,6 @@ for name in [
     "envelope",
     "exterior",
     "interiors",
-    # "representative_point",
     "bounds",
     # "sindex",
 ]:

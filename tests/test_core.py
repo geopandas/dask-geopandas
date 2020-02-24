@@ -32,7 +32,6 @@ def geoseries():
         "envelope",
         "exterior",
         "interiors",
-        # "representative_point",
         "bounds",
         "total_bounds",
         # "sindex",
@@ -47,6 +46,18 @@ def test_geoseries_properties(geoseries, attr):
 
     daskified = getattr(dask_obj, attr)
     assert all(original == daskified.compute())
+
+
+def test_geoseries_unary_union(geoseries):
+    original = getattr(geoseries, "unary_union")
+
+    dask_obj = dask_geopandas.from_geopandas(geoseries, npartitions=2)
+    daskified = dask_obj.unary_union
+    assert isinstance(daskified, dask_geopandas.GeoSeries)
+
+    actual = daskified.compute()
+    assert len(actual) == 1
+    assert original.equals(actual[0])
 
 
 def test_points_from_xy():
