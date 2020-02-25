@@ -40,7 +40,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         def prop(self):
             meta = getattr(self._meta, attr)
-            token = "%s-%s" % (self._name, attr)
+            token = f"{self._name}-{attr}"
             return self.map_partitions(getattr, attr, token=token, meta=meta)
 
         doc = getattr(cls._partition_type, attr).__doc__
@@ -49,6 +49,24 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         if doc:
             doc = ignore_warning(doc, cls._partition_type, attr)
         setattr(cls, name, property(fget=prop, doc=doc))
+
+    @property
+    def crs(self):
+        """
+        The Coordinate Reference System (CRS) represented as a ``pyproj.CRS``
+        object.
+
+        Returns None if the CRS is not set, and to set the value it
+        :getter: Returns a ``pyproj.CRS`` or None. When setting, the value
+        can be anything accepted by :meth:`pyproj.CRS.from_user_input`,
+        such as an authority string (eg "EPSG:4326") or a WKT string.
+        """
+        return self._meta.crs
+
+    @crs.setter
+    def crs(self, value):
+        """Sets the value of the crs"""
+        raise NotImplementedError
 
     @property
     @derived_from(geopandas.base.GeoPandasBase)
@@ -71,14 +89,25 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         )
 
     @property
+    def sindex(self):
+        """Need to figure out how to concatenate spatial indexes"""
+        raise NotImplementedError
+
+    @property
     @derived_from(geopandas.base.GeoPandasBase)
     def unary_union(self):
+        attr = "unary_union"
+        meta = GeometryCollection()
+
         return self.reduction(
-            lambda x: getattr(x, "unary_union"),
-            token=self._name + "-unary_union",
-            aggregate=lambda x: getattr(geopandas.GeoSeries(x), "unary_union"),
-            meta=GeometryCollection(),
+            lambda x: getattr(x, attr),
+            token=f"{self._name}-{attr}",
+            aggregate=lambda x: getattr(geopandas.GeoSeries(x), attr),
+            meta=meta,
         )
+
+    def representative_point(self):
+        raise NotImplementedError
 
 
 class GeoSeries(_Frame, dd.core.Series):
@@ -87,9 +116,6 @@ class GeoSeries(_Frame, dd.core.Series):
 
 class GeoDataFrame(_Frame, dd.core.DataFrame):
     _partition_type = geopandas.GeoDataFrame
-
-
-from_geopandas = dd.from_pandas
 
 
 def from_dask_dataframe(df):
@@ -126,7 +152,6 @@ for name in [
     "exterior",
     "interiors",
     "bounds",
-    # "sindex",
 ]:
     _Frame._bind_property(name)
 

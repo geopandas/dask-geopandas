@@ -45,7 +45,6 @@ def geoseries_points():
         "interiors",
         "bounds",
         "total_bounds",
-        # "sindex",
         "geometry",
     ],
 )
