@@ -1,6 +1,7 @@
 import numpy as np
 
 import dask.dataframe as dd
+from dask.dataframe.core import _emulate, map_partitions, elemwise
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
 
 import geopandas
@@ -49,6 +50,27 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         if doc:
             doc = ignore_warning(doc, cls._partition_type, attr)
         setattr(cls, name, property(fget=prop, doc=doc))
+
+    @classmethod
+    def _bind_elemwise_comparison_method(cls, name, comparison, original):
+        """ bind comparison method like GeoSeries.contains to this class """
+
+        def meth(self, other):
+            return elemwise(comparison, self, other)
+
+        meth.__name__ = name
+        setattr(cls, name, derived_from(original)(meth))
+
+    @classmethod
+    def _bind_elemwise_operator_method(cls, name, op, original):
+        """ bind operator method like GeoSeries.distance to this class """
+        # name must be explicitly passed for div method whose name is truediv
+        def meth(self, other):
+            meta = _emulate(op, self, other)
+            return map_partitions(op, self, other, meta=meta, enforce_metadata=False,)
+
+        meth.__name__ = name
+        setattr(cls, name, derived_from(original)(meth))
 
     @property
     def crs(self):
@@ -109,6 +131,15 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def representative_point(self):
         raise NotImplementedError
 
+    @derived_from(geopandas.base.GeoPandasBase)
+    def project(self, other, normalized=False):
+        """Objects must have the same number or rows"""
+        meth = getattr(self._partition_type, "project")
+        meta = _emulate(meth, self, other, normalized=normalized)
+        return map_partitions(
+            meth, self, other, normalized=normalized, meta=meta, enforce_metadata=False,
+        )
+
 
 class GeoSeries(_Frame, dd.core.Series):
     _partition_type = geopandas.GeoSeries
@@ -116,6 +147,9 @@ class GeoSeries(_Frame, dd.core.Series):
 
 class GeoDataFrame(_Frame, dd.core.DataFrame):
     _partition_type = geopandas.GeoDataFrame
+
+
+from_geopandas = dd.from_pandas
 
 
 def from_dask_dataframe(df):
@@ -161,3 +195,38 @@ for name in [
     "y",
 ]:
     GeoSeries._bind_property(name)
+
+for name in [
+    "contains",
+    "geom_equals",
+    "crosses",
+    "disjoint",
+    "intersects",
+    "overlaps",
+    "touches",
+    "within",
+]:
+    meth = getattr(geopandas.base.GeoPandasBase, name)
+    GeoSeries._bind_elemwise_comparison_method(
+        name, meth, original=geopandas.base.GeoPandasBase
+    )
+    GeoDataFrame._bind_elemwise_comparison_method(
+        name, meth, original=geopandas.base.GeoPandasBase
+    )
+
+
+for name in [
+    "distance",
+    "difference",
+    "symmetric_difference",
+    "union",
+    "intersection",
+    "relate",
+]:
+    meth = getattr(geopandas.base.GeoPandasBase, name)
+    GeoSeries._bind_elemwise_operator_method(
+        name, meth, original=geopandas.base.GeoPandasBase
+    )
+    GeoDataFrame._bind_elemwise_operator_method(
+        name, meth, original=geopandas.base.GeoPandasBase
+    )
