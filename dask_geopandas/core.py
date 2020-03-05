@@ -52,22 +52,26 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         setattr(cls, name, property(fget=prop, doc=doc))
 
     @classmethod
-    def _bind_elemwise_comparison_method(cls, name, comparison, original):
+    def _bind_elemwise_comparison_method(
+        cls, name, comparison, original, *args, **kwargs
+    ):
         """ bind comparison method like GeoSeries.contains to this class """
 
-        def meth(self, other):
-            return elemwise(comparison, self, other)
+        def meth(self, other, *args, **kwargs):
+            return elemwise(comparison, self, other, *args, **kwargs)
 
         meth.__name__ = name
         setattr(cls, name, derived_from(original)(meth))
 
     @classmethod
-    def _bind_elemwise_operator_method(cls, name, op, original):
+    def _bind_elemwise_operator_method(cls, name, op, original, *args, **kwargs):
         """ bind operator method like GeoSeries.distance to this class """
         # name must be explicitly passed for div method whose name is truediv
-        def meth(self, other):
+        def meth(self, other, *args, **kwargs):
             meta = _emulate(op, self, other)
-            return map_partitions(op, self, other, meta=meta, enforce_metadata=False,)
+            return map_partitions(
+                op, self, other, meta=meta, enforce_metadata=False, *args, **kwargs
+            )
 
         meth.__name__ = name
         setattr(cls, name, derived_from(original)(meth))
@@ -88,7 +92,19 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @crs.setter
     def crs(self, value):
         """Sets the value of the crs"""
-        raise NotImplementedError
+        self.dask = self.set_crs(value).dask
+
+    def set_crs(self, value):
+        self._meta.crs = value
+
+        def set_crs(df, crs):
+            df = df.copy(deep=False)
+            df.crs = crs
+            return df
+
+        return self.map_partitions(
+            set_crs, value, meta=self._meta, enforce_metadata=False
+        )
 
     @property
     @derived_from(geopandas.base.GeoPandasBase)
