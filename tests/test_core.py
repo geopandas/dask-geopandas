@@ -2,7 +2,7 @@ import pytest
 import pandas as pd
 import numpy as np
 import geopandas
-from shapely.geometry import Polygon, Point
+from shapely.geometry import Polygon, Point, LineString
 import dask.dataframe as dd
 from dask.dataframe.core import Scalar
 import dask_geopandas
@@ -35,6 +35,13 @@ def geodf_points_crs():
         {"geometry": geopandas.points_from_xy(x, y), "value1": x + y, "value2": x * y},
         crs=crs,
     )
+
+
+@pytest.fixture
+def geoseries_lines():
+    l1 = LineString([(0, 0), (0, 1), (1, 1)])
+    l2 = LineString([(0, 0), (1, 0), (1, 1), (0, 1)])
+    return geopandas.GeoSeries([l1, l2] * 2)
 
 
 @pytest.mark.parametrize(
@@ -104,7 +111,7 @@ def test_points_from_xy():
     list(actual) == list(expected)
 
 
-def test_set_crs(geodf_points_crs):
+def test_geodataframe_crs(geodf_points_crs):
     df = geodf_points_crs
     original = df.crs
 
@@ -121,3 +128,81 @@ def test_set_crs(geodf_points_crs):
     dask_obj.crs = new_crs
     assert dask_obj.crs == new_crs
     assert dask_obj.partitions[1].crs == new_crs
+
+
+def test_project(geoseries_lines):
+    s = geoseries_lines
+    pt = Point(1.0, 0.5)
+
+    original = s.project(pt)
+
+    dask_obj = dask_geopandas.from_geopandas(s, npartitions=2)
+    daskified = dask_obj.project(pt)
+
+    assert isinstance(daskified, dd.Series)
+    assert original.equals(daskified.compute())
+
+    original = s.project(pt, normalized=True)
+    daskified = dask_obj.project(pt, normalized=True)
+
+    assert isinstance(daskified, dd.Series)
+    assert original.equals(daskified.compute())
+
+
+@pytest.mark.parametrize(
+    "meth",
+    [
+        "contains",
+        "geom_equals",
+        "geom_almost_equals",
+        "crosses",
+        "disjoint",
+        "intersects",
+        "overlaps",
+        "touches",
+        "within",
+        "distance",
+        "relate",
+    ],
+)
+def test_elemwise_methods(geoseries_polygons, geoseries_points, meth):
+    one = geoseries_polygons
+    other = geoseries_points
+    original = getattr(one, meth)(other)
+
+    dask_one = dask_geopandas.from_geopandas(one, npartitions=2)
+    dask_other = dask_geopandas.from_geopandas(other, npartitions=2)
+    daskified = getattr(dask_one, meth)(dask_other)
+
+    assert isinstance(daskified, dd.Series)
+    assert original.equals(daskified.compute())
+
+
+def test_geom_equals_exact(geoseries_polygons, geoseries_points):
+    meth = "geom_equals_exact"
+    one = geoseries_polygons
+    other = geoseries_points
+    original = getattr(one, meth)(other, tolerance=2)
+
+    dask_one = dask_geopandas.from_geopandas(one, npartitions=2)
+    dask_other = dask_geopandas.from_geopandas(other, npartitions=2)
+    daskified = getattr(dask_one, meth)(dask_other, tolerance=2)
+
+    assert isinstance(daskified, dd.Series)
+    assert original.equals(daskified.compute())
+
+
+@pytest.mark.parametrize(
+    "meth", ["difference", "symmetric_difference", "union", "intersection"]
+)
+def test_operator_methods(geoseries_polygons, geoseries_points, meth):
+    one = geoseries_polygons
+    other = geoseries_points
+    original = getattr(one, meth)(other)
+
+    dask_one = dask_geopandas.from_geopandas(one, npartitions=2)
+    dask_other = dask_geopandas.from_geopandas(other, npartitions=2)
+    daskified = getattr(dask_one, meth)(dask_other)
+
+    assert isinstance(daskified, dd.Series)
+    assert all(original == daskified.compute())

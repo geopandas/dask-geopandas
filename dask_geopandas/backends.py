@@ -25,7 +25,10 @@ def make_meta_shapely_geometry(x, index=None):
 
 @make_array_nonempty.register(GeometryDtype)
 def _(dtype):
-    a = np.array([shapely.geometry.Point(i, i) for i in range(2)], dtype=object)
+    a = np.array(
+        [shapely.geometry.LineString([(i, i), (i, i + 1)]) for i in range(2)],
+        dtype=object,
+    )
     return from_shapely(a)
 
 
