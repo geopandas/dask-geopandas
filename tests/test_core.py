@@ -1,5 +1,6 @@
 import pytest
 import pandas as pd
+import numpy as np
 import geopandas
 from shapely.geometry import Polygon, Point
 import dask.dataframe as dd
@@ -23,6 +24,17 @@ def geoseries_points():
     p3 = Point(3, 4)
     p4 = Point(4, 1)
     return geopandas.GeoSeries([p1, p2, p3, p4])
+
+
+@pytest.fixture
+def geodf_points_crs():
+    x = np.arange(-1683723, -1683723 + 10, 1)
+    y = np.arange(6689139, 6689139 + 10, 1)
+    crs = "epsg:26918"
+    return geopandas.GeoDataFrame(
+        {"geometry": geopandas.points_from_xy(x, y), "value1": x + y, "value2": x * y},
+        crs=crs,
+    )
 
 
 @pytest.mark.parametrize(
@@ -90,3 +102,22 @@ def test_points_from_xy():
     actual = dask_geopandas.points_from_xy(df)
     assert isinstance(actual, dask_geopandas.GeoSeries)
     list(actual) == list(expected)
+
+
+def test_set_crs(geodf_points_crs):
+    df = geodf_points_crs
+    original = df.crs
+
+    dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)
+    assert dask_obj.crs == original
+    assert dask_obj.partitions[1].crs == original
+
+    new_crs = "epsg:4316"
+    new = dask_obj.set_crs("epsg:4316")
+    assert new.crs == new_crs
+    assert new.partitions[1].crs == new_crs
+    assert dask_obj.crs == original
+
+    dask_obj.crs = new_crs
+    assert dask_obj.crs == new_crs
+    assert dask_obj.partitions[1].crs == new_crs

@@ -92,19 +92,19 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @crs.setter
     def crs(self, value):
         """Sets the value of the crs"""
-        self.dask = self.set_crs(value).dask
+        new = self.set_crs(value)
+        self._meta = new._meta
+        self.dask = new.dask
 
     def set_crs(self, value):
-        self._meta.crs = value
+        """Set the value of the crs on a new object"""
 
         def set_crs(df, crs):
             df = df.copy(deep=False)
             df.crs = crs
             return df
 
-        return self.map_partitions(
-            set_crs, value, meta=self._meta, enforce_metadata=False
-        )
+        return self.map_partitions(set_crs, value, enforce_metadata=False)
 
     @property
     @derived_from(geopandas.base.GeoPandasBase)
