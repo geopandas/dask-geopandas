@@ -2,7 +2,7 @@ import pytest
 import pandas as pd
 import numpy as np
 import geopandas
-from shapely.geometry import Polygon, Point, LineString
+from shapely.geometry import Polygon, Point, LineString, MultiPoint
 import dask.dataframe as dd
 from dask.dataframe.core import Scalar
 import dask_geopandas
@@ -205,4 +205,55 @@ def test_operator_methods(geoseries_polygons, geoseries_points, meth):
     daskified = getattr(dask_one, meth)(dask_other)
 
     assert isinstance(daskified, dd.Series)
+    assert all(original == daskified.compute())
+
+
+""
+
+
+@pytest.mark.parametrize(
+    "meth,options",
+    [
+        ("representative_point", {}),
+        ("buffer", dict(distance=5)),
+        ("simplify", dict(tolerance=3)),
+        ("interpolate", dict(distance=2)),
+        ("affine_transform", dict(matrix=[1, 2, -3, 5, 20, 30])),
+        ("translate", dict(xoff=3, yoff=2, zoff=4)),
+        ("rotate", dict(angle=90)),
+        ("scale", dict(xfact=3, yfact=20, zfact=0.1)),
+        ("skew", dict(xs=45, ys=-90, origin="centroid")),
+    ],
+)
+def test_meth_with_args_and_kwargs(geoseries_lines, meth, options):
+    s = geoseries_lines
+    original = getattr(s, meth)(**options)
+
+    dask_s = dask_geopandas.from_geopandas(s, npartitions=2)
+    daskified = getattr(dask_s, meth)(**options)
+
+    assert isinstance(daskified, dask_geopandas.GeoSeries)
+    assert all(original == daskified.compute())
+
+
+def test_explode_geoseries():
+    s = geopandas.GeoSeries(
+        [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])]
+    )
+    original = s.explode()
+    dask_s = dask_geopandas.from_geopandas(s, npartitions=2)
+    daskified = dask_s.explode()
+    assert isinstance(daskified, dask_geopandas.GeoSeries)
+    assert all(original == daskified.compute())
+
+
+def test_explode_geodf():
+    s = geopandas.GeoSeries(
+        [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])]
+    )
+    df = geopandas.GeoDataFrame({"col": [1, 2], "geometry": s})
+    original = df.explode()
+    dask_s = dask_geopandas.from_geopandas(df, npartitions=2)
+    daskified = dask_s.explode()
+    assert isinstance(daskified, dask_geopandas.GeoDataFrame)
     assert all(original == daskified.compute())

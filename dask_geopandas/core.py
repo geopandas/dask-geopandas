@@ -146,7 +146,9 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     @derived_from(geopandas.base.GeoPandasBase)
     def representative_point(self):
-        raise NotImplementedError
+        return self.map_partitions(
+            self._partition_type.representative_point, enforce_metadata=False,
+        )
 
     @derived_from(geopandas.base.GeoPandasBase)
     def geom_equals_exact(self, other, tolerance):
@@ -156,8 +158,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @derived_from(geopandas.base.GeoPandasBase)
     def buffer(self, distance, resolution=16, **kwargs):
         return self.map_partitions(
-            self._meta.buffer,
-            distance=distance,
+            self._partition_type.buffer,
+            distance,
             resolution=resolution,
             enforce_metadata=False,
             **kwargs,
@@ -165,24 +167,29 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     @derived_from(geopandas.base.GeoPandasBase)
     def simplify(self, *args, **kwargs):
-        return self.map_partitions(self._meta.simplify, enforce_metadata=False)
+        return self.map_partitions(
+            self._partition_type.simplify, *args, enforce_metadata=False, **kwargs
+        )
 
     @derived_from(geopandas.base.GeoPandasBase)
     def interpolate(self, distance, normalized=False):
         return self.map_partitions(
-            self._meta.interpolate, distance=distance, enforce_metadata=False
+            self._partition_type.interpolate,
+            distance,
+            normalized=normalized,
+            enforce_metadata=False,
         )
 
     @derived_from(geopandas.base.GeoPandasBase)
     def affine_transform(self, matrix):
         return self.map_partitions(
-            self._meta.affine_transform, matrix=matrix, enforce_metadata=False
+            self._partition_type.affine_transform, matrix, enforce_metadata=False
         )
 
     @derived_from(geopandas.base.GeoPandasBase)
     def translate(self, xoff=0.0, yoff=0.0, zoff=0.0):
         return self.map_partitions(
-            self._meta.translate,
+            self._partition_type.translate,
             xoff=xoff,
             yoff=yoff,
             zoff=zoff,
@@ -192,8 +199,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @derived_from(geopandas.base.GeoPandasBase)
     def rotate(self, angle, origin="center", use_radians=False):
         return self.map_partitions(
-            self._meta.rotate,
-            angle=angle,
+            self._partition_type.rotate,
+            angle,
             origin=origin,
             use_radians=use_radians,
             enforce_metadata=False,
@@ -202,7 +209,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @derived_from(geopandas.base.GeoPandasBase)
     def scale(self, xfact=1.0, yfact=1.0, zfact=1.0, origin="center"):
         return self.map_partitions(
-            self._meta.scale,
+            self._partition_type.scale,
             xfact=xfact,
             yfact=yfact,
             zfact=zfact,
@@ -213,7 +220,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @derived_from(geopandas.base.GeoPandasBase)
     def skew(self, xs=0.0, ys=0.0, origin="center", use_radians=False):
         return self.map_partitions(
-            self._meta.skew,
+            self._partition_type.skew,
             xs=xs,
             ys=ys,
             origin=origin,
@@ -223,6 +230,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     @derived_from(geopandas.base.GeoPandasBase)
     def explode(self):
+        return self.map_partitions(self._partition_type.explode, enforce_metadata=False)
+
+    @property
+    def cx(self):
         raise NotImplementedError
 
 
