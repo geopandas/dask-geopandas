@@ -38,6 +38,6 @@ setup(
     packages=find_packages(),
     package_data={"dask_geopandas": ["*.yaml"]},
     install_requires=install_requires,
-    tests_require=['pytest'],
+    tests_require=["pytest"],
     zip_safe=False,
 )
