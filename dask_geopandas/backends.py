@@ -1,13 +1,12 @@
 from dask.dataframe.core import get_parallel_type, make_meta
 from dask.dataframe.utils import (
     meta_nonempty,
-    _nonempty_series,
+    _nonempty_index,
     meta_nonempty_dataframe,
 )
 from dask.dataframe.extensions import make_array_nonempty, make_scalar
 import numpy as np
 import shapely.geometry
-from shapely.geometry.collection import GeometryCollection
 from shapely.geometry.base import BaseGeometry
 import geopandas
 from geopandas.array import GeometryDtype, from_shapely
@@ -18,7 +17,7 @@ get_parallel_type.register(geopandas.GeoDataFrame, lambda _: GeoDataFrame)
 get_parallel_type.register(geopandas.GeoSeries, lambda _: GeoSeries)
 
 
-@make_meta.register((GeometryCollection, BaseGeometry))
+@make_meta.register(BaseGeometry)
 def make_meta_shapely_geometry(x, index=None):
     return x
 
@@ -39,8 +38,10 @@ def _(x):
 
 @meta_nonempty.register(geopandas.GeoSeries)
 def _nonempty_geoseries(x, idx=None):
-    s = _nonempty_series(x, idx)
-    return geopandas.GeoSeries(s, name=s.name, crs=x.crs)
+    if idx is None:
+        idx = _nonempty_index(x.index)
+    data = make_array_nonempty(x.dtype)
+    return geopandas.GeoSeries(data, name=x.name, crs=x.crs)
 
 
 @meta_nonempty.register(geopandas.GeoDataFrame)
