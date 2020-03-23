@@ -3,7 +3,7 @@ import pandas as pd
 
 import dask.dataframe as dd
 from dask.dataframe.core import _emulate, map_partitions, elemwise
-from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
+from dask.utils import OperatorMethodMixin, derived_from, ignore_warning
 
 import geopandas
 from shapely.geometry.collection import GeometryCollection
@@ -53,10 +53,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def __repr__(self):
         s = "<dask_geopandas.%s | %d tasks | %d npartitions>"
         return s % (type(self).__name__, len(self.dask), self.npartitions)
-
-    def to_dask_dataframe(self):
-        """Create a dask.dataframe object from a dask_geopandas object"""
-        return self.map_partitions(M.to_pandas)
 
     @classmethod
     def _bind_property(cls, attr):
