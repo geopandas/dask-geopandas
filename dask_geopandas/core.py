@@ -134,10 +134,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         def agg(concatted):
             return np.array(
                 (
-                    concatted[0::4].min(),  # minx
-                    concatted[1::4].min(),  # miny
-                    concatted[2::4].max(),  # maxx
-                    concatted[3::4].max(),  # maxy
+                    np.nanmin(concatted[0::4]),  # minx
+                    np.nanmin(concatted[1::4]),  # miny
+                    np.nanmax(concatted[2::4]),  # maxx
+                    np.nanmax(concatted[3::4]),  # maxy
                 )
             )
 
