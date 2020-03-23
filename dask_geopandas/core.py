@@ -344,10 +344,7 @@ for name in [
     "within",
 ]:
     meth = getattr(geopandas.base.GeoPandasBase, name)
-    GeoSeries._bind_elemwise_comparison_method(
-        name, meth, original=geopandas.base.GeoPandasBase
-    )
-    GeoDataFrame._bind_elemwise_comparison_method(
+    _Frame._bind_elemwise_comparison_method(
         name, meth, original=geopandas.base.GeoPandasBase
     )
 
@@ -362,9 +359,6 @@ for name in [
     "project",
 ]:
     meth = getattr(geopandas.base.GeoPandasBase, name)
-    GeoSeries._bind_elemwise_operator_method(
-        name, meth, original=geopandas.base.GeoPandasBase
-    )
-    GeoDataFrame._bind_elemwise_operator_method(
+    _Frame._bind_elemwise_operator_method(
         name, meth, original=geopandas.base.GeoPandasBase
     )
