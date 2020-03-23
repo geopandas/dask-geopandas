@@ -27,6 +27,14 @@ def geoseries_points():
 
 
 @pytest.fixture
+def geoseries_points_crs(geoseries_points):
+    s = geoseries_points
+    s.crs = "epsg:26918"
+    s.name = "geoseries_with_crs"
+    return s
+
+
+@pytest.fixture
 def geodf_points_crs():
     x = np.arange(-1683723, -1683723 + 10, 1)
     y = np.arange(6689139, 6689139 + 10, 1)
@@ -128,6 +136,31 @@ def test_geodataframe_crs(geodf_points_crs):
     dask_obj.crs = new_crs
     assert dask_obj.crs == new_crs
     assert dask_obj.partitions[1].crs == new_crs
+    assert dask_obj.compute().crs == new_crs
+
+
+def test_geoseries_crs(geoseries_points_crs):
+    s = geoseries_points_crs
+    original = s.crs
+    name = s.name
+
+    dask_obj = dask_geopandas.from_geopandas(s, npartitions=2)
+    assert dask_obj.crs == original
+    assert dask_obj.partitions[1].crs == original
+    assert dask_obj.compute().crs == original
+
+    new_crs = "epsg:4316"
+    new = dask_obj.set_crs("epsg:4316")
+    assert new.crs == new_crs
+    assert new.name == name
+    assert new.partitions[1].crs == new_crs
+    assert dask_obj.crs == original
+
+    dask_obj.crs = new_crs
+    assert dask_obj.crs == new_crs
+    assert dask_obj.partitions[1].crs == new_crs
+    assert dask_obj.name == name
+    assert dask_obj.compute().crs == new_crs
 
 
 def test_project(geoseries_lines):
@@ -206,9 +239,6 @@ def test_operator_methods(geoseries_polygons, geoseries_points, meth):
 
     assert isinstance(daskified, dd.Series)
     assert all(original == daskified.compute())
-
-
-""
 
 
 @pytest.mark.parametrize(

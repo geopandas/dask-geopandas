@@ -101,6 +101,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """Sets the value of the crs"""
         new = self.set_crs(value)
         self._meta = new._meta
+        self._name = new._name
         self.dask = new.dask
 
     def set_crs(self, value):
