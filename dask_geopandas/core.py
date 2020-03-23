@@ -6,7 +6,7 @@ from dask.dataframe.core import _emulate, map_partitions, elemwise
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
 
 import geopandas
-from shapely.geometry.collection import GeometryCollection
+from shapely.geometry.base import BaseGeometry
 
 
 def _set_crs(df, crs):
@@ -157,7 +157,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @derived_from(geopandas.base.GeoPandasBase)
     def unary_union(self):
         attr = "unary_union"
-        meta = GeometryCollection()
+        meta = BaseGeometry()
 
         return self.reduction(
             lambda x: getattr(x, attr),
