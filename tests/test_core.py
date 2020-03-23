@@ -312,3 +312,23 @@ def test_set_geometry_property_on_geodf(geodf_points):
     df = dask_obj.rename(columns={"geometry": "foo"}).set_geometry("foo").compute()
     assert set(df.columns) == {"value1", "value2", "foo"}
     assert all(df.geometry == df.foo)
+
+
+def test_to_crs_geodf(geodf_points_crs):
+    df = geodf_points_crs
+    dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)
+
+    new_crs = "epsg:4316"
+    new = dask_obj.to_crs(new_crs)
+    assert new.crs == new_crs
+    assert all(new.compute() == df.to_crs(new_crs))
+
+
+def test_to_crs_geoseries(geoseries_points_crs):
+    s = geoseries_points_crs
+    dask_obj = dask_geopandas.from_geopandas(s, npartitions=2)
+
+    new_crs = "epsg:4316"
+    new = dask_obj.to_crs(new_crs)
+    assert new.crs == new_crs
+    assert all(new.compute() == s.to_crs(new_crs))

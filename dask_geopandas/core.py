@@ -124,6 +124,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """Set the value of the crs on a new object"""
         return self.map_partitions(_set_crs, value, enforce_metadata=False)
 
+    def to_crs(self, crs=None, epsg=None):
+        token = f"{self._name}-to_crs"
+        return self.map_partitions(M.to_crs, crs=crs, epsg=epsg, token=token)
+
     @property
     @derived_from(geopandas.base.GeoPandasBase)
     def total_bounds(self):
