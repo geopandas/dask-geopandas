@@ -35,14 +35,20 @@ def geoseries_points_crs(geoseries_points):
 
 
 @pytest.fixture
-def geodf_points_crs():
+def geodf_points():
     x = np.arange(-1683723, -1683723 + 10, 1)
     y = np.arange(6689139, 6689139 + 10, 1)
-    crs = "epsg:26918"
     return geopandas.GeoDataFrame(
         {"geometry": geopandas.points_from_xy(x, y), "value1": x + y, "value2": x * y},
-        crs=crs,
     )
+
+
+@pytest.fixture
+def geodf_points_crs(geodf_points):
+    geo_df = geodf_points
+    crs = "epsg:26918"
+    geo_df.crs = crs
+    return geo_df
 
 
 @pytest.fixture
@@ -287,3 +293,22 @@ def test_explode_geodf():
     daskified = dask_s.explode()
     assert isinstance(daskified, dask_geopandas.GeoDataFrame)
     assert all(original == daskified.compute())
+
+
+def test_get_geometry_property_on_geodf(geodf_points):
+    df = geodf_points
+    df = df.rename(columns={"geometry": "foo"}).set_geometry("foo")
+    assert set(df.columns) == {"value1", "value2", "foo"}
+    assert all(df.geometry == df.foo)
+
+    dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)
+    assert all(dask_obj.geometry == dask_obj.foo)
+
+
+def test_set_geometry_property_on_geodf(geodf_points):
+    df = geodf_points
+    dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)
+
+    df = dask_obj.rename(columns={"geometry": "foo"}).set_geometry("foo").compute()
+    assert set(df.columns) == {"value1", "value2", "foo"}
+    assert all(df.geometry == df.foo)

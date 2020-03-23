@@ -3,7 +3,7 @@ import pandas as pd
 
 import dask.dataframe as dd
 from dask.dataframe.core import _emulate, map_partitions, elemwise
-from dask.utils import OperatorMethodMixin, derived_from, ignore_warning
+from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
 
 import geopandas
 from shapely.geometry.collection import GeometryCollection
@@ -43,6 +43,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     """
 
     _partition_type = geopandas.base.GeoPandasBase
+
+    def to_dask_dataframe(self):
+        """Create a dask.dataframe object from a dask_geopandas object"""
+        return self.map_partitions(M.to_pandas)
 
     def __dask_postcompute__(self):
         return _finalize, ()
@@ -257,6 +261,28 @@ class GeoSeries(_Frame, dd.core.Series):
 
 class GeoDataFrame(_Frame, dd.core.DataFrame):
     _partition_type = geopandas.GeoDataFrame
+
+    @property
+    def geometry(self):
+        geometry_column_name = self._meta._geometry_column_name
+        if geometry_column_name not in self.columns:
+            raise AttributeError(
+                "No geometry data set yet (expected in"
+                " column '%s'." % geometry_column_name
+            )
+        return self[geometry_column_name]
+
+    @geometry.setter
+    def geometry(self, col):
+        """Sets the geometry column"""
+        new = self.set_geometry(col)
+        self._meta = new._meta
+        self._name = new._name
+        self.dask = new.dask
+
+    def set_geometry(self, col):
+        token = f"{self._name}-set_geometry"
+        return self.map_partitions(M.set_geometry, col, token=token)
 
 
 from_geopandas = dd.from_pandas
