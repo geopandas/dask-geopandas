@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 import dask.dataframe as dd
 from dask.dataframe.core import _emulate, map_partitions, elemwise
@@ -13,6 +14,15 @@ def _set_crs(df, crs):
     df = df.copy(deep=False)
     df.crs = crs
     return df
+
+
+def _finalize(results):
+    if isinstance(results[0], (geopandas.GeoSeries, geopandas.GeoDataFrame)):
+        output = pd.concat(results)
+        output.crs = results[0].crs
+        return output
+    else:
+        return pd.concat(results)
 
 
 class _Frame(dd.core._Frame, OperatorMethodMixin):
@@ -33,6 +43,12 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     """
 
     _partition_type = geopandas.base.GeoPandasBase
+
+    def __dask_postcompute__(self):
+        return _finalize, ()
+
+    def __dask_postpersist__(self):
+        return type(self), (self._name, self._meta, self.divisions)
 
     def __repr__(self):
         s = "<dask_geopandas.%s | %d tasks | %d npartitions>"
