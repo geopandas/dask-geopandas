@@ -1,3 +1,5 @@
+import uuid
+
 from dask.dataframe.core import get_parallel_type, make_meta
 from dask.dataframe.utils import (
     meta_nonempty,
@@ -5,11 +7,13 @@ from dask.dataframe.utils import (
     meta_nonempty_dataframe,
 )
 from dask.dataframe.extensions import make_array_nonempty, make_scalar
+from dask.base import normalize_token
+
 import numpy as np
 import shapely.geometry
 from shapely.geometry.base import BaseGeometry
 import geopandas
-from geopandas.array import GeometryDtype, from_shapely
+from geopandas.array import GeometryArray, GeometryDtype, from_shapely
 
 from .core import GeoSeries, GeoDataFrame
 
@@ -53,3 +57,10 @@ def _nonempty_geodataframe(x):
 @make_meta.register((geopandas.GeoSeries, geopandas.GeoDataFrame))
 def make_meta_geodataframe(df, index=None):
     return df.head(0)
+
+
+@normalize_token.register(GeometryArray)
+def tokenize_geometryarray(x):
+    # TODO if we can find an efficient hashing function (eg hashing integer
+    # pointers on the C level?), we could replace this random uuid
+    return uuid.uuid4().hex
