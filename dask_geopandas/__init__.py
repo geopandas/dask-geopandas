@@ -8,6 +8,8 @@ from .core import (
     from_geopandas,
     from_dask_dataframe,
 )
+from .io.parquet import read_parquet, to_parquet
+
 
 __version__ = get_versions()["version"]
 del get_versions
@@ -18,4 +20,6 @@ __all__ = [
     "GeoSeries",
     "from_geopandas",
     "from_dask_dataframe",
+    "read_parquet",
+    "to_parquet"
 ]
