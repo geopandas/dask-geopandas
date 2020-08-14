@@ -2,11 +2,14 @@ import numpy as np
 import pandas as pd
 
 import dask.dataframe as dd
-from dask.dataframe.core import _emulate, map_partitions, elemwise
+from dask.dataframe.core import _emulate, map_partitions, elemwise, new_dd_object
+from dask.highlevelgraph import HighLevelGraph
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
+from dask.base import tokenize
 
 import geopandas
 from shapely.geometry.base import BaseGeometry
+from shapely.geometry import box
 
 
 def _set_crs(df, crs):
@@ -44,9 +47,25 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     _partition_type = geopandas.base.GeoPandasBase
 
+    def __init__(self, dsk, name, meta, divisions, spatial_partitions=None):
+        super().__init__(dsk, name, meta, divisions)
+        if (spatial_partitions is not None 
+            and not isinstance(spatial_partitions, geopandas.GeoSeries)
+        ):
+            spatial_partitions = geopandas.GeoSeries(spatial_partitions)
+        self.spatial_partitions = spatial_partitions
+
     def to_dask_dataframe(self):
         """Create a dask.dataframe object from a dask_geopandas object"""
         return self.map_partitions(M.to_pandas)
+
+    def calculate_spatial_partitions(self):
+        # TEMP method to calculate spatial partitions for testing, need to
+        # add better methods (set_partitions / repartition)
+        parts = geopandas.GeoSeries(
+            self.map_partitions(lambda part: part.convex_hull.unary_union).compute()
+        )
+        self.spatial_partitions = parts.convex_hull
 
     def __dask_postcompute__(self):
         return _finalize, ()
@@ -256,7 +275,61 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     @property
     def cx(self):
-        raise NotImplementedError
+        return _CoordinateIndexer(self)
+
+
+def _cx_part(df, bbox):
+    idx = df.intersects(bbox)
+    return df[idx]
+
+
+class _CoordinateIndexer(object):
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __getitem__(self, key):
+        obj = self.obj
+        xs, ys = key
+        # handle numeric values as x and/or y coordinate index
+        if type(xs) is not slice:
+            xs = slice(xs, xs)
+        if type(ys) is not slice:
+            ys = slice(ys, ys)
+        if xs.step is not None or ys.step is not None:
+            raise ValueError("Slice step not supported.")
+        xmin, ymin, xmax, ymax = obj.spatial_partitions.total_bounds
+        bbox = box(
+            xs.start if xs.start is not None else xmin,
+            ys.start if ys.start is not None else ymin,
+            xs.stop if xs.stop is not None else xmax,
+            ys.stop if ys.stop is not None else ymax,
+        )
+        if self.obj.spatial_partitions is not None:
+            partition_idx = np.nonzero(
+                np.asarray(self.obj.spatial_partitions.intersects(bbox))
+            )[0]
+        else:
+            raise NotImplementedError
+
+        name = "cx-%s" % tokenize(key, self.obj)
+
+        if len(partition_idx):
+            # construct graph (based on LocIndexer from dask)
+            dsk = {}
+            for i, part in enumerate(partition_idx):
+                dsk[name, i] = (_cx_part, (self.obj._name, part), bbox)
+
+            divisions = [self.obj.divisions[i] for i in partition_idx] + [
+                self.obj.divisions[partition_idx[-1] + 1]
+            ]
+        else:
+            # TODO can a dask dataframe have 0 partitions?
+            dsk = {(name, 0): self.obj._meta.head(0)}
+            divisions = [None, None]
+
+        graph = HighLevelGraph.from_collections(name, dsk, dependencies=[self.obj])
+        return new_dd_object(graph, name, meta=self.obj._meta, divisions=divisions)
 
 
 class GeoSeries(_Frame, dd.core.Series):
