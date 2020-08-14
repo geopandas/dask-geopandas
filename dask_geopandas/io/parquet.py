@@ -4,10 +4,14 @@ from typing import TYPE_CHECKING
 import pandas as pd
 
 import geopandas
-from geopandas.io.arrow import _geopandas_to_arrow, _arrow_to_geopandas
 
 import dask.dataframe as dd
-from dask.dataframe.io.parquet.arrow import ArrowEngine
+
+try:
+    # pyarrow is imported here, but is an optional dependency
+    from dask.dataframe.io.parquet.arrow import ArrowEngine
+except:
+    ArrowEngine = object
 
 if TYPE_CHECKING:
     import pyarrow
@@ -29,6 +33,8 @@ class GeoArrowEngine(ArrowEngine):
     def _arrow_table_to_pandas(
         cls, arrow_table: "pyarrow.Table", categories, **kwargs
     ) -> pd.DataFrame:
+        from geopandas.io.arrow import _arrow_to_geopandas
+
         _kwargs = kwargs.get("arrow_to_pandas", {})
         _kwargs.update({"use_threads": False, "ignore_metadata": False})
 
@@ -39,6 +45,8 @@ class GeoArrowEngine(ArrowEngine):
     def _pandas_to_arrow_table(
         cls, df: pd.DataFrame, preserve_index=False, schema=None
     ) -> "pyarrow.Table":
+        from geopandas.io.arrow import _geopandas_to_arrow
+
         # TODO add support for schema
         table = _geopandas_to_arrow(df, index=preserve_index)
         # table = pa.Table.from_pandas(df, preserve_index=preserve_index, schema=schema)
