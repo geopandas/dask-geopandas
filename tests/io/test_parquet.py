@@ -14,7 +14,7 @@ def test_parquet_roundtrip(tmp_path):
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
     
     basedir = tmp_path / "dataset"
-    dask_geopandas.to_parquet(ddf, basedir)
+    ddf.to_parquet(basedir)
 
     # each partition (4) is written as parquet file
     paths = list(basedir.glob("*.parquet"))
