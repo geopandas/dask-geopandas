@@ -21,5 +21,5 @@ __all__ = [
     "from_geopandas",
     "from_dask_dataframe",
     "read_parquet",
-    "to_parquet"
+    "to_parquet",
 ]

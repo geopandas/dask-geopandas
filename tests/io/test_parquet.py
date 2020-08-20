@@ -9,10 +9,10 @@ pa = pytest.importorskip("pyarrow")
 
 
 def test_parquet_roundtrip(tmp_path):
-    # basic roundtrip 
+    # basic roundtrip
     df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
-    
+
     basedir = tmp_path / "dataset"
     ddf.to_parquet(basedir)
 
@@ -20,7 +20,7 @@ def test_parquet_roundtrip(tmp_path):
     paths = list(basedir.glob("*.parquet"))
     assert len(paths) == 4
 
-    # reading back gives identical GeoDataFrame 
+    # reading back gives identical GeoDataFrame
     result = dask_geopandas.read_parquet(basedir)
     assert ddf.npartitions == 4
     assert_geodataframe_equal(result.compute(), df)

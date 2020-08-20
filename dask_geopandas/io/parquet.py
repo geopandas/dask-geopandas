@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 
 
 class GeoArrowEngine(ArrowEngine):
-
     @classmethod
     def read_metadata(cls, *args, **kwargs):
         meta, stats, parts, index = super().read_metadata(*args, **kwargs)
@@ -73,9 +72,7 @@ class GeoArrowEngine(ArrowEngine):
         schema=None,
         **kwargs,
     ):
-        from dask.dataframe.io.parquet.arrow import (
-            _index_in_schema, _write_partitioned
-        )
+        from dask.dataframe.io.parquet.arrow import _index_in_schema, _write_partitioned
         import pyarrow.parquet as pq
 
         _meta = None
