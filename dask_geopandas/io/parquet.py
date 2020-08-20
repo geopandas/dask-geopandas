@@ -10,7 +10,7 @@ import dask.dataframe as dd
 try:
     # pyarrow is imported here, but is an optional dependency
     from dask.dataframe.io.parquet.arrow import ArrowEngine
-except:
+except ImportError:
     ArrowEngine = object
 
 if TYPE_CHECKING:
@@ -24,7 +24,8 @@ class GeoArrowEngine(ArrowEngine):
         meta, stats, parts, index = super().read_metadata(*args, **kwargs)
 
         # Update meta to be a GeoDataFrame
-        # TODO convert columns based on GEO metadata (this will now only work for a default "geometry" column)
+        # TODO convert columns based on GEO metadata (this will now only work
+        # for a default "geometry" column)
         meta = geopandas.GeoDataFrame(meta)
 
         return (meta, stats, parts, index)
@@ -49,7 +50,8 @@ class GeoArrowEngine(ArrowEngine):
 
         # TODO add support for schema
         table = _geopandas_to_arrow(df, index=preserve_index)
-        # table = pa.Table.from_pandas(df, preserve_index=preserve_index, schema=schema)
+        # table = pa.Table.from_pandas(df, preserve_index=preserve_index,
+        #                              schema=schema)
         return table
 
 
