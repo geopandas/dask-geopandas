@@ -288,6 +288,12 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         token = f"{self._name}-set_geometry"
         return self.map_partitions(M.set_geometry, col, token=token)
 
+    def to_parquet(self, path, *args, **kwargs):
+        """ See dask_geopadandas.to_parquet docstring for more information """
+        from .io.parquet import to_parquet
+
+        return to_parquet(self, path, *args, **kwargs)
+
 
 from_geopandas = dd.from_pandas
 
