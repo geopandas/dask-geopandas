@@ -48,9 +48,10 @@ class GeoArrowEngine(ArrowEngine):
         from geopandas.io.arrow import _geopandas_to_arrow
 
         # TODO add support for schema
+        if schema is not None:
+            raise NotImplementedError("Passing 'schema' is not yet supported")
+
         table = _geopandas_to_arrow(df, index=preserve_index)
-        # table = pa.Table.from_pandas(df, preserve_index=preserve_index,
-        #                              schema=schema)
         return table
 
     # --------------------------------------------------
@@ -123,4 +124,7 @@ class GeoArrowEngine(ArrowEngine):
 
 
 to_parquet = partial(dd.to_parquet, engine=GeoArrowEngine)
+to_parquet.__doc__ = dd.to_parquet.__doc__
+
 read_parquet = partial(dd.read_parquet, engine=GeoArrowEngine)
+read_parquet.__doc__ = dd.read_parquet.__doc__
