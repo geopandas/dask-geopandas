@@ -56,11 +56,21 @@ data.
    import dask.dataframe as dd
    import dask_geopandas
 
-   df = dd.read_csv('...')
+   ddf = dd.read_csv('...')
 
-   df = df.set_geometry(
-       dask_geopandas.points_from_xy(df, 'latitude', 'longitude')
+   ddf = dask_geopandas.from_dask_dataframe(ddf)
+   ddf = dff.set_geometry(
+       dask_geopandas.points_from_xy(ddf, 'latitude', 'longitude')
    )
+
+Writing files (and reading back) is currently supported for the Parquet file
+format:
+
+.. code-block:: python
+
+   ddf.to_parquet("path/to/dir/")
+   ddf = dask_geopandas.read_parquet("path/to/dir/")
+
 
 Installation
 ------------
