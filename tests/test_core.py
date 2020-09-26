@@ -1,3 +1,4 @@
+from distutils.version import LooseVersion
 import pytest
 import pandas as pd
 import numpy as np
@@ -332,3 +333,15 @@ def test_to_crs_geoseries(geoseries_points_crs):
     new = dask_obj.to_crs(new_crs)
     assert new.crs == new_crs
     assert all(new.compute() == s.to_crs(new_crs))
+
+
+@pytest.mark.skipif(
+    LooseVersion(geopandas.__version__) <= LooseVersion("0.8.1"),
+    reason="geopandas 0.8 has bug in apply",
+)
+def test_geoseries_apply(geoseries_polygons):
+    # https://github.com/jsignell/dask-geopandas/issues/18
+    ds = dask_geopandas.from_geopandas(geoseries_polygons, npartitions=2)
+    result = ds.apply(lambda geom: geom.area, meta="float").compute()
+    expected = geoseries_polygons.area
+    pd.testing.assert_series_equal(result, expected)
