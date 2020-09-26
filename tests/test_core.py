@@ -102,9 +102,7 @@ def test_geoseries_unary_union(geoseries_points):
     assert original.equals(daskified.compute())
 
 
-@pytest.mark.parametrize(
-    "attr", ["x", "y"],
-)
+@pytest.mark.parametrize("attr", ["x", "y"])
 def test_geoseries_points_attrs(geoseries_points, attr):
     original = getattr(geoseries_points, attr)
 
