@@ -26,7 +26,7 @@ def _finalize(results):
 
 
 class _Frame(dd.core._Frame, OperatorMethodMixin):
-    """ Superclass for DataFrame and Series
+    """Superclass for DataFrame and Series
 
     Parameters
     ----------
@@ -169,7 +169,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @derived_from(geopandas.base.GeoPandasBase)
     def representative_point(self):
         return self.map_partitions(
-            self._partition_type.representative_point, enforce_metadata=False,
+            self._partition_type.representative_point, enforce_metadata=False
         )
 
     @derived_from(geopandas.base.GeoPandasBase)
