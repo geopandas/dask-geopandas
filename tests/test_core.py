@@ -8,6 +8,8 @@ import dask.dataframe as dd
 from dask.dataframe.core import Scalar
 import dask_geopandas
 
+from geopandas.testing import assert_geodataframe_equal
+
 
 @pytest.fixture
 def geoseries_polygons():
@@ -115,13 +117,22 @@ def test_geoseries_points_attrs(geoseries_points, attr):
 
 
 def test_points_from_xy():
-    x = [1, 2, 3]
-    y = [4, 5, 6]
+    x = [1, 2, 3, 4, 5]
+    y = [4, 5, 6, 7, 8]
     expected = geopandas.points_from_xy(x, y)
-    df = dd.from_pandas(pd.DataFrame({"x": x, "y": y}), npartitions=2)
-    actual = dask_geopandas.points_from_xy(df)
+    df = pd.DataFrame({"x": x, "y": y})
+    ddf = dd.from_pandas(df, npartitions=2)
+    actual = dask_geopandas.points_from_xy(ddf)
     assert isinstance(actual, dask_geopandas.GeoSeries)
-    list(actual) == list(expected)
+    assert list(actual) == list(expected)
+
+    # assign to geometry column and convert to GeoDataFrame
+    df["geometry"] = expected
+    expected = geopandas.GeoDataFrame(df)
+    ddf["geometry"] = actual
+    ddf = dask_geopandas.from_dask_dataframe(ddf)
+    result = ddf.compute()
+    assert_geodataframe_equal(result, expected)
 
 
 def test_geodataframe_crs(geodf_points_crs):

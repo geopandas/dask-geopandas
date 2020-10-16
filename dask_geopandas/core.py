@@ -309,7 +309,8 @@ def points_from_xy(df, x="x", y="y", z="z"):
         return geopandas.GeoSeries(
             geopandas.points_from_xy(
                 data[x], data[y], data[z] if z in df.columns else None
-            )
+            ),
+            index=data.index,
         )
 
     return df.map_partitions(func, x, y, z, meta=geopandas.GeoSeries())
