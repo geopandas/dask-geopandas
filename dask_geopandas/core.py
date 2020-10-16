@@ -53,6 +53,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             spatial_partitions, geopandas.GeoSeries
         ):
             spatial_partitions = geopandas.GeoSeries(spatial_partitions)
+        # TODO make this a property
         self.spatial_partitions = spatial_partitions
 
     def to_dask_dataframe(self):
@@ -70,13 +71,16 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         return s % (type(self).__name__, len(self.dask), self.npartitions)
 
     @classmethod
-    def _bind_property(cls, attr):
+    def _bind_property(cls, attr, preserve_spatial_partitions=False):
         """Map property to partitions and bind to class"""
 
         def prop(self):
             meta = getattr(self._meta, attr)
             token = f"{self._name}-{attr}"
-            return self.map_partitions(getattr, attr, token=token, meta=meta)
+            result = self.map_partitions(getattr, attr, token=token, meta=meta)
+            if preserve_spatial_partitions:
+                result = self._propagate_spatial_partitions(result)
+            return result
 
         doc = getattr(cls._partition_type, attr).__doc__
         # Insert disclaimer that this is a copied docstring note that
@@ -365,15 +369,23 @@ for name in [
     "is_simple",
     "is_ring",
     "has_z",
+    "interiors",
+    "bounds",
+]:
+    _Frame._bind_property(name)
+
+
+for name in [
     "boundary",
     "centroid",
     "convex_hull",
     "envelope",
     "exterior",
-    "interiors",
-    "bounds",
 ]:
-    _Frame._bind_property(name)
+    # TODO actually calculate envelope / convex_hull of the spatial partitions
+    # for some of those
+    _Frame._bind_property(name, preserve_spatial_partitions=True)
+
 
 for name in [
     "geometry",

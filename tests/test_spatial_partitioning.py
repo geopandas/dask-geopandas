@@ -1,3 +1,5 @@
+import pytest
+
 import geopandas
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 
@@ -25,6 +27,21 @@ def test_propagate_on_geometry_access():
     subset = ddf[["continent", "geometry"]]
     assert subset.spatial_partitions is not None
     assert_geoseries_equal(subset.spatial_partitions, spatial_partitions)
+
+
+@pytest.mark.parametrize(
+    "attr", ["boundary", "centroid", "convex_hull", "envelope", "exterior"]
+)
+def test_propagate_geoseries_properties(attr):
+    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+    ddf.calculate_spatial_partitions()
+    spatial_partitions = ddf.spatial_partitions.copy()
+
+    result = getattr(ddf, attr)
+    assert result.spatial_partitions is not None
+    assert_geoseries_equal(result.spatial_partitions, spatial_partitions)
+    assert_geoseries_equal(result.compute(), getattr(df, attr))
 
 
 def test_cx():
