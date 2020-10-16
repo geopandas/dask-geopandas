@@ -49,8 +49,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     def __init__(self, dsk, name, meta, divisions, spatial_partitions=None):
         super().__init__(dsk, name, meta, divisions)
-        if (spatial_partitions is not None 
-            and not isinstance(spatial_partitions, geopandas.GeoSeries)
+        if spatial_partitions is not None and not isinstance(
+            spatial_partitions, geopandas.GeoSeries
         ):
             spatial_partitions = geopandas.GeoSeries(spatial_partitions)
         self.spatial_partitions = spatial_partitions
@@ -58,14 +58,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def to_dask_dataframe(self):
         """Create a dask.dataframe object from a dask_geopandas object"""
         return self.map_partitions(M.to_pandas)
-
-    def calculate_spatial_partitions(self):
-        # TEMP method to calculate spatial partitions for testing, need to
-        # add better methods (set_partitions / repartition)
-        parts = geopandas.GeoSeries(
-            self.map_partitions(lambda part: part.convex_hull.unary_union).compute()
-        )
-        self.spatial_partitions = parts.convex_hull
 
     def __dask_postcompute__(self):
         return _finalize, ()
@@ -117,6 +109,23 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         meth.__name__ = name
         setattr(cls, name, derived_from(original)(meth))
+
+    def calculate_spatial_partitions(self):
+        # TEMP method to calculate spatial partitions for testing, need to
+        # add better methods (set_partitions / repartition)
+        parts = geopandas.GeoSeries(
+            self.map_partitions(lambda part: part.convex_hull.unary_union).compute()
+        )
+        self.spatial_partitions = parts.convex_hull
+
+    def _propagate_spatial_partitions(self, new_object):
+        """
+        We need to override several dask methods to ensure the spatial
+        partitions are properly propagated.
+        This is a helper method to set this.
+        """
+        new_object.spatial_partitions = self.spatial_partitions
+        return new_object
 
     @property
     def crs(self):
@@ -284,7 +293,6 @@ def _cx_part(df, bbox):
 
 
 class _CoordinateIndexer(object):
-
     def __init__(self, obj):
         self.obj = obj
 
@@ -360,6 +368,17 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
     def set_geometry(self, col):
         token = f"{self._name}-set_geometry"
         return self.map_partitions(M.set_geometry, col, token=token)
+
+    def __getitem__(self, key):
+        """
+        If the result is a new dask_geopandas.GeoDataFrame/GeoSeries (automatically
+        determined by dask based on the meta), then pass through the spatial
+        partitions information.
+        """
+        result = super().__getitem__(key)
+        if isinstance(result, _Frame):
+            result = self._propagate_spatial_partitions(result)
+        return result
 
     def to_parquet(self, path, *args, **kwargs):
         """ See dask_geopadandas.to_parquet docstring for more information """

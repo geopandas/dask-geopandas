@@ -1,7 +1,30 @@
 import geopandas
-from geopandas.testing import assert_geodataframe_equal
+from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 
 import dask_geopandas
+
+
+def test_propagate_on_geometry_access():
+    # ensure the spatial_partitioning information is preserved in GeoSeries
+    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+    ddf.calculate_spatial_partitions()
+    spatial_partitions = ddf.spatial_partitions.copy()
+
+    # geometry attribute
+    gs = ddf.geometry
+    assert gs.spatial_partitions is not None
+    assert_geoseries_equal(gs.spatial_partitions, spatial_partitions)
+
+    # column access
+    gs = ddf["geometry"]
+    assert gs.spatial_partitions is not None
+    assert_geoseries_equal(gs.spatial_partitions, spatial_partitions)
+
+    # subset geodataframe
+    subset = ddf[["continent", "geometry"]]
+    assert subset.spatial_partitions is not None
+    assert_geoseries_equal(subset.spatial_partitions, spatial_partitions)
 
 
 def test_cx():
