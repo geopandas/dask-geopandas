@@ -9,3 +9,5 @@ dependencies:
   - geopandas
   # test dependencies
   - pytest
+  # optional dependencies
+  - pyarrow

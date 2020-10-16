@@ -29,7 +29,7 @@ def _finalize(results):
 
 
 class _Frame(dd.core._Frame, OperatorMethodMixin):
-    """ Superclass for DataFrame and Series
+    """Superclass for DataFrame and Series
 
     Parameters
     ----------
@@ -188,7 +188,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @derived_from(geopandas.base.GeoPandasBase)
     def representative_point(self):
         return self.map_partitions(
-            self._partition_type.representative_point, enforce_metadata=False,
+            self._partition_type.representative_point, enforce_metadata=False
         )
 
     @derived_from(geopandas.base.GeoPandasBase)
@@ -361,6 +361,12 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         token = f"{self._name}-set_geometry"
         return self.map_partitions(M.set_geometry, col, token=token)
 
+    def to_parquet(self, path, *args, **kwargs):
+        """ See dask_geopadandas.to_parquet docstring for more information """
+        from .io.parquet import to_parquet
+
+        return to_parquet(self, path, *args, **kwargs)
+
 
 from_geopandas = dd.from_pandas
 
@@ -376,7 +382,8 @@ def points_from_xy(df, x="x", y="y", z="z"):
         return geopandas.GeoSeries(
             geopandas.points_from_xy(
                 data[x], data[y], data[z] if z in df.columns else None
-            )
+            ),
+            index=data.index,
         )
 
     return df.map_partitions(func, x, y, z, meta=geopandas.GeoSeries())

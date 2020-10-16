@@ -1,3 +1,4 @@
+from distutils.version import LooseVersion
 import pytest
 import pandas as pd
 import numpy as np
@@ -6,6 +7,8 @@ from shapely.geometry import Polygon, Point, LineString, MultiPoint
 import dask.dataframe as dd
 from dask.dataframe.core import Scalar
 import dask_geopandas
+
+from geopandas.testing import assert_geodataframe_equal
 
 
 @pytest.fixture
@@ -101,9 +104,7 @@ def test_geoseries_unary_union(geoseries_points):
     assert original.equals(daskified.compute())
 
 
-@pytest.mark.parametrize(
-    "attr", ["x", "y"],
-)
+@pytest.mark.parametrize("attr", ["x", "y"])
 def test_geoseries_points_attrs(geoseries_points, attr):
     original = getattr(geoseries_points, attr)
 
@@ -116,13 +117,22 @@ def test_geoseries_points_attrs(geoseries_points, attr):
 
 
 def test_points_from_xy():
-    x = [1, 2, 3]
-    y = [4, 5, 6]
+    x = [1, 2, 3, 4, 5]
+    y = [4, 5, 6, 7, 8]
     expected = geopandas.points_from_xy(x, y)
-    df = dd.from_pandas(pd.DataFrame({"x": x, "y": y}), npartitions=2)
-    actual = dask_geopandas.points_from_xy(df)
+    df = pd.DataFrame({"x": x, "y": y})
+    ddf = dd.from_pandas(df, npartitions=2)
+    actual = dask_geopandas.points_from_xy(ddf)
     assert isinstance(actual, dask_geopandas.GeoSeries)
-    list(actual) == list(expected)
+    assert list(actual) == list(expected)
+
+    # assign to geometry column and convert to GeoDataFrame
+    df["geometry"] = expected
+    expected = geopandas.GeoDataFrame(df)
+    ddf["geometry"] = actual
+    ddf = dask_geopandas.from_dask_dataframe(ddf)
+    result = ddf.compute()
+    assert_geodataframe_equal(result, expected)
 
 
 def test_geodataframe_crs(geodf_points_crs):
@@ -332,3 +342,15 @@ def test_to_crs_geoseries(geoseries_points_crs):
     new = dask_obj.to_crs(new_crs)
     assert new.crs == new_crs
     assert all(new.compute() == s.to_crs(new_crs))
+
+
+@pytest.mark.skipif(
+    LooseVersion(geopandas.__version__) <= LooseVersion("0.8.1"),
+    reason="geopandas 0.8 has bug in apply",
+)
+def test_geoseries_apply(geoseries_polygons):
+    # https://github.com/jsignell/dask-geopandas/issues/18
+    ds = dask_geopandas.from_geopandas(geoseries_polygons, npartitions=2)
+    result = ds.apply(lambda geom: geom.area, meta="float").compute()
+    expected = geoseries_polygons.area
+    pd.testing.assert_series_equal(result, expected)
