@@ -331,6 +331,12 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             result = self._propagate_spatial_partitions(result)
         return result
 
+    def _repr_html_(self):
+        output = super()._repr_html_()
+        return output.replace(
+            "Dask DataFrame Structure", "Dask-GeoPandas GeoDataFrame Structure"
+        )
+
     def to_parquet(self, path, *args, **kwargs):
         """ See dask_geopadandas.to_parquet docstring for more information """
         from .io.parquet import to_parquet

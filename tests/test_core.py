@@ -354,3 +354,8 @@ def test_geoseries_apply(geoseries_polygons):
     result = ds.apply(lambda geom: geom.area, meta="float").compute()
     expected = geoseries_polygons.area
     pd.testing.assert_series_equal(result, expected)
+
+
+def test_geodataframe_html_repr(geodf_points):
+    dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
+    assert "Dask-GeoPandas GeoDataFrame" in dask_obj._repr_html_()
