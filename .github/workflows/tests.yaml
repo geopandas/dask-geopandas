@@ -1,0 +1,67 @@
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  Linting:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - uses: pre-commit/action@v2.0.0
+
+  Test:
+    needs: Linting
+    name: ${{ matrix.os }}, ${{ matrix.env }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        env:
+          - continuous_integration/envs/37-latest.yaml
+          - continuous_integration/envs/38-latest.yaml
+          - continuous_integration/envs/39-latest.yaml
+
+        include:
+          - env: continuous_integration/envs/39-latest.yaml
+            os: macos-latest
+          - env: continuous_integration/envs/39-latest.yaml
+            os: windows-latest
+          - env: continuous_integration/envs/39-dev.yaml
+            os: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Conda
+        uses: s-weigand/setup-conda@v1
+        with:
+          activate-conda: false
+
+      - name: Install Env
+        shell: bash
+        run: conda env create -f ${{ matrix.env }}
+
+      - name: Check and Log Environment
+        shell: bash
+        run: |
+          source activate test
+          python -V
+          python -c "import geopandas; geopandas.show_versions();"
+          conda info
+          conda list
+
+      - name: Test
+        shell: bash
+        run: |
+          source activate test
+          pytest -v -r s --color=yes --cov=dask_geopandas --cov-append --cov-report term-missing --cov-report xml .
+
+          - uses: codecov/codecov-action@v1
