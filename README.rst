@@ -9,7 +9,7 @@ Status
 **EXPERIMENTAL** This project is in an early state. The basic element-wise
 spatial methods are implemented, but also not yet much more than that.
 
-If you would like to see this project in a more stable state then you might
+If you would like to see this project in a more stable state, then you might
 consider pitching in with developer time (contributions are very welcome!)
 or with financial support from you or your company.
 
@@ -48,7 +48,7 @@ and will be computed in parallel:
 
 
 Additionally, if you have a distributed dask.dataframe you can pass columns of
-x-y points to the `set_geometry` method.  Currently this only supports point
+x-y points to the `set_geometry` method. Currently, this only supports point
 data.
 
 .. code-block:: python
@@ -75,12 +75,12 @@ format:
 Installation
 ------------
 
-This packages depends on GeoPandas and Dask. In addition, it is recommended to
+This package depends on GeoPandas and Dask. In addition, it is recommended to
 install PyGEOS, to have faster spatial operations and enable multithreading. See
 https://geopandas.readthedocs.io/en/latest/install.html#using-the-optional-pygeos-dependency
 for details.
 
-One way is to use the ``conda`` package manager to create an new environment:
+One way is to use the ``conda`` package manager to create a new environment:
 
 ::
 
@@ -89,4 +89,4 @@ One way is to use the ``conda`` package manager to create an new environment:
     conda config --env --add channels conda-forge
     conda config --env --set channel_priority strict
     conda install python=3 geopandas dask pygeos
-    pip install git+git://github.com/jsignell/dask-geopandas.git
+    pip install git+git://github.com/geopandas/dask-geopandas.git
