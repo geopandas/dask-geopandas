@@ -9,7 +9,6 @@ from dask.dataframe.utils import (
 from dask.dataframe.extensions import make_array_nonempty, make_scalar
 from dask.base import normalize_token
 
-import numpy as np
 import shapely.geometry
 from shapely.geometry.base import BaseGeometry
 import geopandas
@@ -28,11 +27,9 @@ def make_meta_shapely_geometry(x, index=None):
 
 @make_array_nonempty.register(GeometryDtype)
 def _(dtype):
-    a = np.array(
-        [shapely.geometry.LineString([(i, i), (i, i + 1)]) for i in range(2)],
-        dtype=object,
+    return from_shapely(
+        [shapely.geometry.LineString([(i, i), (i, i + 1)]) for i in range(2)]
     )
-    return from_shapely(a)
 
 
 @make_scalar.register(GeometryDtype.type)
