@@ -282,7 +282,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             enforce_metadata=False,
         )
 
-    @derived_from(geopandas.base.GeoPandasBase)
+    @derived_from(geopandas.geodataframe.GeoDataFrame)
     def explode(self):
         return self.map_partitions(self._partition_type.explode, enforce_metadata=False)
 
