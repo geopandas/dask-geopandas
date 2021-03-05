@@ -1,0 +1,22 @@
+name: test
+channels:
+  - conda-forge
+dependencies:
+  # required dependencies
+  - python=3.9
+  - distributed
+  - pandas
+  - shapely
+  - fiona
+  - pyproj
+  - fsspec
+  # test dependencies
+  - pytest
+  - pytest-cov
+  # optional dependencies
+  - pyarrow
+  - pip
+  - pip:
+    - git+https://github.com/geopandas/geopandas.git@master
+    - git+https://github.com/pygeos/pygeos.git@master
+    - git+https://github.com/dask/dask.git@master

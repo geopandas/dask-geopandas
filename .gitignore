@@ -17,3 +17,5 @@ log
 .cache/
 .ipynb_checkpoints
 .vscode/
+
+coverage.xml

@@ -1,11 +1,13 @@
-name: test-environment
+name: test
 channels:
   - conda-forge
 dependencies:
   # required dependencies
-  - python=3.6
+  - python=3.7
   - dask
   - distributed
   - geopandas
+  - pygeos
   # test dependencies
   - pytest
+  - pytest-cov
