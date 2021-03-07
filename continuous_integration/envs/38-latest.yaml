@@ -8,6 +8,7 @@ dependencies:
   - distributed
   - geopandas
   - pygeos
+  - pyproj=2.6
   # test dependencies
   - pytest
   - pytest-cov

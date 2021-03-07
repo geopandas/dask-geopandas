@@ -8,7 +8,7 @@ dependencies:
   - pandas
   - shapely
   - fiona
-  - pyproj
+  - pyproj=2.6
   - fsspec
   # test dependencies
   - pytest
