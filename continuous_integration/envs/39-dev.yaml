@@ -8,7 +8,7 @@ dependencies:
   - pandas
   - shapely
   - fiona
-  - pyproj
+  - pyproj=2.6  # unpin when pyproj 3.1 is released with multithreading fix
   - fsspec
   # test dependencies
   - pytest
@@ -19,4 +19,4 @@ dependencies:
   - pip:
     - git+https://github.com/geopandas/geopandas.git@master
     - git+https://github.com/pygeos/pygeos.git@master
-    - git+https://github.com/dask/dask.git@master
+    - git+https://github.com/dask/dask.git@main
