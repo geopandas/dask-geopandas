@@ -29,11 +29,11 @@ setup(
     long_description=(
         open("README.rst").read() if os.path.exists("README.rst") else ""
     ),
-    url="https://geopandas.dask.org/",
+    url="https://github.com/geopandas/dask-geopandas",
     project_urls={
-        "Documentation": "https://geopandas.dask.org/",
-        "Source": "https://github.com/dask/dask-geopandas/",
-        "Issue Tracker": "https://github.com/dask/dask-geopandas/issues",
+        "Documentation": "https://github.com/geopandas/dask-geopandas",
+        "Source": "https://github.com/geopandas/dask-geopandas/",
+        "Issue Tracker": "https://github.com/geopandas/dask-geopandas/issues",
     },
     packages=find_packages(),
     package_data={"dask_geopandas": ["*.yaml"]},
