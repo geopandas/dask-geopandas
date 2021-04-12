@@ -28,8 +28,10 @@ def test_parquet_roundtrip(tmp_path):
 
     # reading back gives identical GeoDataFrame
     result = dask_geopandas.read_parquet(basedir)
-    assert ddf.npartitions == 4
+    assert result.npartitions == 4
     assert_geodataframe_equal(result.compute(), df)
+    # reading back also populates the spatial partitioning property
+    assert result.spatial_partitions is not None
 
     # the written dataset is also readable by plain geopandas
     result_gpd = geopandas.read_parquet(basedir)
