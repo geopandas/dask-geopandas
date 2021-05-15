@@ -1,11 +1,14 @@
-name: test-environment
+name: test
 channels:
   - conda-forge
 dependencies:
   # required dependencies
-  - python=3.6
+  - python=3.7
   - dask
   - distributed
   - geopandas
+  - pygeos
+  - pyproj=2.6  # unpin when pyproj 3.1 is released with multithreading fix
   # test dependencies
   - pytest
+  - pytest-cov

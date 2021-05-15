@@ -282,7 +282,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             enforce_metadata=False,
         )
 
-    @derived_from(geopandas.base.GeoPandasBase)
+    @derived_from(geopandas.geodataframe.GeoDataFrame)
     def explode(self):
         return self.map_partitions(self._partition_type.explode, enforce_metadata=False)
 
@@ -330,6 +330,12 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         if isinstance(result, _Frame):
             result = self._propagate_spatial_partitions(result)
         return result
+
+    def _repr_html_(self):
+        output = super()._repr_html_()
+        return output.replace(
+            "Dask DataFrame Structure", "Dask-GeoPandas GeoDataFrame Structure"
+        )
 
     def to_parquet(self, path, *args, **kwargs):
         """ See dask_geopadandas.to_parquet docstring for more information """
