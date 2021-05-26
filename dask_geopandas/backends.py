@@ -1,6 +1,6 @@
 import uuid
 
-from dask.dataframe.core import get_parallel_type, make_meta
+from dask.dataframe.core import get_parallel_type
 from dask.dataframe.utils import (
     meta_nonempty,
     _nonempty_index,
@@ -8,6 +8,11 @@ from dask.dataframe.utils import (
 )
 from dask.dataframe.extensions import make_array_nonempty, make_scalar
 from dask.base import normalize_token
+
+try:
+    from dask.dataframe.utils import make_meta_obj as make_meta_obj
+except ImportError:
+    from dask.dataframe.utils import make_meta as make_meta_obj
 
 import shapely.geometry
 from shapely.geometry.base import BaseGeometry
@@ -20,7 +25,7 @@ get_parallel_type.register(geopandas.GeoDataFrame, lambda _: GeoDataFrame)
 get_parallel_type.register(geopandas.GeoSeries, lambda _: GeoSeries)
 
 
-@make_meta.register(BaseGeometry)
+@make_meta_obj.register(BaseGeometry)
 def make_meta_shapely_geometry(x, index=None):
     return x
 
@@ -51,7 +56,7 @@ def _nonempty_geodataframe(x):
     return geopandas.GeoDataFrame(df, crs=x.crs)
 
 
-@make_meta.register((geopandas.GeoSeries, geopandas.GeoDataFrame))
+@make_meta_obj.register((geopandas.GeoSeries, geopandas.GeoDataFrame))
 def make_meta_geodataframe(df, index=None):
     return df.head(0)
 
