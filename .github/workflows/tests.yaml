@@ -21,6 +21,7 @@ jobs:
     needs: Linting
     name: ${{ matrix.os }}, ${{ matrix.env }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -36,6 +37,7 @@ jobs:
             os: windows-latest
           - env: continuous_integration/envs/39-dev.yaml
             os: ubuntu-latest
+            experimental: true
 
     steps:
       - uses: actions/checkout@v2
