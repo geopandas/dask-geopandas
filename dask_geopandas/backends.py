@@ -16,7 +16,7 @@ from geopandas.array import GeometryArray, GeometryDtype, from_shapely
 DASK_2021_06 = str(dask.__version__) > LooseVersion("2021.05.0")
 
 if DASK_2021_06:
-    from dask.dataframe.utils import make_meta_util as make_meta
+    from dask.dataframe.utils import make_meta_obj as make_meta
     from dask.dataframe.backends import _nonempty_index, meta_nonempty_dataframe
 else:
     from dask.dataframe.core import make_meta
