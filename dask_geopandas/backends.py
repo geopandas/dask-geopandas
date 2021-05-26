@@ -15,7 +15,7 @@ except ImportError:
 
 try:
     from dask.dataframe.backends import _nonempty_index
-except:
+except ImportError:
     from dask.dataframe.utils import _nonempty_index
 
 import shapely.geometry
