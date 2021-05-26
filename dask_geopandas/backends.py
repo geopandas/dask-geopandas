@@ -1,27 +1,27 @@
 import uuid
+from distutils.version import LooseVersion
+
+import dask
 
 from dask.dataframe.core import get_parallel_type
-from dask.dataframe.utils import (
-    meta_nonempty,
-    meta_nonempty_dataframe,
-)
+from dask.dataframe.utils import meta_nonempty
 from dask.dataframe.extensions import make_array_nonempty, make_scalar
 from dask.base import normalize_token
-
-try:
-    from dask.dataframe.utils import make_meta_util as make_meta
-except ImportError:
-    from dask.dataframe.core import make_meta
-
-try:
-    from dask.dataframe.backends import _nonempty_index
-except ImportError:
-    from dask.dataframe.utils import _nonempty_index
 
 import shapely.geometry
 from shapely.geometry.base import BaseGeometry
 import geopandas
 from geopandas.array import GeometryArray, GeometryDtype, from_shapely
+
+DASK_2021_06 = str(dask.__version__) > LooseVersion("2021.05.0")
+
+if DASK_2021_06:
+    from dask.dataframe.utils import make_meta_util as make_meta
+    from dask.dataframe.backends import _nonempty_index, meta_nonempty_dataframe
+else:
+    from dask.dataframe.core import make_meta
+    from dask.dataframe.utils import _nonempty_index, meta_nonempty_dataframe
+
 
 from .core import GeoSeries, GeoDataFrame
 
