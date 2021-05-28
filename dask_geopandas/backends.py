@@ -16,13 +16,11 @@ from geopandas.array import GeometryArray, GeometryDtype, from_shapely
 DASK_2021_06 = str(dask.__version__) > LooseVersion("2021.05.0")
 
 if DASK_2021_06:
-    from dask.dataframe.utils import make_meta_obj, make_meta
+    from dask.dataframe.utils import make_meta
     from dask.dataframe.backends import _nonempty_index, meta_nonempty_dataframe
 else:
     from dask.dataframe.core import make_meta
     from dask.dataframe.utils import _nonempty_index, meta_nonempty_dataframe
-
-    make_meta_obj = make_meta
 
 
 from .core import GeoSeries, GeoDataFrame
@@ -31,12 +29,7 @@ get_parallel_type.register(geopandas.GeoDataFrame, lambda _: GeoDataFrame)
 get_parallel_type.register(geopandas.GeoSeries, lambda _: GeoSeries)
 
 
-@make_meta.register((geopandas.GeoSeries, geopandas.GeoDataFrame))
-def make_meta_geodataframe(df, index=None):
-    return df.head(0)
-
-
-@make_meta_obj.register(BaseGeometry)
+@make_meta.register(BaseGeometry)
 def make_meta_shapely_geometry(x, index=None):
     return x
 
@@ -65,6 +58,11 @@ def _nonempty_geoseries(x, idx=None):
 def _nonempty_geodataframe(x):
     df = meta_nonempty_dataframe(x)
     return geopandas.GeoDataFrame(df, crs=x.crs)
+
+
+@make_meta.register((geopandas.GeoSeries, geopandas.GeoDataFrame))
+def make_meta_geodataframe(df, index=None):
+    return df.head(0)
 
 
 @normalize_token.register(GeometryArray)
