@@ -93,7 +93,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def _bind_elemwise_comparison_method(
         cls, name, comparison, original, *args, **kwargs
     ):
-        """ bind comparison method like GeoSeries.contains to this class """
+        """bind comparison method like GeoSeries.contains to this class"""
 
         def meth(self, other, *args, **kwargs):
             return elemwise(comparison, self, other, *args, **kwargs)
@@ -103,7 +103,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     @classmethod
     def _bind_elemwise_operator_method(cls, name, op, original, *args, **kwargs):
-        """ bind operator method like GeoSeries.distance to this class """
+        """bind operator method like GeoSeries.distance to this class"""
         # name must be explicitly passed for div method whose name is truediv
         def meth(self, other, *args, **kwargs):
             meta = _emulate(op, self, other)
@@ -338,7 +338,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         )
 
     def to_parquet(self, path, *args, **kwargs):
-        """ See dask_geopadandas.to_parquet docstring for more information """
+        """See dask_geopadandas.to_parquet docstring for more information"""
         from .io.parquet import to_parquet
 
         return to_parquet(self, path, *args, **kwargs)
