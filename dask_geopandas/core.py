@@ -14,8 +14,7 @@ from shapely.geometry import box
 
 def _set_crs(df, crs, allow_override):
     """Return a new object with crs set to ``crs``"""
-    df = df.copy(deep=False).set_crs(crs, allow_override=allow_override)
-    return df
+    return df.set_crs(crs, allow_override=allow_override)
 
 
 def _finalize(results):

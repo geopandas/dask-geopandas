@@ -144,7 +144,7 @@ def test_geodataframe_crs(geodf_points_crs):
     assert dask_obj.partitions[1].crs == original
 
     new_crs = "epsg:4316"
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match=r'.*already has a CRS which is not equal to the passed CRS.*'):
         dask_obj.set_crs(new_crs)
 
     new = dask_obj.set_crs(new_crs, allow_override=True)
@@ -169,8 +169,8 @@ def test_geoseries_crs(geoseries_points_crs):
     assert dask_obj.compute().crs == original
 
     new_crs = "epsg:4316"
-    with pytest.raises(ValueError):
-        dask_obj.set_crs(new_crs)
+    with pytest.raises(ValueError, match=r'.*already has a CRS which is not equal to the passed CRS.*'):
+            dask_obj.set_crs(new_crs)
 
     new = dask_obj.set_crs(new_crs, allow_override=True)
     assert new.crs == new_crs
