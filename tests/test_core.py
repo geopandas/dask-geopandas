@@ -144,7 +144,10 @@ def test_geodataframe_crs(geodf_points_crs):
     assert dask_obj.partitions[1].crs == original
 
     new_crs = "epsg:4316"
-    new = dask_obj.set_crs("epsg:4316")
+    with pytest.raises(ValueError):
+        dask_obj.set_crs(new_crs)
+
+    new = dask_obj.set_crs(new_crs, allow_override=True)
     assert new.crs == new_crs
     assert new.partitions[1].crs == new_crs
     assert dask_obj.crs == original
