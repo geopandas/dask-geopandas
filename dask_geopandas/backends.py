@@ -13,14 +13,10 @@ from shapely.geometry.base import BaseGeometry
 import geopandas
 from geopandas.array import GeometryArray, GeometryDtype, from_shapely
 
-DASK_2021_05_1 = str(dask.__version__) >= LooseVersion("2021.05.1")
-DASK_2021_06_0 = str(dask.__version__) > LooseVersion("2021.05.1")
+DASK_2021_06_0 = str(dask.__version__) >= LooseVersion("2021.06.0")
 
 if DASK_2021_06_0:
     from dask.dataframe.dispatch import make_meta_dispatch
-    from dask.dataframe.backends import _nonempty_index, meta_nonempty_dataframe
-elif DASK_2021_05_1:
-    from dask.dataframe.utils import make_meta as make_meta_dispatch
     from dask.dataframe.backends import _nonempty_index, meta_nonempty_dataframe
 else:
     from dask.dataframe.core import make_meta as make_meta_dispatch
