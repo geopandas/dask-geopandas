@@ -12,11 +12,9 @@ from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
 
 
-def _set_crs(df, crs):
+def _set_crs(df, crs, allow_override):
     """Return a new object with crs set to ``crs``"""
-    df = df.copy(deep=False)
-    df.crs = crs
-    return df
+    return df.set_crs(crs, allow_override=allow_override)
 
 
 def _finalize(results):
@@ -147,14 +145,17 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @crs.setter
     def crs(self, value):
         """Sets the value of the crs"""
-        new = self.set_crs(value)
+        # When using setter, Geopandas always overrides the CRS
+        new = self.set_crs(value, allow_override=True)
         self._meta = new._meta
         self._name = new._name
         self.dask = new.dask
 
-    def set_crs(self, value):
+    def set_crs(self, value, allow_override=False):
         """Set the value of the crs on a new object"""
-        return self.map_partitions(_set_crs, value, enforce_metadata=False)
+        return self.map_partitions(
+            _set_crs, value, allow_override, enforce_metadata=False
+        )
 
     def to_crs(self, crs=None, epsg=None):
         token = f"{self._name}-to_crs"
