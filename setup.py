@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 import versioneer
 
-install_requires = ["geopandas", "dask>=2.2.0", "distributed>=2.2.0"]
+install_requires = ["geopandas", "dask>=2.18.0", "distributed>=2.18.0"]
 
 
 setup(
