@@ -5,8 +5,8 @@ import versioneer
 
 install_requires = [
     "geopandas",
-    "dask>=2.2.0,!=2021.05.1",
-    "distributed>=2.2.0,!=2021.05.1",
+    "dask>=2.18.0,!=2021.05.1",
+    "distributed>=2.18.0,!=2021.05.1",
 ]
 
 
