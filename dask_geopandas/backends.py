@@ -13,13 +13,13 @@ from shapely.geometry.base import BaseGeometry
 import geopandas
 from geopandas.array import GeometryArray, GeometryDtype, from_shapely
 
-DASK_2021_06 = str(dask.__version__) > LooseVersion("2021.05.0")
+DASK_2021_06_0 = str(dask.__version__) >= LooseVersion("2021.06.0")
 
-if DASK_2021_06:
-    from dask.dataframe.utils import make_meta
+if DASK_2021_06_0:
+    from dask.dataframe.dispatch import make_meta_dispatch
     from dask.dataframe.backends import _nonempty_index, meta_nonempty_dataframe
 else:
-    from dask.dataframe.core import make_meta
+    from dask.dataframe.core import make_meta as make_meta_dispatch
     from dask.dataframe.utils import _nonempty_index, meta_nonempty_dataframe
 
 
@@ -29,7 +29,7 @@ get_parallel_type.register(geopandas.GeoDataFrame, lambda _: GeoDataFrame)
 get_parallel_type.register(geopandas.GeoSeries, lambda _: GeoSeries)
 
 
-@make_meta.register(BaseGeometry)
+@make_meta_dispatch.register(BaseGeometry)
 def make_meta_shapely_geometry(x, index=None):
     return x
 
@@ -60,7 +60,7 @@ def _nonempty_geodataframe(x):
     return geopandas.GeoDataFrame(df, crs=x.crs)
 
 
-@make_meta.register((geopandas.GeoSeries, geopandas.GeoDataFrame))
+@make_meta_dispatch.register((geopandas.GeoSeries, geopandas.GeoDataFrame))
 def make_meta_geodataframe(df, index=None):
     return df.head(0)
 
