@@ -1,0 +1,55 @@
+import numpy as np
+import geopandas
+
+from dask.base import tokenize
+from dask.highlevelgraph import HighLevelGraph
+
+from .core import from_geopandas, GeoDataFrame
+
+
+def sjoin(left, right, how="inner", op="intersects"):
+    """
+    Spatial join of two GeoDataFrames.
+
+    ...
+    """
+    if isinstance(left, geopandas.GeoDataFrame):
+        left = from_geopandas(left, npartitions=1)
+    if isinstance(right, geopandas.GeoDataFrame):
+        right = from_geopandas(right, npartitions=1)
+
+    name = "sjoin-" + tokenize(left, right, how, op)
+    meta = geopandas.sjoin(left._meta, right._meta, how=how, op=op)
+
+    if left.spatial_partitions is not None and right.spatial_partitions is not None:
+        # Spatial partitions are known -> use them to trim down the list of
+        # partitions that need to be joined
+        parts = geopandas.sjoin(
+            left.spatial_partitions.to_frame("geometry"),
+            right.spatial_partitions.to_frame("geometry"),
+            how="inner",
+            op="intersects",
+        )
+        parts_left = np.asarray(parts.index)
+        parts_right = np.asarray(parts["index_right"].values)
+    else:
+        # Unknown spatial partitions -> full cartesian (cross) product of all
+        # combinations of the partitions of the left and right dataframe
+        n_left = left.npartitions
+        n_right = right.npartitions
+        parts_left = np.repeat(np.arange(n_left), n_right)
+        parts_right = np.tile(np.arange(n_right), n_left)
+
+    dsk = {}
+    # regions = []
+    for i, (l, r) in enumerate(zip(parts_left, parts_right)):
+        dsk[(name, i)] = (geopandas.sjoin, (left._name, l), (right._name, r), how, op)
+        # TODO preserve spatial partitions of the output
+        # lr = left.spatial_partitions.iloc[l]
+        # rr = right.spatial_partitions.iloc[r]
+        # extent = lr.intersection(rr).buffer(buffer).intersection(lr.union(rr))
+        # regions.append(region)
+
+    divisions = [None] * (len(dsk) + 1)
+    graph = HighLevelGraph.from_collections(name, dsk, dependencies=[left, right])
+    return GeoDataFrame(graph, name, meta, divisions)
