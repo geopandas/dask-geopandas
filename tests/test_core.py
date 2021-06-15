@@ -354,6 +354,15 @@ def test_to_crs_geoseries(geoseries_points_crs):
     assert all(new.compute() == s.to_crs(new_crs))
 
 
+def test_copy_spatial_partitions(geodf_points):
+    dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
+    dask_obj.calculate_spatial_partitions()
+    dask_obj_copy = dask_obj.copy()
+    pd.testing.assert_series_equal(
+        dask_obj.spatial_partitions, dask_obj_copy.spatial_partitions
+    )
+
+
 @pytest.mark.skipif(
     LooseVersion(geopandas.__version__) <= LooseVersion("0.8.1"),
     reason="geopandas 0.8 has bug in apply",

@@ -161,6 +161,16 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         token = f"{self._name}-to_crs"
         return self.map_partitions(M.to_crs, crs=crs, epsg=epsg, token=token)
 
+    def copy(self):
+        """Make a copy of the dataframe
+
+        Creates shallow copies of the computational graph and spatial partitions.
+        Does not affect the underlying data.
+        """
+        self_copy = super().copy()
+        self_copy.spatial_partitions = self.spatial_partitions.copy()
+        return self_copy
+
     @property
     @derived_from(geopandas.base.GeoPandasBase)
     def total_bounds(self):
