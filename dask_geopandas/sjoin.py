@@ -32,6 +32,7 @@ def sjoin(left, right, how="inner", op="intersects"):
         )
         parts_left = np.asarray(parts.index)
         parts_right = np.asarray(parts["index_right"].values)
+        using_spatial_partitions = True
     else:
         # Unknown spatial partitions -> full cartesian (cross) product of all
         # combinations of the partitions of the left and right dataframe
@@ -39,17 +40,23 @@ def sjoin(left, right, how="inner", op="intersects"):
         n_right = right.npartitions
         parts_left = np.repeat(np.arange(n_left), n_right)
         parts_right = np.tile(np.arange(n_right), n_left)
+        using_spatial_partitions = False
 
     dsk = {}
-    # regions = []
+    new_spatial_partitions = []
     for i, (l, r) in enumerate(zip(parts_left, parts_right)):
         dsk[(name, i)] = (geopandas.sjoin, (left._name, l), (right._name, r), how, op)
-        # TODO preserve spatial partitions of the output
-        # lr = left.spatial_partitions.iloc[l]
-        # rr = right.spatial_partitions.iloc[r]
-        # extent = lr.intersection(rr).buffer(buffer).intersection(lr.union(rr))
-        # regions.append(region)
+        # TODO preserve spatial partitions of the output if only left has spatial
+        # partitions
+        if using_spatial_partitions:
+            lr = left.spatial_partitions.iloc[l]
+            rr = right.spatial_partitions.iloc[r]
+            # extent = lr.intersection(rr).buffer(buffer).intersection(lr.union(rr))
+            extent = lr.intersection(rr)
+            new_spatial_partitions.append(extent)
 
     divisions = [None] * (len(dsk) + 1)
     graph = HighLevelGraph.from_collections(name, dsk, dependencies=[left, right])
-    return GeoDataFrame(graph, name, meta, divisions)
+    if not using_spatial_partitions:
+        new_spatial_partitions = None
+    return GeoDataFrame(graph, name, meta, divisions, new_spatial_partitions)

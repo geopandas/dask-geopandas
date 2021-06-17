@@ -32,4 +32,5 @@ def test_sjoin_dask_geopandas():
     ddf_points.calculate_spatial_partitions()
     ddf_polygons.calculate_spatial_partitions()
     result = dask_geopandas.sjoin(ddf_points, ddf_polygons, op="within", how="inner")
+    assert result.spatial_partitions is not None
     assert_geodataframe_equal(expected, result.compute().sort_index())
