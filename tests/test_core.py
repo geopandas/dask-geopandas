@@ -8,7 +8,7 @@ import dask.dataframe as dd
 from dask.dataframe.core import Scalar
 import dask_geopandas
 
-from geopandas.testing import assert_geodataframe_equal
+from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 
 
 @pytest.fixture
@@ -361,6 +361,25 @@ def test_copy_spatial_partitions(geodf_points):
     pd.testing.assert_series_equal(
         dask_obj.spatial_partitions, dask_obj_copy.spatial_partitions
     )
+
+
+def test_set_crs_sets_spatial_partition_crs(geodf_points):
+    dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
+
+    dask_obj.calculate_spatial_partitions()
+    dask_obj = dask_obj.set_crs("epsg:4326")
+
+    assert dask_obj.crs == dask_obj.spatial_partitions.crs
+
+
+def test_propagate_on_set_crs(geodf_points):
+    dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
+
+    dask_obj.calculate_spatial_partitions()
+    result = dask_obj.set_crs("epsg:4326").spatial_partitions
+    expected = dask_obj.spatial_partitions.set_crs("epsg:4326")
+
+    assert_geoseries_equal(result, expected)
 
 
 @pytest.mark.skipif(
