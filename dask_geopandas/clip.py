@@ -3,13 +3,16 @@ import geopandas
 
 from dask.highlevelgraph import HighLevelGraph
 from dask.utils import derived_from
-from dask.base import tokenize
+from dask.base import tokenize, DaskMethodsMixin
 
 from .core import GeoDataFrame
 
 
 @derived_from(geopandas.tools)
 def clip(gdf, mask, keep_geom_type=False):
+    if isinstance(mask, DaskMethodsMixin):
+        raise NotImplementedError("Mask cannot be a Dask object.")
+
     if gdf.spatial_partitions is None:
         return gdf.map_partitions(
             lambda partition: geopandas.clip(
@@ -22,6 +25,9 @@ def clip(gdf, mask, keep_geom_type=False):
     new_spatial_partitions = geopandas.clip(
         gdf=gdf.spatial_partitions.to_frame("geometry"),
         mask=mask,
+        # keep_geom_type is always false for clipping the spatial partitions
+        # otherwise we'd be falsely creating new partition(s)
+        keep_geom_type=False,
     )
     intersecting_partitions = np.asarray(new_spatial_partitions.index)
 
