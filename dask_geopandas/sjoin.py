@@ -11,8 +11,36 @@ def sjoin(left, right, how="inner", op="intersects"):
     """
     Spatial join of two GeoDataFrames.
 
-    ...
+    Parameters
+    ----------
+    left, right : geopandas or dask_geopandas GeoDataFrames
+        If a geopandas.GeoDataFrame is passed, it is considered as a
+        dask_geopandas.GeoDataFrame with 1 partition (without spatial
+        partitioning information).
+    how : string, default 'inner'
+        The type of join. Currently only 'inner' is supported.
+    op : string, default 'intersects'
+        Binary predicate how to match corresponding rows of the left and right
+        GeoDataFrame. Possible values: 'contains', 'contains_properly',
+        'covered_by', 'covers', 'crosses', 'intersects', 'overlaps',
+        'touches', 'within'.
+
+    Returns
+    -------
+    dask_geopandas.GeoDataFrame
+
+    Notes
+    -----
+    If both the left and right GeoDataFrame have spatial partitioning
+    information available (the ``spatial_partitions`` attribute is set),
+    the output partitions are determined based on intersection of the
+    spatial partitions. In all other cases, the output partitions are
+    all combinations (cartesian/cross product) of all input partition
+    of the left and right GeoDataFrame.
     """
+    if how != "inner":
+        raise NotImplementedError("Only how='inner' is supported right now")
+
     if isinstance(left, geopandas.GeoDataFrame):
         left = from_geopandas(left, npartitions=1)
     if isinstance(right, geopandas.GeoDataFrame):
