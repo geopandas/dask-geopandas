@@ -12,11 +12,9 @@ from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
 
 
-def _set_crs(df, crs):
+def _set_crs(df, crs, allow_override):
     """Return a new object with crs set to ``crs``"""
-    df = df.copy(deep=False)
-    df.crs = crs
-    return df
+    return df.set_crs(crs, allow_override=allow_override)
 
 
 def _finalize(results):
@@ -93,7 +91,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def _bind_elemwise_comparison_method(
         cls, name, comparison, original, *args, **kwargs
     ):
-        """ bind comparison method like GeoSeries.contains to this class """
+        """bind comparison method like GeoSeries.contains to this class"""
 
         def meth(self, other, *args, **kwargs):
             return elemwise(comparison, self, other, *args, **kwargs)
@@ -103,7 +101,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     @classmethod
     def _bind_elemwise_operator_method(cls, name, op, original, *args, **kwargs):
-        """ bind operator method like GeoSeries.distance to this class """
+        """bind operator method like GeoSeries.distance to this class"""
         # name must be explicitly passed for div method whose name is truediv
         def meth(self, other, *args, **kwargs):
             meta = _emulate(op, self, other)
@@ -147,18 +145,36 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @crs.setter
     def crs(self, value):
         """Sets the value of the crs"""
-        new = self.set_crs(value)
+        # When using setter, Geopandas always overrides the CRS
+        new = self.set_crs(value, allow_override=True)
         self._meta = new._meta
         self._name = new._name
         self.dask = new.dask
 
-    def set_crs(self, value):
+    def set_crs(self, value, allow_override=False):
         """Set the value of the crs on a new object"""
-        return self.map_partitions(_set_crs, value, enforce_metadata=False)
+        new = self.map_partitions(
+            _set_crs, value, allow_override, enforce_metadata=False
+        )
+        if self.spatial_partitions is not None:
+            new.spatial_partitions = self.spatial_partitions.set_crs(
+                value, allow_override=allow_override
+            )
+        return new
 
     def to_crs(self, crs=None, epsg=None):
         token = f"{self._name}-to_crs"
         return self.map_partitions(M.to_crs, crs=crs, epsg=epsg, token=token)
+
+    def copy(self):
+        """Make a copy of the dataframe
+
+        Creates shallow copies of the computational graph and spatial partitions.
+        Does not affect the underlying data.
+        """
+        self_copy = super().copy()
+        self_copy.spatial_partitions = self.spatial_partitions.copy()
+        return self_copy
 
     @property
     @derived_from(geopandas.base.GeoPandasBase)
@@ -338,7 +354,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         )
 
     def to_parquet(self, path, *args, **kwargs):
-        """ See dask_geopadandas.to_parquet docstring for more information """
+        """See dask_geopadandas.to_parquet docstring for more information"""
         from .io.parquet import to_parquet
 
         return to_parquet(self, path, *args, **kwargs)
