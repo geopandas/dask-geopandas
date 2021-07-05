@@ -56,6 +56,8 @@ def test_column_selection_push_down(tmp_path):
     # selecting columns including geometry column still gives GeoDataFrame
     ddf_subset = ddf[["pop_est", "geometry"]]
     assert type(ddf_subset) is dask_geopandas.GeoDataFrame
+    # and also preserves the spatial partitioning information
+    assert ddf_subset.spatial_partitions is not None
 
     # selecting a single non-geometry column on the dataframe should work
     s = ddf["pop_est"]
