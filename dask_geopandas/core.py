@@ -363,22 +363,25 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
 
         meta = self._meta.dissolve(by=by, as_index=False, **kwargs)
 
-        within_chunks = self.map_partitions(
-            self._partition_type.dissolve,
-            by=by,
-            as_index=False,
-            meta=meta,
-            **kwargs,
-        )
+        # within_chunks = self.map_partitions(
+        #     self._partition_type.dissolve,
+        #     by=by,
+        #     as_index=False,
+        #     meta=meta,
+        #     **kwargs,
+        # )
 
-        if by is None:
-            by = "index"
+        # if by is None:
+        #     by = "index"
 
-        # To create final dissolved polygons, we need
+        # To create  dissolved polygons, we need
         # all its parts within a single partition. Therefore we need to reshuffle.
-        shuffled = within_chunks.shuffle(
+        shuffled = self.shuffle(
             by, npartitions=self.npartitions, shuffle="tasks", ignore_index=True
         )
+        # shuffled = within_chunks.shuffle(
+        #     by, npartitions=self.npartitions, shuffle="tasks", ignore_index=True
+        # )
 
         return shuffled.map_partitions(
             self._partition_type.dissolve, by=by, as_index=False, meta=meta, **kwargs
