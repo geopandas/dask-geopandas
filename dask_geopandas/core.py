@@ -153,9 +153,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     def set_crs(self, value, allow_override=False):
         """Set the value of the crs on a new object"""
-        return self.map_partitions(
+        new = self.map_partitions(
             _set_crs, value, allow_override, enforce_metadata=False
         )
+        if self.spatial_partitions is not None:
+            new.spatial_partitions = self.spatial_partitions.set_crs(
+                value, allow_override=allow_override
+            )
+        return new
 
     def to_crs(self, crs=None, epsg=None):
         token = f"{self._name}-to_crs"
