@@ -359,29 +359,40 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
 
         return to_parquet(self, path, *args, **kwargs)
 
-    def dissolve(self, by=None, **kwargs):
+    def dissolve_steps(self, by=None, **kwargs):
+        """Dissolve within partitions, shuffle, dissolve again"""
 
         meta = self._meta.dissolve(by=by, as_index=False, **kwargs)
 
-        # within_chunks = self.map_partitions(
-        #     self._partition_type.dissolve,
-        #     by=by,
-        #     as_index=False,
-        #     meta=meta,
-        #     **kwargs,
-        # )
+        within_chunks = self.map_partitions(
+            self._partition_type.dissolve,
+            by=by,
+            as_index=False,
+            meta=meta,
+            **kwargs,
+        )
 
-        # if by is None:
-        #     by = "index"
+        if by is None:
+            by = "index"
 
         # To create  dissolved polygons, we need
         # all its parts within a single partition. Therefore we need to reshuffle.
+        shuffled = within_chunks.shuffle(
+            by, npartitions=self.npartitions, shuffle="tasks", ignore_index=True
+        )
+
+        return shuffled.map_partitions(
+            self._partition_type.dissolve, by=by, as_index=False, meta=meta, **kwargs
+        )
+
+    def dissolve_direct(self, by=None, **kwargs):
+        """Shuffle and map partition"""
+
+        meta = self._meta.dissolve(by=by, as_index=False, **kwargs)
+
         shuffled = self.shuffle(
             by, npartitions=self.npartitions, shuffle="tasks", ignore_index=True
         )
-        # shuffled = within_chunks.shuffle(
-        #     by, npartitions=self.npartitions, shuffle="tasks", ignore_index=True
-        # )
 
         return shuffled.map_partitions(
             self._partition_type.dissolve, by=by, as_index=False, meta=meta, **kwargs
