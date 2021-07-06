@@ -356,36 +356,26 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
 
     def dissolve(self, by=None, **kwargs):
 
-        # prepare meta
-        geometry_name = self.geometry.name
-        cols = self.columns.to_list()
-        cols.remove(geometry_name)
+        meta = self._meta.dissolve(by=by, as_index=False, **kwargs)
 
-        if by is None:
-            cols.insert(0, "index")
-            cols.insert(1, geometry_name)
-        else:
-            cols.remove(by)
-            cols.insert(0, by)
-            cols.insert(1, geometry_name)
-
-        meta = geopandas.GeoDataFrame(columns=cols)
-
-        first_step = self.map_partitions(
+        within_chunks = self.map_partitions(
             self._partition_type.dissolve,
             by=by,
             as_index=False,
             meta=meta,
             **kwargs,
         )
-        if by is None:
-            pre_second = first_step.set_index("index")
-        else:
-            pre_second = first_step.set_index(by)
-        unique = self[by].unique()
-        repartiotioned = pre_second.repartition(divisions=sorted(list(unique)))
 
-        return repartiotioned.map_partitions(
+        if by is None:
+            by = "index"
+
+        # To create final dissolved polygons, we need
+        # all its parts within a single partition. Therefore we need to reshuffle.
+        shuffled = within_chunks.shuffle(
+            by, npartitions=self.npartitions, shuffle="tasks", ignore_index=True
+        )
+
+        return shuffled.map_partitions(
             self._partition_type.dissolve, by=by, as_index=False, meta=meta, **kwargs
         )
 
