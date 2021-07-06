@@ -398,6 +398,22 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             self._partition_type.dissolve, by=by, as_index=False, meta=meta, **kwargs
         )
 
+    def dissolve_groupby(self, by=None, aggfunc="first", **kwargs):
+        """Use dask groupby (mimic geopandas implementation)"""
+
+        def union(block):
+            merged_geom = block.unary_union
+            return merged_geom
+
+        merge_geometries = dd.Aggregation(
+            "merge_geometries", lambda s: s.agg(union), lambda s0: s0.agg(union)
+        )
+        data_agg = {col: aggfunc for col in self.columns.drop([by, self.geometry.name])}
+        data_agg[self.geometry.name] = merge_geometries
+        aggregated = self.groupby(by=by, **kwargs).agg(data_agg)
+
+        return aggregated
+
 
 from_geopandas = dd.from_pandas
 
