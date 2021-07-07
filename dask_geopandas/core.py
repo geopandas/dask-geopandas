@@ -10,6 +10,7 @@ from dask.base import tokenize
 import geopandas
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
+from .hilbert_distance import _hilbert_distance
 
 
 def _set_crs(df, crs, allow_override):
@@ -305,6 +306,30 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @property
     def cx(self):
         return _CoordinateIndexer(self)
+
+
+    def hilbert_distance(self, p=15):
+
+        """
+        A function that calculates hilbert distance for each geometry
+        in each partition of a Dask-GeoDataFrame 
+        
+        Parameters
+        ----------    
+        p	: Hilbert curve parameter
+        
+        Returns
+        ----------
+        Distances for each partition
+        """
+        
+        # Compute total bounds of all partitions rather than each partition
+        total_bounds = self.total_bounds.compute()
+        # Calculate hilbert distances for each partition
+        distances = self.map_partitions(
+            lambda s: _hilbert_distance(s, total_bounds=total_bounds, p=p) )
+    
+        return distances
 
 
 class GeoSeries(_Frame, dd.core.Series):
