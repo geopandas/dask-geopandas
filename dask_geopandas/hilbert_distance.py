@@ -33,23 +33,30 @@ def _hilbert_distance(gdf, total_bounds, p):
     # Calculate bounds of each geom
     bounds = gdf.bounds.to_numpy()
 
-    # Number of dimensions
-    n = bounds.shape[1] // 2
     # Hilbert Side len
     side_length = 2 ** p
-    # Empty coord array
-    coords = np.zeros((bounds.shape[0], n), dtype=np.int64)
 
     # Calculate x and y range of total bound coords - returns array
-    geom_ranges = [(total_bounds[d], total_bounds[d + n]) for d in range(n)]
+    geom_ranges = [
+        (total_bounds[0], total_bounds[2]),
+        (total_bounds[1], total_bounds[3]),
+    ]
     # Calculate mid points for x and y bound coords - returns array
-    geom_mids = [(bounds[:, d] + bounds[:, d + n]) / 2.0 for d in range(n)]
+    geom_mids = [
+        ((bounds[:, 0] + bounds[:, 2]) / 2.0),
+        ((bounds[:, 1] + bounds[:, 3]) / 2.0),
+    ]
 
-    # Transform numeric to discrete int
-    for d in range(n):
-        coords[:, d] = _continuous_int_to_discrete_int(
-            geom_mids[d], geom_ranges[d], side_length
-        )
+    # Empty coord array
+    coords = np.zeros((bounds.shape[0], 2), dtype=np.int64)
+    # Transform continuous int to discrete int for each dimension
+    coords[:, 0] = _continuous_int_to_discrete_int(
+        geom_mids[0], geom_ranges[0], side_length
+    )
+    coords[:, 1] = _continuous_int_to_discrete_int(
+        geom_mids[1], geom_ranges[1], side_length
+    )
+
     # Calculate hilbert distance
     hilbert_distances = _distances_from_coordinates(p, coords)
 
