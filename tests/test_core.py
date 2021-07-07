@@ -397,3 +397,14 @@ def test_geoseries_apply(geoseries_polygons):
 def test_geodataframe_html_repr(geodf_points):
     dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
     assert "Dask-GeoPandas GeoDataFrame" in dask_obj._repr_html_()
+
+
+def test_hilbert_distance(geodf_points):
+ 
+    df = geodf_point
+    dask_obj = dask_geopandas.from_geopandas(df, npartitions=10)
+    
+    expected = hilbert_distances(df, df.total_bounds, p=16)
+    result = dask_obj._hilbert_distances(dask_obj.total_bounds, p=15).compute()
+    
+    assert list(result) == list(expected)
