@@ -331,6 +331,39 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return distances
 
+    def partition_hilbert_distance(self, p=15, npartitions=10, shuffle="tasks"):
+
+        """
+        Partition a Dask-GeoDataFrame based on calculated hilbert distances
+
+        Based on: https://github.com/holoviz/spatialpandas/blob/
+        9252a7aba5f8bc7a435fffa2c31018af8d92942c/spatialpandas/dask.py#L172
+
+        Parameters
+        ----------
+
+        p           : Hilbert curve parameter
+
+        npartitions : Number of partitions
+
+        shuffle     : Dask shuffle strategy
+        Returns
+        ---------
+        Partitioned Dask-GeoPandas GeoDataFrame based on hilbert distances
+        """
+
+        # Calculate hilbert distances for each partition
+        distances = self.hilbert_distance(p=15)
+
+        # Set index & rename index
+        self["hilbert_distance"] = distances
+
+        d_gdf = self.set_index(
+            "hilbert_distance", npartitions=npartitions, shuffle=shuffle
+        )
+
+        return d_gdf
+
 
 class GeoSeries(_Frame, dd.core.Series):
     _partition_type = geopandas.GeoSeries
