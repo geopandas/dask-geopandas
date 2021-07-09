@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 import dask.dataframe as dd
+import dask.array as da
 from dask.dataframe.core import _emulate, map_partitions, elemwise, new_dd_object
 from dask.highlevelgraph import HighLevelGraph
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
@@ -179,21 +180,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @property
     @derived_from(geopandas.base.GeoPandasBase)
     def total_bounds(self):
-        def agg(concatted):
-            return np.array(
-                (
-                    np.nanmin(concatted[0::4]),  # minx
-                    np.nanmin(concatted[1::4]),  # miny
-                    np.nanmax(concatted[2::4]),  # maxx
-                    np.nanmax(concatted[3::4]),  # maxy
-                )
+        b = self.bounds.to_dask_array()
+        return da.array(
+            (
+                da.nanmin(b[:, 0]),  # minx
+                da.nanmin(b[:, 1]),  # miny
+                da.nanmax(b[:, 2]),  # maxx
+                da.nanmax(b[:, 3]),  # maxy
             )
-
-        return self.reduction(
-            lambda x: getattr(x, "total_bounds"),
-            token=self._name + "-total_bounds",
-            meta=self._meta.total_bounds,
-            aggregate=agg,
         )
 
     @property
