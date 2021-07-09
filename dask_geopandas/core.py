@@ -180,14 +180,27 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @property
     @derived_from(geopandas.base.GeoPandasBase)
     def total_bounds(self):
-        b = self.bounds.to_dask_array()
-        return da.array(
-            (
-                da.nanmin(b[:, 0]),  # minx
-                da.nanmin(b[:, 1]),  # miny
-                da.nanmax(b[:, 2]),  # maxx
-                da.nanmax(b[:, 3]),  # maxy
+        def agg(concatted):
+            return np.array(
+                (
+                    np.nanmin(concatted[0::4]),  # minx
+                    np.nanmin(concatted[1::4]),  # miny
+                    np.nanmax(concatted[2::4]),  # maxx
+                    np.nanmax(concatted[3::4]),  # maxy
+                )
             )
+
+        total_bounds = self.reduction(
+            lambda x: getattr(x, "total_bounds"),
+            token=self._name + "-total_bounds",
+            meta=self._meta.total_bounds,
+            aggregate=agg,
+        )
+        return da.Array(
+            total_bounds.dask,
+            total_bounds.name,
+            chunks=((4,),),
+            dtype=total_bounds.dtype,
         )
 
     @property
