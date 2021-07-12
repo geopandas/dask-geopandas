@@ -4,6 +4,7 @@ channels:
 dependencies:
   # required dependencies
   - python=3.9
+  - numba=0.53.1
   - distributed
   - pandas
   - shapely

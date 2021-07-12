@@ -5,6 +5,7 @@ dependencies:
   # required dependencies
   - python=3.9
   - dask
+  - numba=0.53.1
   - distributed
   - geopandas
   - pygeos
