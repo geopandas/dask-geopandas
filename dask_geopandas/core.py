@@ -10,7 +10,7 @@ from dask.base import tokenize
 import geopandas
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
-from .hilbert_distance import _hilbert_distance
+from .hilbert_distance import _calculate_hilbert_distance
 
 
 def _set_crs(df, crs, allow_override):
@@ -326,7 +326,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         total_bounds = self.total_bounds
         # Calculate hilbert distances for each partition
         distances = self.map_partitions(
-            _hilbert_distance,
+            _calculate_hilbert_distance,
             total_bounds=total_bounds,
             p=p,
             meta=("hilbert_distance", "int64"),

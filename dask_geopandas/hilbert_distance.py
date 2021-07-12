@@ -7,18 +7,17 @@ ngjit = jit(nopython=True, nogil=True)
 # 9252a7aba5f8bc7a435fffa2c31018af8d92942c/spatialpandas/dask.py
 
 
-@ngjit
-def _hilbert_distance(gdf, total_bounds, p):
+def _calculate_hilbert_distance(gdf, total_bounds, p):
 
     """
-    Calculate the hilbert distance for a GeoDataFrame based on the mid-point of
-    the bounds for each geom and total bounds of the collection of geoms
+    Calculate hilbert distance for a GeoDataFrame
+    int coordinates
 
     Parameters
     ----------
     gdf : GeoDataFrame
 
-    total_bounds : Total bounds of GeoDataFrame
+    total_bounds : Total bounds of geometries - array
 
     p : Hilbert curve parameter
 
@@ -27,11 +26,57 @@ def _hilbert_distance(gdf, total_bounds, p):
     Array of hilbert distances for each geom
     """
 
-    if total_bounds is None:
-        total_bounds = gdf.total_bounds
+    # Compute bounds as array
+    bounds = gdf.bounds.to_numpy()
+    # Compute hilbert distances
+    distances = _hilbert_distance(total_bounds, bounds, p)
+
+    # TO DO: Return Pandas Series & not as array-
+    # https://github.com/geopandas/dask-geopandas/pull/70#discussion_r666742604
+    return distances
+
+
+def bounds_to_numpy(gdf):
+
+    """
+    Calculate bounds for each geometry in a GeoDataFrame
+    int coordinates
+
+    Parameters
+    ----------
+    gdf : GeoDataFrame
+
+    Returns
+    ---------
+    Array of bounds for each geometry
+    """
 
     # Calculate bounds of each geom
     bounds = gdf.bounds.to_numpy()
+
+    return bounds
+
+
+@ngjit
+def _hilbert_distance(total_bounds, bounds, p):
+
+    """
+    Calculate the hilbert distance based on the total bounds and
+    bounds for a collection of geometries
+
+    Parameters
+    ----------
+
+    total_bounds : Total bounds of geometries - array
+
+    bounds : Bounds of each geometry - array
+
+    p : Hilbert curve parameter
+
+    Returns
+    ---------
+    Array of hilbert distances for each geom
+    """
 
     # Hilbert Side len
     side_length = 2 ** p
@@ -47,24 +92,20 @@ def _hilbert_distance(gdf, total_bounds, p):
         ((bounds[:, 1] + bounds[:, 3]) / 2.0),
     ]
 
-    # Empty coord array
-    coords = np.zeros((bounds.shape[0], 2), dtype=np.int64)
     # Transform continuous int to discrete int for each dimension
-    coords[:, 0] = _continuous_int_to_discrete_int(
-        geom_mids[0], geom_ranges[0], side_length
-    )
-    coords[:, 1] = _continuous_int_to_discrete_int(
-        geom_mids[1], geom_ranges[1], side_length
-    )
+    x_int = _continuous_to_discrete(geom_mids[0], geom_ranges[0], side_length)
+    y_int = _continuous_to_discrete(geom_mids[1], geom_ranges[1], side_length)
+    # Stack as coord array
+    coords = np.stack((x_int, y_int), axis=1)
 
     # Calculate hilbert distance
-    hilbert_distances = _distances_from_coordinates(p, coords)
+    distances = _distances_from_coordinates(p, coords)
 
-    return hilbert_distances
+    return distances
 
 
 @ngjit
-def _continuous_int_to_discrete_int(vals, val_range, n):
+def _continuous_to_discrete(vals, val_range, n):
 
     """
     Convert an array of values from continuous data coordinates to discrete
@@ -87,9 +128,11 @@ def _continuous_int_to_discrete_int(vals, val_range, n):
     x_width = val_range[1] - val_range[0]
     res = ((vals - val_range[0]) * (n / x_width)).astype(np.int64)
 
+    # TO DO: When numba 0.54 releases - used.clip(res, min=0, max=n, out=res)
     # clip
     res[res < 0] = 0
     res[res > n - 1] = n - 1
+
     return res
 
 
@@ -110,8 +153,6 @@ def _distances_from_coordinates(p, coords):
     Array of hilbert distances for each geom
     """
 
-    # Create empty coord list
-    # coords = np.atleast_2d(coords).copy()
     result = np.zeros(coords.shape[0], dtype=np.int64)
     # For each coord calculate hilbert distance
     for i in range(coords.shape[0]):
