@@ -2,6 +2,9 @@ import numpy as np
 from numba import jit
 ngjit = jit(nopython=True, nogil=True)
 
+# Based on: https://github.com/holoviz/spatialpandas/blob/
+# 9252a7aba5f8bc7a435fffa2c31018af8d92942c/spatialpandas/dask.py
+
 @ngjit
 def _hilbert_distance(gdf, total_bounds, p):
 
@@ -9,16 +12,13 @@ def _hilbert_distance(gdf, total_bounds, p):
     Calculate the hilbert distance for a GeoDataFrame based on the mid-point of
     the bounds for each geom and total bounds of the collection of geoms
 
-    Based on: https://github.com/holoviz/spatialpandas/blob/
-    9252a7aba5f8bc7a435fffa2c31018af8d92942c/spatialpandas/dask.py#L172
-
     Parameters
     ----------
-    gdf          : GeoDataFrame
+    gdf : GeoDataFrame
 
     total_bounds : Total bounds of GeoDataFrame
 
-    p            : Hilbert curve parameter
+    p : Hilbert curve parameter
 
     Returns
     ---------
@@ -68,17 +68,14 @@ def _continuous_int_to_discrete_int(vals, val_range, n):
     Convert an array of values from continuous data coordinates to discrete
     int coordinates
 
-    Based on: https://github.com/holoviz/spatialpandas/blob/
-    9252a7aba5f8bc7a435fffa2c31018af8d92942c/spatialpandas/utils.py#L9
-
     Parameters
     ----------
-    vals      : Array of continuous coordinates to be
-                ([([val_1, val_2,..., val_n]), array([val_1, val_2,..., val_n])])
+    vals : Array of continuous coordinates to be
+            ([([val_1, val_2,..., val_n]), array([val_1, val_2,..., val_n])])
 
     val_range : Ranges of x and y values ([(xmin, xmax), (ymin, ymax)])
 
-    n         : Number of discrete coords (int)
+    n : Number of discrete coords (int)
 
     Returns
     ---------
@@ -93,18 +90,16 @@ def _continuous_int_to_discrete_int(vals, val_range, n):
     res[res > n - 1] = n - 1
     return res
 
+
 @ngjit
 def _distances_from_coordinates(p, coords):
 
     """
     Calculate hilbert distance for a set of coords
 
-    Based on: https://github.com/holoviz/spatialpandas/blob/
-    9252a7aba5f8bc7a435fffa2c31018af8d92942c/spatialpandas/spatialindex/hilbert_curve.py#L173
-
     Parameters
     ----------
-    p      : Hilbert curve param
+    p : Hilbert curve param
 
     coords : Array of coordinates
 
@@ -129,12 +124,9 @@ def _distance_from_coordinate(p, coord):
     """
     Calculate hilbert distance for a single coord
 
-    Based on: https://github.com/holoviz/spatialpandas/blob/
-    9252a7aba5f8bc7a435fffa2c31018af8d92942c/spatialpandas/spatialindex/rtree.py#L50
-
     Parameters
     ----------
-    p     : Hilbert curve param
+    p : Hilbert curve param
 
     coord : Array of coordinates
 
@@ -177,13 +169,9 @@ def _transpose_to_hilbert_integer(p, coord):
     """
     Calculate hilbert distance for a single coord
 
-    Based on: https://github.com/holoviz/spatialpandas/blob/
-    9252a7aba5f8bc7a435fffa2c31018af8d92942c/spatialpandas/spatialindex/hilbert_curve.py#L53
-
-
     Parameters
     ----------
-    p     : Hilbert curve param
+    p : Hilbert curve param
 
     coord : Array of coordinates
 
@@ -209,18 +197,15 @@ def _int_2_binary(v, width):
     """
     Convert an array of values from discrete int coordinates to binary byte
 
-    Based on: https://github.com/holoviz/spatialpandas/blob/
-    9252a7aba5f8bc7a435fffa2c31018af8d92942c/spatialpandas/spatialindex/hilbert_curve.py#L12
-
     Parameters
     ----------
-    p     : Hilbert curve param
+    p : Hilbert curve param
 
     coord : Array of coordinates
 
     Returns
     ---------
-    # Returns binary byte
+    Binary byte
     """
 
     res = np.zeros(width, dtype=np.uint8)
@@ -236,18 +221,15 @@ def _binary_2_int(bin_vec):
     """
     Convert binary byte to int
 
-    Based on: https://github.com/holoviz/spatialpandas/blob/
-    9252a7aba5f8bc7a435fffa2c31018af8d92942c/spatialpandas/spatialindex/hilbert_curve.py#L23
-
     Parameters
     ----------
-    p     : Hilbert curve param
+    p : Hilbert curve param
 
     coord : Array of coordinates
 
     Returns
     ---------
-    # Returns discrete int
+    Discrete int
     """
 
     res = 0
