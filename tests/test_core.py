@@ -397,5 +397,3 @@ def test_geoseries_apply(geoseries_polygons):
 def test_geodataframe_html_repr(geodf_points):
     dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
     assert "Dask-GeoPandas GeoDataFrame" in dask_obj._repr_html_()
-
-

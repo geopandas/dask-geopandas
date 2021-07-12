@@ -1,9 +1,11 @@
 import numpy as np
 from numba import jit
+
 ngjit = jit(nopython=True, nogil=True)
 
 # Based on: https://github.com/holoviz/spatialpandas/blob/
 # 9252a7aba5f8bc7a435fffa2c31018af8d92942c/spatialpandas/dask.py
+
 
 @ngjit
 def _hilbert_distance(gdf, total_bounds, p):
