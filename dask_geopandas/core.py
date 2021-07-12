@@ -315,7 +315,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Parameters
         ----------
-        p   : Hilbert curve parameter
+        p : Hilbert curve parameter
 
         Returns
         ----------
