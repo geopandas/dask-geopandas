@@ -315,7 +315,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Parameters
         ----------
-        p	: Hilbert curve parameter
+        p   : Hilbert curve parameter
 
         Returns
         ----------
@@ -323,10 +323,13 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """
 
         # Compute total bounds of all partitions rather than each partition
-        total_bounds = self.total_bounds.compute()
+        total_bounds = self.total_bounds
         # Calculate hilbert distances for each partition
         distances = self.map_partitions(
-            lambda s: _hilbert_distance(s, total_bounds=total_bounds, p=p)
+            _hilbert_distance,
+            total_bounds=total_bounds,
+            p=p,
+            meta=("hilbert_distance", "int64"),
         )
 
         return distances
