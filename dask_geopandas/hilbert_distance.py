@@ -1,10 +1,8 @@
-import geopandas
 import numpy as np
+from numba import jit
+ngjit = jit(nopython=True, nogil=True)
 
-# from numba import jit # optional - do we want numba as a dependency for dask-geopandas?
-# ngjit = jit(nopython=True, nogil=True)
-
-
+@ngjit
 def _hilbert_distance(gdf, total_bounds, p):
 
     """
@@ -63,7 +61,7 @@ def _hilbert_distance(gdf, total_bounds, p):
     return hilbert_distances
 
 
-# @ngjit
+@ngjit
 def _continuous_int_to_discrete_int(vals, val_range, n):
 
     """
@@ -95,7 +93,7 @@ def _continuous_int_to_discrete_int(vals, val_range, n):
     res[res > n - 1] = n - 1
     return res
 
-
+@ngjit
 def _distances_from_coordinates(p, coords):
 
     """
@@ -125,7 +123,7 @@ def _distances_from_coordinates(p, coords):
     return result
 
 
-# @ngjit
+@ngjit
 def _distance_from_coordinate(p, coord):
 
     """
@@ -173,7 +171,7 @@ def _distance_from_coordinate(p, coord):
     return h
 
 
-# @ngjit
+@ngjit
 def _transpose_to_hilbert_integer(p, coord):
 
     """
@@ -205,7 +203,7 @@ def _transpose_to_hilbert_integer(p, coord):
     return h
 
 
-# @ngjit
+@ngjit
 def _int_2_binary(v, width):
 
     """
@@ -232,7 +230,7 @@ def _int_2_binary(v, width):
     return res
 
 
-# @ngjit
+@ngjit
 def _binary_2_int(bin_vec):
 
     """
