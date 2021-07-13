@@ -36,27 +36,6 @@ def _calculate_hilbert_distance(gdf, total_bounds, p):
     return distances
 
 
-def bounds_to_numpy(gdf):
-
-    """
-    Calculate bounds for each geometry in a GeoDataFrame
-    int coordinates
-
-    Parameters
-    ----------
-    gdf : GeoDataFrame
-
-    Returns
-    ---------
-    Array of bounds for each geometry
-    """
-
-    # Calculate bounds of each geom
-    bounds = gdf.bounds.to_numpy()
-
-    return bounds
-
-
 @ngjit
 def _hilbert_distance(total_bounds, bounds, p):
 
