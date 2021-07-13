@@ -87,21 +87,19 @@ def _hilbert_distance(total_bounds, bounds, p):
 def _continuous_to_discrete(vals, val_range, n):
 
     """
-    Convert an array of values from continuous data coordinates to discrete
-    int coordinates
+    Convert a continuous one-dimensional array to discrete int
 
     Parameters
     ----------
-    vals : Array of continuous coordinates to be
-            ([([val_1, val_2,..., val_n]), array([val_1, val_2,..., val_n])])
+    vals : Array of continuous values
 
-    val_range : Ranges of x and y values ([(xmin, xmax), (ymin, ymax)])
-
-    n : Number of discrete coords (int)
+    val_range : Tuple containing range of continuous values
+    
+    n : Number of discrete values
 
     Returns
     ---------
-    Array of discrete int coords
+    One-dimensional array of discrete ints
     """
 
     width = val_range[1] - val_range[0]
