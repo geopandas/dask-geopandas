@@ -104,8 +104,8 @@ def _continuous_to_discrete(vals, val_range, n):
     Array of discrete int coords
     """
 
-    x_width = val_range[1] - val_range[0]
-    res = ((vals - val_range[0]) * (n / x_width)).astype(np.int64)
+    width = val_range[1] - val_range[0]
+    res = ((vals - val_range[0]) * (n / width)).astype(np.int64)
 
     # TO DO: When numba 0.54 releases - used.clip(res, min=0, max=n, out=res)
     # clip
