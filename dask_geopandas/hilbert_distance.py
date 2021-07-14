@@ -56,27 +56,8 @@ def _hilbert_distance(total_bounds, bounds, p):
     ---------
     Array of hilbert distances for each geom
     """
-
-    # Hilbert Side len
-    side_length = 2 ** p
-
-    # Calculate x and y range of total bound coords - returns array
-    geom_ranges = [
-        (total_bounds[0], total_bounds[2]),
-        (total_bounds[1], total_bounds[3]),
-    ]
-    # Calculate mid points for x and y bound coords - returns array
-    geom_mids = [
-        ((bounds[:, 0] + bounds[:, 2]) / 2.0),
-        ((bounds[:, 1] + bounds[:, 3]) / 2.0),
-    ]
-
-    # Transform continuous int to discrete int for each dimension
-    x_int = _continuous_to_discrete(geom_mids[0], geom_ranges[0], side_length)
-    y_int = _continuous_to_discrete(geom_mids[1], geom_ranges[1], side_length)
-    # Stack as coord array
-    coords = np.stack((x_int, y_int), axis=1)
-
+    
+    coords = _continuous_to_discrete_coords(total_bounds, bounds, p)
     # Calculate hilbert distance
     distances = _distances_from_coordinates(p, coords)
 
@@ -84,10 +65,56 @@ def _hilbert_distance(total_bounds, bounds, p):
 
 
 @ngjit
+def _continuous_to_discrete_coords(total_bounds, bounds, p):
+
+    """
+    Calculates mid points & ranges of geoms and returns 
+    as discrete coords
+    
+    Parameters
+    ----------
+
+    total_bounds : Total bounds of geometries - array
+
+    bounds : Bounds of each geometry - array
+
+    p : Hilbert curve parameter
+
+    Returns
+    ---------
+    Discrete two-dimensional numpy array 
+    Two-dimensional array Array of hilbert distances for each geom
+    """
+
+    # Hilbert Side len
+    side_length = 2 ** p
+    
+    # Calculate x and y range of total bound coords - returns array
+    geom_ranges = [
+        (total_bounds[0], total_bounds[2]),
+        (total_bounds[1], total_bounds[3]),
+    ]
+
+    # Calculate mid points for x and y bound coords - returns array
+    geom_mids = [
+        ((bounds[:, 0] + bounds[:, 2]) / 2.0),
+        ((bounds[:, 1] + bounds[:, 3]) / 2.0),
+    ]
+  
+    # Transform continuous int to discrete int for each dimension
+    x_int = _continuous_to_discrete(geom_mids[0], geom_ranges[0], side_length)
+    y_int = _continuous_to_discrete(geom_mids[1], geom_ranges[1], side_length)
+    # Stack x and y discrete ints
+    coords = np.stack((x_int, y_int), axis=1)
+
+    return coords
+
+@ngjit
 def _continuous_to_discrete(vals, val_range, n):
 
     """
     Convert a continuous one-dimensional array to discrete int
+    based on values and their ranges
 
     Parameters
     ----------
