@@ -11,7 +11,7 @@ import dask_geopandas
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 
 
-@pytest.fixture
+@pytest.fixture()
 def geoseries_polygons():
     t1 = Polygon([(0, 3.5), (7, 2.4), (1, 0.1)])
     t2 = Polygon([(0, 0), (1, 1), (0, 1)])

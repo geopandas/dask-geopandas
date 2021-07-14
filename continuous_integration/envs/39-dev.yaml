@@ -14,7 +14,7 @@ dependencies:
   # test dependencies
   - pytest
   - pytest-cov
-  - hilbert_curve=2.0.5
+  - hilbert_curve
   # optional dependencies
   - pyarrow
   - pip
