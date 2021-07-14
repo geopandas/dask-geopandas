@@ -324,12 +324,13 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         # Compute total bounds of all partitions rather than each partition
         total_bounds = self.total_bounds
+
         # Calculate hilbert distances for each partition
         distances = self.map_partitions(
             _calculate_hilbert_distance,
             total_bounds=total_bounds,
             p=p,
-            meta=("hilbert_distance", "int64"),
+            meta=pd.Series([], name="hilbert_distance", dtype="int"),
         )
 
         return distances
