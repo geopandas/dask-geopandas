@@ -37,7 +37,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         The key prefix that specifies which keys in the dask comprise this
         particular DataFrame / Series
     meta : geopandas.GeoDataFrame, geopandas.GeoSeries
-        An empty cudf object with names, dtypes, and indices matching the
+        An empty geopandas object with names, dtypes, and indices matching the
         expected output.
     divisions : tuple of index values
         Values along which we partition our blocks on the index
