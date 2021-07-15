@@ -48,7 +48,7 @@ and will be computed in parallel:
 
 
 Additionally, if you have a distributed dask.dataframe you can pass columns of
-x-y points to the `set_geometry` method. Currently, this only supports point
+x-y points to the ``set_geometry`` method. Currently, this only supports point
 data.
 
 .. code-block:: python
@@ -59,7 +59,7 @@ data.
    ddf = dd.read_csv('...')
 
    ddf = dask_geopandas.from_dask_dataframe(ddf)
-   ddf = dff.set_geometry(
+   ddf = ddf.set_geometry(
        dask_geopandas.points_from_xy(ddf, 'latitude', 'longitude')
    )
 
