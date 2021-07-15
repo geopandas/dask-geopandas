@@ -1,5 +1,6 @@
 import pytest
 import pandas as pd
+from pandas.testing import assert_index_equal
 from hilbertcurve.hilbertcurve import HilbertCurve
 from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
 from dask_geopandas import from_geopandas
@@ -46,6 +47,7 @@ def hilbert_distance_dask(geoseries):
 
     assert list(result) == expected
     assert isinstance(result, pd.Series)
+    assert_index_equal(ddf.index.compute(), result.index)
 
 
 def test_hilbert_distance_points(geoseries_points):
