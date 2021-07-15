@@ -32,7 +32,7 @@ def _calculate_hilbert_distance(gdf, total_bounds, p):
     # Compute hilbert distances
     distances = _hilbert_distance(total_bounds, bounds, p)
 
-    return pd.Series(distances, name="hilbert_distance")
+    return pd.Series(distances, index=gdf.index, name="hilbert_distance")
 
 
 @ngjit
