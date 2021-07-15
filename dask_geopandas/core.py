@@ -74,8 +74,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         def prop(self):
             meta = getattr(self._meta, attr)
-            token = f"{self._name}-{attr}"
-            result = self.map_partitions(getattr, attr, token=token, meta=meta)
+            result = self.map_partitions(getattr, attr, token=attr, meta=meta)
             if preserve_spatial_partitions:
                 result = self._propagate_spatial_partitions(result)
             return result
@@ -163,8 +162,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         return new
 
     def to_crs(self, crs=None, epsg=None):
-        token = f"{self._name}-to_crs"
-        return self.map_partitions(M.to_crs, crs=crs, epsg=epsg, token=token)
+        return self.map_partitions(M.to_crs, crs=crs, epsg=epsg)
 
     def copy(self):
         """Make a copy of the dataframe
@@ -191,7 +189,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return self.reduction(
             lambda x: getattr(x, "total_bounds"),
-            token=self._name + "-total_bounds",
+            token="total_bounds",
             meta=self._meta.total_bounds,
             aggregate=agg,
         )
@@ -209,7 +207,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return self.reduction(
             lambda x: getattr(x, attr),
-            token=f"{self._name}-{attr}",
+            token=attr,
             aggregate=lambda x: getattr(geopandas.GeoSeries(x), attr),
             meta=meta,
         )
@@ -333,8 +331,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         self.dask = new.dask
 
     def set_geometry(self, col):
-        token = f"{self._name}-set_geometry"
-        return self.map_partitions(M.set_geometry, col, token=token)
+        return self.map_partitions(M.set_geometry, col)
 
     def __getitem__(self, key):
         """
@@ -378,7 +375,9 @@ def points_from_xy(df, x="x", y="y", z="z"):
             index=data.index,
         )
 
-    return df.map_partitions(func, x, y, z, meta=geopandas.GeoSeries())
+    return df.map_partitions(
+        func, x, y, z, meta=geopandas.GeoSeries(), token="points_from_xy"
+    )
 
 
 for name in [
