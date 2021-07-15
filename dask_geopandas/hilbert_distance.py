@@ -92,12 +92,12 @@ def _continuous_to_discrete_coords(total_bounds, bounds, p):
     xmin, ymin, xmax, ymax = total_bounds
 
     # Calculate mid points for x and y bound coords - returns array
-    x_mids = ((bounds[:, 0] + bounds[:, 2]) / 2.0)
-    y_mids = ((bounds[:, 1] + bounds[:, 3]) / 2.0)
+    x_mids = (bounds[:, 0] + bounds[:, 2]) / 2.0
+    y_mids = (bounds[:, 1] + bounds[:, 3]) / 2.0
 
     # Transform continuous int to discrete int for each dimension
-    x_int = _continuous_to_discrete(geom_mids[0], geom_ranges[0], side_length)
-    y_int = _continuous_to_discrete(geom_mids[1], geom_ranges[1], side_length)
+    x_int = _continuous_to_discrete(x_mids, (xmin, xmax), side_length)
+    y_int = _continuous_to_discrete(y_mids, (ymin, ymax), side_length)
     # Stack x and y discrete ints
     coords = np.stack((x_int, y_int), axis=1)
 
