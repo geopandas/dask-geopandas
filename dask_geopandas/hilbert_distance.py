@@ -89,10 +89,7 @@ def _continuous_to_discrete_coords(total_bounds, bounds, p):
     side_length = 2 ** p
 
     # Calculate x and y range of total bound coords - returns array
-    geom_ranges = [
-        (total_bounds[0], total_bounds[2]),
-        (total_bounds[1], total_bounds[3]),
-    ]
+    xmin, ymin, xmax, ymax = total_bounds
 
     # Calculate mid points for x and y bound coords - returns array
     x_mids = ((bounds[:, 0] + bounds[:, 2]) / 2.0)
