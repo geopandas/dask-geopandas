@@ -162,8 +162,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         return new
 
     def to_crs(self, crs=None, epsg=None):
-        token = "to_crs"
-        return self.map_partitions(M.to_crs, crs=crs, epsg=epsg, token=token)
+        return self.map_partitions(M.to_crs, crs=crs, epsg=epsg)
 
     def copy(self):
         """Make a copy of the dataframe
@@ -332,7 +331,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         self.dask = new.dask
 
     def set_geometry(self, col):
-        return self.map_partitions(M.set_geometry, col, token="set_geometry")
+        return self.map_partitions(M.set_geometry, col)
 
     def __getitem__(self, key):
         """
