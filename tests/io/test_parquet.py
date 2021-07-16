@@ -28,8 +28,10 @@ def test_parquet_roundtrip(tmp_path):
 
     # reading back gives identical GeoDataFrame
     result = dask_geopandas.read_parquet(basedir)
-    assert ddf.npartitions == 4
+    assert result.npartitions == 4
     assert_geodataframe_equal(result.compute(), df)
+    # reading back also populates the spatial partitioning property
+    assert result.spatial_partitions is not None
 
     # the written dataset is also readable by plain geopandas
     result_gpd = geopandas.read_parquet(basedir)
@@ -54,6 +56,8 @@ def test_column_selection_push_down(tmp_path):
     # selecting columns including geometry column still gives GeoDataFrame
     ddf_subset = ddf[["pop_est", "geometry"]]
     assert type(ddf_subset) is dask_geopandas.GeoDataFrame
+    # and also preserves the spatial partitioning information
+    assert ddf_subset.spatial_partitions is not None
 
     # selecting a single non-geometry column on the dataframe should work
     s = ddf["pop_est"]

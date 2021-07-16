@@ -9,6 +9,7 @@ from .core import (
     from_dask_dataframe,
 )
 from .io.parquet import read_parquet, to_parquet
+from .sjoin import sjoin
 
 
 __version__ = get_versions()["version"]
@@ -22,4 +23,5 @@ __all__ = [
     "from_dask_dataframe",
     "read_parquet",
     "to_parquet",
+    "sjoin",
 ]
