@@ -20,7 +20,7 @@ def _hilbert_distance(gdf, total_bounds, p):
 
     total_bounds : Total bounds of geometries - array
 
-    p : Hilbert curve parameter
+    p : The number of iterations used in constructing the Hilbert curve
 
     Returns
     ---------
@@ -50,7 +50,7 @@ def _continuous_to_discrete_coords(total_bounds, bounds, p):
 
     bounds : Bounds of each geometry - array
 
-    p : Hilbert curve parameter
+    p : The number of iterations used in constructing the Hilbert curve
 
     Returns
     ---------
@@ -116,7 +116,7 @@ def _distances_from_coordinates(p, coords):
 
     Parameters
     ----------
-    p : Hilbert curve param
+    p : The number of iterations used in constructing the Hilbert curve.
 
     coords : Array of coordinates
 
@@ -141,7 +141,7 @@ def _distance_from_coordinate(p, coord):
 
     Parameters
     ----------
-    p : Hilbert curve param
+    p : The number of iterations used in constructing the Hilbert curve
 
     coord : Array of coordinates
 
@@ -186,7 +186,7 @@ def _transpose_to_hilbert_integer(p, coord):
 
     Parameters
     ----------
-    p : Hilbert curve param
+    p : The number of iterations used in constructing the Hilbert curve
 
     coord : Array of coordinates
 
@@ -214,7 +214,7 @@ def _int_2_binary(v, width):
 
     Parameters
     ----------
-    p : Hilbert curve param
+    p : The number of iterations used in constructing the Hilbert curve
 
     coord : Array of coordinates
 
@@ -238,7 +238,7 @@ def _binary_2_int(bin_vec):
 
     Parameters
     ----------
-    p : Hilbert curve param
+    p : The number of iterations used in constructing the Hilbert curve
 
     coord : Array of coordinates
 
