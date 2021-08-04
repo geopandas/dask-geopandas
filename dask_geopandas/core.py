@@ -11,6 +11,7 @@ import geopandas
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
 from .hilbert_distance import _hilbert_distance
+from .morton_distance import _morton_distance
 
 
 def _set_crs(df, crs, allow_override):
@@ -332,6 +333,33 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             total_bounds=total_bounds,
             p=p,
             meta=pd.Series([], name="hilbert_distance", dtype="int"),
+        )
+
+        return distances
+
+    def morton_distance(self, p=15):
+
+        """
+
+        Parameters
+        ----------
+
+        p : The number of iterations used in constructing the Hilbert curve.
+
+        Returns
+        ----------
+        Distances for each partition
+        """
+
+        # Compute total bounds of all partitions rather than each partition
+        total_bounds = self.total_bounds
+
+        # Calculate hilbert distances for each partition
+        distances = self.map_partitions(
+            _morton_distance,
+            total_bounds=total_bounds,
+            p=p,
+            meta=pd.Series([], name="morton_distance", dtype="int"),
         )
 
         return distances
