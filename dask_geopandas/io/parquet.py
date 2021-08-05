@@ -9,6 +9,8 @@ import shapely.geometry
 
 import dask.dataframe as dd
 
+from .arrow import GeoDatasetEngine
+
 try:
     # pyarrow is imported here, but is an optional dependency
     from dask.dataframe.io.parquet.arrow import ArrowEngine
@@ -53,7 +55,7 @@ def _get_partition_bounds(part):
     return shapely.geometry.box(*bbox)
 
 
-class GeoArrowEngine(ArrowEngine):
+class GeoArrowEngine(GeoDatasetEngine, ArrowEngine):
     @classmethod
     def read_metadata(cls, *args, **kwargs):
         meta, stats, parts, index = super().read_metadata(*args, **kwargs)
@@ -70,30 +72,6 @@ class GeoArrowEngine(ArrowEngine):
             meta.attrs["spatial_partitions"] = regions
 
         return (meta, stats, parts, index)
-
-    @classmethod
-    def _arrow_table_to_pandas(
-        cls, arrow_table: "pyarrow.Table", categories, **kwargs
-    ) -> pd.DataFrame:
-        from geopandas.io.arrow import _arrow_to_geopandas
-
-        _kwargs = kwargs.get("arrow_to_pandas", {})
-        _kwargs.update({"use_threads": False, "ignore_metadata": False})
-
-        # TODO support additional keywords
-        try:
-            return _arrow_to_geopandas(arrow_table)
-        except ValueError as err:
-            # when no geometry column is selected, the above will error.
-            # We want to fallback to reading it as a plain dask object, because
-            # the column selection can be an automatic pushdown (eg `ddf['col']`)
-            # TODO more robust detection of when to fall back?
-            if "No geometry columns are included" in str(err):
-                return super()._arrow_table_to_pandas(
-                    arrow_table, categories=categories, **kwargs
-                )
-            else:
-                raise
 
     @classmethod
     def _pandas_to_arrow_table(

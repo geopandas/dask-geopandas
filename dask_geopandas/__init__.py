@@ -9,6 +9,7 @@ from .core import (
     from_dask_dataframe,
 )
 from .io.parquet import read_parquet, to_parquet
+from .io.arrow import read_feather
 from .sjoin import sjoin
 
 
