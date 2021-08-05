@@ -41,8 +41,7 @@ def _distances_from_coordinates(coords):
 
     result = np.zeros(coords.shape[0], dtype=np.int64)
     # For each coord calculate hilbert distance
-    for i in range(coords.shape[0]):
-        result[i] = encode_morton(coords[i][0], coords[i][1])
+    result = encode_morton(coords[:, 0], coords[:, 1])
 
     return result
 
