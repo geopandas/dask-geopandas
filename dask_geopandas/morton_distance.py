@@ -8,63 +8,69 @@ from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
 
 def _morton_distance(gdf, total_bounds, p):
     """
-    Calculate
+    Calculate distance of geoms along Morton curve
+
+    The Morton curve is also known as Z-order https://en.wikipedia.org/wiki/Z-order
 
     Parameters
     ----------
-
     gdf : GeoDataFrame
+    total_bounds : array_like
+        array containing xmin, ymin, xmax, ymax
+    p : int
+        precision of the Morton curve
 
-    total_bounds : Total bounds
-
-    p : number of iterations
+    Returns
+    -------
+    type : pandas.Series
+        Series containing distances from Morton curve
 
     """
-    bounds = gdf.bounds.to_numpy()
-    coords = _continuous_to_discrete_coords(total_bounds, bounds, p)
 
+    # Calculate bounds as numpy array
+    bounds = gdf.bounds.to_numpy()
+    # Calculate discrete coords based on total bounds and bounds
+    coords = _continuous_to_discrete_coords(total_bounds, bounds, p)
+    # Calculate distance from morton curve
     distances = _distances_from_coordinates(coords)
 
     return pd.Series(distances, index=gdf.index, name="morton_distance")
 
 
 def _distances_from_coordinates(coords):
-
     """
-    Calculate Morton distances from coordinates
+    Calculate distances from geometry mid-points along Morton curve
 
     Parameters
     ----------
+    coords : array_like
+        x, y coordinate pairs based on mid-points of geoms
 
-    coords : Coordinates in np.array format
+    Returns
+    -------
+    type : int
+        Integer distances from Morton curve
     """
 
-    result = np.zeros(coords.shape[0], dtype=np.int64)
-    # For each coord calculate hilbert distance
-    result = encode_morton(coords[:, 0], coords[:, 1])
-
-    return result
+    return np.bitwise_or(
+        _part1by1(coords[:, 0]), np.left_shift(_part1by1(coords[:, 1]), 1)
+    )
 
 
-def encode_morton(x, y):
-
+def _part1by1(n):
     """
-    Encode x and y values from coordinates
+    Interleave bits by Binary Magic Numbers
 
     Parameters
     ----------
+    n : np.array
+        X or Y coordinates
 
-    x : X coordinate
-
-    y : Y coordinate
+    Returns
+    -------
+    n : int
+        Interleaved bits
     """
-
-    return part1by1(x) | (part1by1(y) << 1)
-
-
-def part1by1(n):
-
-    """Interleave bits by Binary Magic Numbers"""
 
     n &= 0x0000FFFF
     n = (n | (n << 8)) & 0x00FF00FF
