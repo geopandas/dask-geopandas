@@ -354,7 +354,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         # Compute total bounds of all partitions rather than each partition
         total_bounds = self.total_bounds
 
-        # Calculate hilbert distances for each partition
+        # Calculate Morton distances for each partition
         distances = self.map_partitions(
             _morton_distance,
             total_bounds=total_bounds,
