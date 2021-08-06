@@ -4,6 +4,7 @@ channels:
 dependencies:
   # required dependencies
   - python=3.9
+  - numba
   - distributed
   - pandas
   - shapely
@@ -13,6 +14,7 @@ dependencies:
   # test dependencies
   - pytest
   - pytest-cov
+  - hilbertcurve
   # optional dependencies
   - pyarrow
   - pip

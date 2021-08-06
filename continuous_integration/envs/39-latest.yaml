@@ -5,6 +5,7 @@ dependencies:
   # required dependencies
   - python=3.9
   - dask
+  - numba
   - distributed
   - geopandas
   - pygeos
@@ -12,5 +13,6 @@ dependencies:
   # test dependencies
   - pytest
   - pytest-cov
+  - hilbertcurve
   # optional dependencies
   - pyarrow

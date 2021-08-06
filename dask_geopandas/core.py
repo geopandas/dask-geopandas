@@ -10,6 +10,7 @@ from dask.base import tokenize
 import geopandas
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
+from .hilbert_distance import _hilbert_distance
 
 
 def _set_crs(df, crs, allow_override):
@@ -37,7 +38,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         The key prefix that specifies which keys in the dask comprise this
         particular DataFrame / Series
     meta : geopandas.GeoDataFrame, geopandas.GeoSeries
-        An empty cudf object with names, dtypes, and indices matching the
+        An empty geopandas object with names, dtypes, and indices matching the
         expected output.
     divisions : tuple of index values
         Values along which we partition our blocks on the index
@@ -74,8 +75,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         def prop(self):
             meta = getattr(self._meta, attr)
-            token = f"{self._name}-{attr}"
-            result = self.map_partitions(getattr, attr, token=token, meta=meta)
+            result = self.map_partitions(getattr, attr, token=attr, meta=meta)
             if preserve_spatial_partitions:
                 result = self._propagate_spatial_partitions(result)
             return result
@@ -153,13 +153,17 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     def set_crs(self, value, allow_override=False):
         """Set the value of the crs on a new object"""
-        return self.map_partitions(
+        new = self.map_partitions(
             _set_crs, value, allow_override, enforce_metadata=False
         )
+        if self.spatial_partitions is not None:
+            new.spatial_partitions = self.spatial_partitions.set_crs(
+                value, allow_override=allow_override
+            )
+        return new
 
     def to_crs(self, crs=None, epsg=None):
-        token = f"{self._name}-to_crs"
-        return self.map_partitions(M.to_crs, crs=crs, epsg=epsg, token=token)
+        return self.map_partitions(M.to_crs, crs=crs, epsg=epsg)
 
     def copy(self):
         """Make a copy of the dataframe
@@ -186,7 +190,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return self.reduction(
             lambda x: getattr(x, "total_bounds"),
-            token=self._name + "-total_bounds",
+            token="total_bounds",
             meta=self._meta.total_bounds,
             aggregate=agg,
         )
@@ -204,7 +208,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return self.reduction(
             lambda x: getattr(x, attr),
-            token=f"{self._name}-{attr}",
+            token=attr,
             aggregate=lambda x: getattr(geopandas.GeoSeries(x), attr),
             meta=meta,
         )
@@ -301,6 +305,37 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def cx(self):
         return _CoordinateIndexer(self)
 
+    def hilbert_distance(self, p=15):
+
+        """
+        A function that calculates the Hilbert distance between the geometry bounds
+        and total bounds of a Dask-GeoDataFrame.
+        The Hilbert distance can be used to spatially partition Dask-GeoPandas objects,
+        by mapping two dimensional geometries along the Hilbert curve.
+
+        Parameters
+        ----------
+
+        p : The number of iterations used in constructing the Hilbert curve.
+
+        Returns
+        ----------
+        Distances for each partition
+        """
+
+        # Compute total bounds of all partitions rather than each partition
+        total_bounds = self.total_bounds
+
+        # Calculate hilbert distances for each partition
+        distances = self.map_partitions(
+            _hilbert_distance,
+            total_bounds=total_bounds,
+            p=p,
+            meta=pd.Series([], name="hilbert_distance", dtype="int"),
+        )
+
+        return distances
+
 
 class GeoSeries(_Frame, dd.core.Series):
     _partition_type = geopandas.GeoSeries
@@ -328,8 +363,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         self.dask = new.dask
 
     def set_geometry(self, col):
-        token = f"{self._name}-set_geometry"
-        return self.map_partitions(M.set_geometry, col, token=token)
+        return self.map_partitions(M.set_geometry, col)
 
     def __getitem__(self, key):
         """
@@ -373,7 +407,9 @@ def points_from_xy(df, x="x", y="y", z="z"):
             index=data.index,
         )
 
-    return df.map_partitions(func, x, y, z, meta=geopandas.GeoSeries())
+    return df.map_partitions(
+        func, x, y, z, meta=geopandas.GeoSeries(), token="points_from_xy"
+    )
 
 
 for name in [
