@@ -2,8 +2,7 @@ import numpy as np
 import pandas as pd
 from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
 
-# Based on #https://code.activestate.com/recipes/
-# 577558-interleave-bits-aka-morton-ize-aka-z-order-curve/
+# Based on #http://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN
 
 
 def _morton_distance(gdf, total_bounds, p):
