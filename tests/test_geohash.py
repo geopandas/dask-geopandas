@@ -3,7 +3,7 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pandas as pd
 from pandas.testing import assert_index_equal
-from geohash import encode
+from pygeohash import encode
 from dask_geopandas.geohash import _calculate_mid_points
 from dask_geopandas import from_geopandas
 import geopandas
