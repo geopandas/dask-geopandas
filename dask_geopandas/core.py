@@ -11,6 +11,7 @@ import geopandas
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
 from .hilbert_distance import _hilbert_distance
+from .geohash import _geohash
 
 
 def _set_crs(df, crs, allow_override):
@@ -335,6 +336,32 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         )
 
         return distances
+
+    def geohash(self, precision=15):
+
+        """
+        A function that encodes geometry mid points using Geohash for a given precision
+
+        Parameters
+        ----------
+        precision : int
+            precision of the Geohash
+
+        Returns
+
+        ----------
+        type : pandas.Series
+            Series containing Geohash
+        """
+
+        # Calculate hilbert distances for each partition
+        geohashes = self.map_partitions(
+            _geohash,
+            precision=precision,
+            meta=pd.Series([], name="geohash", dtype="str"),
+        )
+
+        return geohashes
 
 
 class GeoSeries(_Frame, dd.core.Series):
