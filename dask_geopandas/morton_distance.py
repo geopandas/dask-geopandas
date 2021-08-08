@@ -1,8 +1,5 @@
-import numpy as np
 import pandas as pd
 from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
-
-# Based on #http://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN
 
 
 def _morton_distance(gdf, total_bounds, p):
@@ -51,14 +48,14 @@ def _distances_from_coordinates(coords):
         Integer distances from Morton curve
     """
 
-    return np.bitwise_or(
-        _part1by1(coords[:, 0]), np.left_shift(_part1by1(coords[:, 1]), 1)
-    )
+    return _part1by1(coords[:, 0]) | (_part1by1(coords[:, 1]) << 1)
 
 
 def _part1by1(n):
     """
-    Interleave bits by Binary Magic Numbers
+    Interleave bits by ninary magic numbers
+
+    Based on #http://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN
 
     Parameters
     ----------
@@ -71,7 +68,6 @@ def _part1by1(n):
         Interleaved bits
     """
 
-    n &= 0x0000FFFF
     n = (n | (n << 8)) & 0x00FF00FF
     n = (n | (n << 4)) & 0x0F0F0F0F
     n = (n | (n << 2)) & 0x33333333
