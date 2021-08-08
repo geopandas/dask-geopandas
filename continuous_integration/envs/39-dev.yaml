@@ -11,6 +11,7 @@ dependencies:
   - fiona
   - pyproj=2.6  # unpin when pyproj 3.1 is released with multithreading fix
   - fsspec
+  - pygeohash
   # test dependencies
   - pytest
   - pytest-cov
