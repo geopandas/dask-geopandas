@@ -340,15 +340,20 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def morton_distance(self, p=15):
 
         """
+        Calculate distance of geoms along Morton curve
+
+        The Morton curve is also known as Z-order https://en.wikipedia.org/wiki/Z-order
 
         Parameters
         ----------
 
-        p : The number of iterations used in constructing the Hilbert curve.
+        p : int
+            precision of the Morton curve
 
         Returns
         ----------
-        Distances for each partition
+        type : pandas.Series
+            Series containing distances from Morton curve
         """
 
         # Compute total bounds of all partitions rather than each partition
