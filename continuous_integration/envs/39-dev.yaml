@@ -17,6 +17,7 @@ dependencies:
   - hilbertcurve
   # optional dependencies
   - pyarrow
+  - pip
   - pip:
     - pymorton
     - git+https://github.com/geopandas/geopandas.git@master
