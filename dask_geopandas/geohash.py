@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from geohash import encode
+from pygeohash import encode
 
 
 def _geohash(gdf, precision):
