@@ -10,7 +10,7 @@ from .core import GeoDataFrame, GeoSeries
 
 @derived_from(geopandas.tools)
 def clip(gdf, mask, keep_geom_type=False):
-    if isinstance(mask, GeoDataFrame) or isinstance(mask, GeoSeries):
+    if isinstance(mask, (GeoDataFrame, GeoSeries)):
         raise NotImplementedError("Mask cannot be a Dask GeoDataFrame or GeoSeries.")
 
     if gdf.spatial_partitions is None:
