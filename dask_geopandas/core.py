@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 import dask.dataframe as dd
+import dask.array as da
 from dask.dataframe.core import _emulate, map_partitions, elemwise, new_dd_object
 from dask.highlevelgraph import HighLevelGraph
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
@@ -188,11 +189,17 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
                 )
             )
 
-        return self.reduction(
+        total_bounds = self.reduction(
             lambda x: getattr(x, "total_bounds"),
             token="total_bounds",
             meta=self._meta.total_bounds,
             aggregate=agg,
+        )
+        return da.Array(
+            total_bounds.dask,
+            total_bounds.name,
+            chunks=((4,),),
+            dtype=total_bounds.dtype,
         )
 
     @property
