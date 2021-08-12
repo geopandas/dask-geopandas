@@ -3,15 +3,15 @@ import geopandas
 
 from dask.highlevelgraph import HighLevelGraph
 from dask.utils import derived_from
-from dask.base import tokenize, DaskMethodsMixin
+from dask.base import tokenize
 
-from .core import GeoDataFrame
+from .core import GeoDataFrame, GeoSeries
 
 
 @derived_from(geopandas.tools)
 def clip(gdf, mask, keep_geom_type=False):
-    if isinstance(mask, DaskMethodsMixin):
-        raise NotImplementedError("Mask cannot be a Dask object.")
+    if isinstance(mask, GeoDataFrame) or isinstance(mask, GeoSeries):
+        raise NotImplementedError("Mask cannot be a Dask GeoDataFrame or GeoSeries.")
 
     if gdf.spatial_partitions is None:
         return gdf.map_partitions(
