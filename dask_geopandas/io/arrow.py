@@ -56,13 +56,12 @@ class ArrowDatasetEngine:
         schema = dataset.schema
         # TODO add support for `categories`keyword
         dtypes = _get_pyarrow_dtypes(schema, categories=None)
-        if columns is not None:
+        if columns is None:
+            columns = list(dtypes)
+        else:
             ex = set(columns) - set(dtypes)
             if ex:
-                raise ValueError(
-                    "Requested columns (%s) not in schema (%s)" % (ex, set(dtypes))
-                )
-        columns = list(dtypes) if columns is None else columns
+                raise ValueError(f"Requested columns {ex} not in schema {set(dtypes)}")
         index = [index] if isinstance(index, str) else index
         meta = _meta_from_dtypes(columns, dtypes, index, [])
         return fragments, meta, schema, filter
