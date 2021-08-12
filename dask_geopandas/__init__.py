@@ -24,6 +24,7 @@ __all__ = [
     "from_dask_dataframe",
     "read_feather",
     "read_parquet",
-    "to_feather" "to_parquet",
+    "to_feather",
+    "to_parquet",
     "sjoin",
 ]
