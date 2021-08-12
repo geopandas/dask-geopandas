@@ -1,11 +1,11 @@
 import copy
 from typing import TYPE_CHECKING
 
-from dask.base import tokenize
-from dask.dataframe.core import new_dd_object
+from dask.base import compute_as_if_collection, tokenize
+from dask.dataframe.core import new_dd_object, Scalar
 from dask.highlevelgraph import HighLevelGraph
 from dask.layers import DataFrameIOLayer
-from dask.utils import natural_sort_key
+from dask.utils import natural_sort_key, apply
 
 from dask.dataframe.io.utils import _get_pyarrow_dtypes, _meta_from_dtypes
 
@@ -85,6 +85,17 @@ class ArrowDatasetEngine:
         df = cls._arrow_table_to_pandas(table, None)
         return df
 
+    @classmethod
+    def write_partition(cls, df, path, fs, filename, **kwargs):
+        print("writing a partition to: ", path, " with filename: ", filename)
+        from pyarrow import feather
+
+        table = cls._pandas_to_arrow_table(df, preserve_index=None)
+        # ds.write_dataset(table, path, filesystem=fs, format=cls.file_format,
+        #                  basename_template=filename)
+        with fs.open(fs.sep.join([path, filename]), "wb") as f:
+            feather.write_feather(table, f)
+
 
 class GeoDatasetEngine:
     @classmethod
@@ -110,6 +121,19 @@ class GeoDatasetEngine:
                 )
             else:
                 raise
+
+    @classmethod
+    def _pandas_to_arrow_table(
+        cls, df: pd.DataFrame, preserve_index=False, schema=None
+    ) -> "pyarrow.Table":
+        from geopandas.io.arrow import _geopandas_to_arrow
+
+        # TODO add support for schema
+        if schema is not None:
+            raise NotImplementedError("Passing 'schema' is not yet supported")
+
+        table = _geopandas_to_arrow(df, index=preserve_index)
+        return table
 
 
 class FeatherDatasetEngine(GeoDatasetEngine, ArrowDatasetEngine):
@@ -210,3 +234,87 @@ def read_feather(
     )
     graph = HighLevelGraph({output_name: layer}, {output_name: set()})
     return new_dd_object(graph, output_name, meta, [None] * (len(parts) + 1))
+
+
+def to_feather(
+    df,
+    path,
+    write_index=True,
+    storage_options=None,
+    compute=True,
+    compute_kwargs=None,
+):
+    """Store Dask.dataframe to Feather files
+
+    Notes
+    -----
+    Each partition will be written to a separate file.
+
+    Parameters
+    ----------
+    df : dask_geopandas.GeoDataFrame
+    path : string or pathlib.Path
+        Destination directory for data.  Prepend with protocol like ``s3://``
+        or ``hdfs://`` for remote data.
+    write_index : boolean, default True
+        Whether or not to write the index. Defaults to True.
+    storage_options : dict, default None
+        Key/value pairs to be passed on to the file-system backend, if any.
+    compute : bool, default True
+        If True (default) then the result is computed immediately. If False
+        then a ``dask.delayed`` object is returned for future computation.
+    compute_kwargs : dict, default True
+        Options to be passed in to the compute method
+
+    See Also
+    --------
+    dask_geopandas.read_feather: Read Feather data to dask.dataframe
+    """
+    # based on the to_orc function from dask
+
+    # Get engine
+    engine = FeatherDatasetEngine
+
+    # Process file path
+    storage_options = storage_options or {}
+    fs, _, _ = get_fs_token_paths(path, mode="wb", storage_options=storage_options)
+    # Trim any protocol information from the path before forwarding
+    path = fs._strip_protocol(path)
+
+    if not write_index:
+        # Not writing index - might as well drop it
+        df = df.reset_index(drop=True)
+
+    # Use df.npartitions to define file-name list
+    fs.mkdirs(path, exist_ok=True)
+    filenames = [f"part.{i}.feather" for i in range(df.npartitions)]
+
+    # Construct IO graph
+    dsk = {}
+    name = "to-feather-" + tokenize(df, fs, path, write_index, storage_options)
+    part_tasks = []
+    for d, filename in enumerate(filenames):
+        dsk[(name, d)] = (
+            apply,
+            engine.write_partition,
+            [
+                (df._name, d),
+                path,
+                fs,
+                filename,
+            ],
+        )
+        part_tasks.append((name, d))
+    dsk[name] = (lambda x: None, part_tasks)
+    graph = HighLevelGraph.from_collections(name, dsk, dependencies=[df])
+
+    # Compute or return future
+    if compute:
+        if compute_kwargs is None:
+            compute_kwargs = dict()
+        from dask_geopandas import GeoDataFrame
+
+        return compute_as_if_collection(
+            GeoDataFrame, graph, part_tasks, **compute_kwargs
+        )
+    return Scalar(graph, name, "")

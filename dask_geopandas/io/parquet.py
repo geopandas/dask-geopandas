@@ -1,8 +1,5 @@
 from functools import partial
 import json
-from typing import TYPE_CHECKING
-
-import pandas as pd
 
 import geopandas
 import shapely.geometry
@@ -16,9 +13,6 @@ try:
     from dask.dataframe.io.parquet.arrow import ArrowEngine
 except ImportError:
     ArrowEngine = object
-
-if TYPE_CHECKING:
-    import pyarrow
 
 
 def _get_partition_bounds(part):
@@ -72,19 +66,6 @@ class GeoArrowEngine(GeoDatasetEngine, ArrowEngine):
             meta.attrs["spatial_partitions"] = regions
 
         return (meta, stats, parts, index)
-
-    @classmethod
-    def _pandas_to_arrow_table(
-        cls, df: pd.DataFrame, preserve_index=False, schema=None
-    ) -> "pyarrow.Table":
-        from geopandas.io.arrow import _geopandas_to_arrow
-
-        # TODO add support for schema
-        if schema is not None:
-            raise NotImplementedError("Passing 'schema' is not yet supported")
-
-        table = _geopandas_to_arrow(df, index=preserve_index)
-        return table
 
 
 to_parquet = partial(dd.to_parquet, engine=GeoArrowEngine)
