@@ -86,12 +86,11 @@ class ArrowDatasetEngine:
 
     @classmethod
     def write_partition(cls, df, path, fs, filename, **kwargs):
-        print("writing a partition to: ", path, " with filename: ", filename)
         from pyarrow import feather
 
         table = cls._pandas_to_arrow_table(df, preserve_index=None)
-        # ds.write_dataset(table, path, filesystem=fs, format=cls.file_format,
-        #                  basename_template=filename)
+        # TODO using the datasets API could automatically support partitioning
+        # on columns
         with fs.open(fs.sep.join([path, filename]), "wb") as f:
             feather.write_feather(table, f)
 
