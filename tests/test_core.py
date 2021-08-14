@@ -397,3 +397,22 @@ def test_geoseries_apply(geoseries_polygons):
 def test_geodataframe_html_repr(geodf_points):
     dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
     assert "Dask-GeoPandas GeoDataFrame" in dask_obj._repr_html_()
+
+
+def test_dissolve():
+    world = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    gpd_default = world.dissolve("continent")
+    gpd_sum = world.dissolve("continent", aggfunc="sum")
+
+    ddf = dask_geopandas.from_geopandas(world, npartitions=4)
+    dd_default = ddf.dissolve("continent").compute()
+    dd_sum = ddf.dissolve("continent", aggfunc="sum").compute()
+    dd_split = ddf.dissolve("continent", split_out=4)
+
+    assert_geodataframe_equal(gpd_default, dd_default, check_like=True)
+    # drop due to https://github.com/geopandas/geopandas/issues/1999
+    assert_geodataframe_equal(
+        gpd_sum, dd_sum.drop(columns=["name", "iso_a3"]), check_like=True
+    )
+    assert dd_split.npartitions == 4
+    assert_geodataframe_equal(gpd_default, dd_split.compute(), check_like=True)

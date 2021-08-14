@@ -359,47 +359,25 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
 
         return to_parquet(self, path, *args, **kwargs)
 
-    def dissolve_steps(self, by=None, **kwargs):
-        """Dissolve within partitions, shuffle, dissolve again"""
+    def dissolve(self, by=None, aggfunc="first", split_out=1, **kwargs):
+        """Dissolve geometries within `groupby` into single observation.
 
-        meta = self._meta.dissolve(by=by, as_index=False, **kwargs)
+        Parameters
+        ----------
+        by : string, default None
+            Column whose values define groups to be dissolved. If None,
+            whole GeoDataFrame is considered a single group.
+        aggfunc : function or string, default "first"
+            Aggregation function for manipulation of data associated
+            with each group. Passed to dask `groupby.agg` method.
+            The same `aggfunc` is applied to all columns apart from active geometry.
+        split_out : int, default 1
+            Number of partitions of the output
 
-        within_chunks = self.map_partitions(
-            self._partition_type.dissolve,
-            by=by,
-            as_index=False,
-            meta=meta,
-            **kwargs,
-        )
+        **kwargs
+            keyword arguments passed to `groupby`
 
-        if by is None:
-            by = "index"
-
-        # To create  dissolved polygons, we need
-        # all its parts within a single partition. Therefore we need to reshuffle.
-        shuffled = within_chunks.shuffle(
-            by, npartitions=self.npartitions, shuffle="tasks", ignore_index=True
-        )
-
-        return shuffled.map_partitions(
-            self._partition_type.dissolve, by=by, as_index=False, meta=meta, **kwargs
-        )
-
-    def dissolve_direct(self, by=None, **kwargs):
-        """Shuffle and map partition"""
-
-        meta = self._meta.dissolve(by=by, as_index=False, **kwargs)
-
-        shuffled = self.shuffle(
-            by, npartitions=self.npartitions, shuffle="tasks", ignore_index=True
-        )
-
-        return shuffled.map_partitions(
-            self._partition_type.dissolve, by=by, as_index=False, meta=meta, **kwargs
-        )
-
-    def dissolve_groupby(self, by=None, aggfunc="first", **kwargs):
-        """Use dask groupby (mimic geopandas implementation)"""
+        """
 
         def union(block):
             merged_geom = block.unary_union
@@ -410,9 +388,11 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         )
         data_agg = {col: aggfunc for col in self.columns.drop([by, self.geometry.name])}
         data_agg[self.geometry.name] = merge_geometries
-        aggregated = self.groupby(by=by, **kwargs).agg(data_agg)
-
-        return aggregated
+        aggregated = self.groupby(by=by, **kwargs).agg(
+            data_agg,
+            split_out=split_out,
+        )
+        return aggregated.set_crs(self.crs)
 
 
 from_geopandas = dd.from_pandas
