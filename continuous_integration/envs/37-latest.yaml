@@ -5,6 +5,7 @@ dependencies:
   # required dependencies
   - python=3.7
   - dask=2.18
+  - numba
   - distributed
   - geopandas
   - pygeos
@@ -12,3 +13,4 @@ dependencies:
   # test dependencies
   - pytest
   - pytest-cov
+  - hilbertcurve
