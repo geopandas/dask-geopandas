@@ -13,10 +13,12 @@ from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
 from .hilbert_distance import _hilbert_distance
 
+
 try:
     from .geohash import _geohash
 except ImportError:
-        external_module = None 
+    external_module = None
+
 
 def _set_crs(df, crs, allow_override):
     """Return a new object with crs set to ``crs``"""

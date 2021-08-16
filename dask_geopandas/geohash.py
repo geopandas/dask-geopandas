@@ -5,10 +5,11 @@ try:
     from pygeohash import encode
 except ImportError:
     raise ImportError(
-                "To use geohash in Dask-GeoPandas, you need to install "
-                "pygeohash: 'conda install pygeohash' or 'pip install pygeohash'"
-            )
-        
+        "To use geohash in Dask-GeoPandas, you need to install"
+        "pygeohash: 'conda install pygeohash' or 'pip install pygeohash'"
+    )
+
+
 def _geohash(gdf, precision):
 
     """
