@@ -6,8 +6,7 @@ from pygeohash import encode
 def _geohash(gdf, precision):
 
     """
-    Calculate geohash for the mid points of each geometry
-    int coordinates
+    Calculate geohash based on the middle points of the geometry bounds
 
     Parameters
     ----------
@@ -24,7 +23,7 @@ def _geohash(gdf, precision):
     bounds = gdf.bounds.to_numpy()
     # Calculate mid points based on bounds
     x_mids, y_mids = _calculate_mid_points(bounds)
-    # Vectorize geohash for fast speed up
+    # Vectorize geohash encode function
     geohash_vec = np.vectorize(encode)
     # Encode mid points of geometries using geohash
     geohash = geohash_vec(y_mids, x_mids, precision)
