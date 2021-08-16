@@ -14,5 +14,6 @@ dependencies:
   - pytest
   - pytest-cov
   - hilbertcurve
+  - pip
   - pip:
     - pymorton
