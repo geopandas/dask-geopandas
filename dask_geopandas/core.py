@@ -359,7 +359,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Returns
         ----------
-        type : pandas.Series
+        type : dask.Series
             Series containing distances from Morton curve
         """
 
