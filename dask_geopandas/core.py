@@ -370,7 +370,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         Returns
         ----------
         type : dask.Series
-            Series containing distances from Morton curve
+            Series containing distances along the Morton curve
         """
 
         # Compute total bounds of all partitions rather than each partition
