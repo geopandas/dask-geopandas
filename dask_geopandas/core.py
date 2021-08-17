@@ -349,6 +349,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """
         Calculate the distance of geometries along the Morton curve
         
+        The Morton curve is also known as Z-order https://en.wikipedia.org/wiki/Z-order.
+
         The Morton distance can be used to spatially partition Dask-GeoPandas objects,
         by mapping two-dimensional geometries along the Morton space-filing curve.
         
@@ -358,8 +360,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         
         Morton distance is more performant than ``hilbert_distance`` but can result in 
         less optimal partitioning.
-
-        The Morton curve is also known as Z-order https://en.wikipedia.org/wiki/Z-order
 
         Parameters
         ----------
