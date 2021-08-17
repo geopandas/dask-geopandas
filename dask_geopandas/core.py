@@ -347,7 +347,17 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def morton_distance(self, p=15):
 
         """
-        Calculate distance of geoms along Morton curve
+        Calculate the distance of geometries along the Morton curve
+        
+        The Morton distance can be used to spatially partition Dask-GeoPandas objects,
+        by mapping two-dimensional geometries along the Morton space-filing curve.
+        
+        Each geometry is represented by the midpoint of its bounds and linked to the 
+        Morton curve. The function returns a distance from the beginning 
+        of the curve to the linked point.
+        
+        Morton distance is more performant than ``hilbert_distance`` but can result in 
+        less optimal partitioning.
 
         The Morton curve is also known as Z-order https://en.wikipedia.org/wiki/Z-order
 
