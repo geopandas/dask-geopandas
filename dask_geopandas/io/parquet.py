@@ -68,7 +68,9 @@ class GeoArrowEngine(ArrowEngine):
 
     @classmethod
     def _generate_dd_meta(cls, schema, index, categories, partition_info):
-        meta, index_cols, categories, index, partition_info = super()._generate_dd_meta(schema, index, categories, partition_info)
+        meta, index_cols, categories, index, partition_info = super()._generate_dd_meta(
+            schema, index, categories, partition_info
+        )
         if b"geo" in schema.metadata:
             geo_meta = json.loads(schema.metadata[b"geo"])
             crs = geo_meta["columns"][geo_meta["primary_column"]]["crs"]
