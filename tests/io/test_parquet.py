@@ -42,6 +42,7 @@ def test_parquet_roundtrip(tmp_path):
     result_part0 = geopandas.read_parquet(basedir / "part.0.parquet")
     result_part0.index.name = None
     assert_geodataframe_equal(result_part0, df.iloc[:45])
+    assert result.crs == df.crs
 
 
 def test_column_selection_push_down(tmp_path):
