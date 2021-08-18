@@ -4,7 +4,7 @@ from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
 
 def _morton_distance(gdf, total_bounds, p):
     """
-    Calculate distance of geoms along Morton curve
+    Calculate distance of geometries along Morton curve
 
     The Morton curve is also known as Z-order https://en.wikipedia.org/wiki/Z-order
 
