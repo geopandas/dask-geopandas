@@ -11,6 +11,8 @@ from dask.base import tokenize
 import geopandas
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
+import pygeos
+
 from .hilbert_distance import _hilbert_distance
 from .morton_distance import _morton_distance
 
@@ -118,9 +120,13 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         # TEMP method to calculate spatial partitions for testing, need to
         # add better methods (set_partitions / repartition)
         parts = geopandas.GeoSeries(
-            self.map_partitions(lambda part: part.convex_hull.unary_union).compute()
+            self.map_partitions(
+                lambda part: pygeos.convex_hull(
+                    pygeos.geometrycollections(part.geometry.values.data)
+                )
+            ).compute(), crs=self.crs
         )
-        self.spatial_partitions = parts.convex_hull
+        self.spatial_partitions = parts
 
     def _propagate_spatial_partitions(self, new_object):
         """
