@@ -12,6 +12,7 @@ import geopandas
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
 from .hilbert_distance import _hilbert_distance
+from .morton_distance import _morton_distance
 
 
 def _set_crs(df, crs, allow_override):
@@ -339,6 +340,48 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             total_bounds=total_bounds,
             p=p,
             meta=pd.Series([], name="hilbert_distance", dtype="int"),
+        )
+
+        return distances
+
+    def morton_distance(self, p=15):
+
+        """
+        Calculate the distance of geometries along the Morton curve
+
+        The Morton curve is also known as Z-order https://en.wikipedia.org/wiki/Z-order.
+
+        The Morton distance can be used to spatially partition Dask-GeoPandas objects,
+        by mapping two-dimensional geometries along the Morton space-filing curve.
+
+        Each geometry is represented by the midpoint of its bounds and linked to the
+        Morton curve. The function returns a distance from the beginning
+        of the curve to the linked point.
+
+        Morton distance is more performant than ``hilbert_distance`` but can result in
+        less optimal partitioning.
+
+        Parameters
+        ----------
+
+        p : int
+            precision of the Morton curve
+
+        Returns
+        ----------
+        type : dask.Series
+            Series containing distances along the Morton curve
+        """
+
+        # Compute total bounds of all partitions rather than each partition
+        total_bounds = self.total_bounds
+
+        # Calculate Morton distances for each partition
+        distances = self.map_partitions(
+            _morton_distance,
+            total_bounds=total_bounds,
+            p=p,
+            meta=pd.Series([], name="morton_distance", dtype="int"),
         )
 
         return distances
