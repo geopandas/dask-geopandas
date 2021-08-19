@@ -1,5 +1,3 @@
-
-
 def _calculate_mid_points(bounds):
     """
     Calculate geohash based on the mid points of each geometry
