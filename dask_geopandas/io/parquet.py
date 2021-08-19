@@ -71,7 +71,7 @@ class GeoArrowEngine(ArrowEngine):
         meta, index_cols, categories, index, partition_info = super()._generate_dd_meta(
             schema, index, categories, partition_info
         )
-        if b"geo" in schema.metadata:
+        if schema.metadata and b"geo" in schema.metadata:
             geo_meta = json.loads(schema.metadata[b"geo"])
             crs = geo_meta["columns"][geo_meta["primary_column"]]["crs"]
         else:
