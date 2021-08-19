@@ -396,7 +396,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         return to_parquet(self, path, *args, **kwargs)
 
     def dissolve(self, by=None, aggfunc="first", split_out=1, **kwargs):
-        """Dissolve geometries within `groupby` into single observation.
+        """Dissolve geometries within `groupby` into a single geometry.
 
         Parameters
         ----------
