@@ -100,7 +100,8 @@ def _encode_into_uint64(quantized_coords):
 
     Returns
     ---------
-    quantized_coords : array_like
+    array_like of shape (n, 2)
+        coordinate pairs encoded to uint64 values
         quantized coordinate pairs
     """
 
