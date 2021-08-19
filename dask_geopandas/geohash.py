@@ -42,7 +42,8 @@ def encode_geohash(coords, precision):
 
     Parameters
     ----------
-    coords : array_like
+    coords : array_like of shape (n, 2)
+        array of [x, y] pairs
     precision : int
         precision of the Geohash
 
