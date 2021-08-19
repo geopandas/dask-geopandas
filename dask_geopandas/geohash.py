@@ -62,7 +62,7 @@ def encode_geohash(coords, precision):
 
 def _encode_quantize_points(coords):
     """
-    Quantize coordinates by mapping
+    Quantize coordinates by mapping onto
     unit intervals [0, 1] and multiplying by 2^32.
 
     Parameters
