@@ -168,7 +168,7 @@ def _encode_base32(g_uint64):
 
 def _encode_unicode(gs_uint8_mat, precision):
     """
-    Encode quantized coordinates into uint64
+    Encode uint64 encoded values into unicode values
 
     Implementation based on "Geohash in Golang Assembly"
     blog (https://mmcloughlin.com/posts/geohash-assembly)
