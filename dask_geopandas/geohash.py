@@ -27,7 +27,7 @@ def _geohash(gdf, precision):
     bounds = gdf.bounds.to_numpy()
     # Calculate mid points based on bounds
     x_mids, y_mids = _calculate_mid_points(bounds)
-    # Return coordinates
+    # Create pairs of x and y midpoints
     coords = np.array([y_mids, x_mids]).T
     # Encode coords with Geohash
     geohash = encode_geohash(coords, precision)
