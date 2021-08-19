@@ -67,7 +67,8 @@ def _encode_quantize_points(coords):
 
     Parameters
     ----------
-    coords : array_like
+    coords : array_like of shape (n, 2)
+        array of [x, y] pairs
         coordinate pairs
 
     Returns
