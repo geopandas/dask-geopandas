@@ -402,17 +402,29 @@ def test_geodataframe_html_repr(geodf_points):
 def test_dissolve():
     world = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
     gpd_default = world.dissolve("continent")
-    gpd_sum = world.dissolve("continent", aggfunc="sum")
 
     ddf = dask_geopandas.from_geopandas(world, npartitions=4)
     dd_default = ddf.dissolve("continent").compute()
-    dd_sum = ddf.dissolve("continent", aggfunc="sum").compute()
-    dd_split = ddf.dissolve("continent", split_out=4)
-
     assert_geodataframe_equal(gpd_default, dd_default, check_like=True)
+
+
+def test_dissolve_sum():
+    world = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    gpd_sum = world.dissolve("continent", aggfunc="sum")
+
+    ddf = dask_geopandas.from_geopandas(world, npartitions=4)
+    dd_sum = ddf.dissolve("continent", aggfunc="sum").compute()
     # drop due to https://github.com/geopandas/geopandas/issues/1999
     assert_geodataframe_equal(
         gpd_sum, dd_sum.drop(columns=["name", "iso_a3"]), check_like=True
     )
+
+
+def test_dissolve_split_out():
+    world = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    gpd_default = world.dissolve("continent")
+    ddf = dask_geopandas.from_geopandas(world, npartitions=4)
+
+    dd_split = ddf.dissolve("continent", split_out=4)
     assert dd_split.npartitions == 4
     assert_geodataframe_equal(gpd_default, dd_split.compute(), check_like=True)
