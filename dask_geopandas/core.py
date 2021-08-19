@@ -124,7 +124,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
                 lambda part: pygeos.convex_hull(
                     pygeos.geometrycollections(part.geometry.values.data)
                 )
-            ).compute(), crs=self.crs
+            ).compute(),
+            crs=self.crs,
         )
         self.spatial_partitions = parts
 
