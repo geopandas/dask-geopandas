@@ -403,10 +403,9 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         by : string, default None
             Column whose values define groups to be dissolved. If None,
             whole GeoDataFrame is considered a single group.
-        aggfunc : function or string, default "first"
+        aggfunc : function,  string or dict, default "first"
             Aggregation function for manipulation of data associated
             with each group. Passed to dask `groupby.agg` method.
-            The same `aggfunc` is applied to all columns apart from active geometry.
         split_out : int, default 1
             Number of partitions of the output
 
@@ -422,7 +421,12 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         merge_geometries = dd.Aggregation(
             "merge_geometries", lambda s: s.agg(union), lambda s0: s0.agg(union)
         )
-        data_agg = {col: aggfunc for col in self.columns.drop([by, self.geometry.name])}
+        if isinstance(aggfunc, dict):
+            data_agg = aggfunc
+        else:
+            data_agg = {
+                col: aggfunc for col in self.columns.drop([by, self.geometry.name])
+            }
         data_agg[self.geometry.name] = merge_geometries
         aggregated = self.groupby(by=by, **kwargs).agg(
             data_agg,
