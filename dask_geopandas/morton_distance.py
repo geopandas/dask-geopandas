@@ -67,7 +67,7 @@ def _part1by1(n):
     n : int
         Interleaved bits
     """
-
+    n &= 0x0000FFFF
     n = (n | (n << 8)) & 0x00FF00FF
     n = (n | (n << 4)) & 0x0F0F0F0F
     n = (n | (n << 2)) & 0x33333333
