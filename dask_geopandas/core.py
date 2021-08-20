@@ -319,7 +319,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def cx(self):
         return _CoordinateIndexer(self)
 
-    
     def hilbert_distance(self, p=15):
 
         """
@@ -350,7 +349,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         )
 
         return distances
-
 
     def morton_distance(self, p=15):
 
@@ -393,8 +391,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         )
 
         return distances
-    
-    
+
     def geohash(self, precision=15):
 
         """
