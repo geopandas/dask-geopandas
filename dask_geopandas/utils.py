@@ -1,12 +1,11 @@
 def _calculate_mid_points(bounds):
     """
-    Calculate geohash based on the mid points of each geometry
+    Calculate middle points based on the geometry bounds
 
     Parameters
     ----------
-    gdf : GeoDataFrame
-    precision : int
-        precision of the Geohash
+    bounds : array_like
+        array containing xmin, ymin, xmax, ymax
 
     Returns
     ---------
