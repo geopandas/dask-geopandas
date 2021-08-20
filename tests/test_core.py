@@ -408,12 +408,12 @@ class TestDissolve:
         )
         self.ddf = dask_geopandas.from_geopandas(self.world, npartitions=4)
 
-    def test_dissolve(self):
+    def test_default(self):
         gpd_default = self.world.dissolve("continent")
         dd_default = self.ddf.dissolve("continent").compute()
         assert_geodataframe_equal(gpd_default, dd_default, check_like=True)
 
-    def test_dissolve_sum(self):
+    def test_sum(self):
         gpd_sum = self.world.dissolve("continent", aggfunc="sum")
         dd_sum = self.ddf.dissolve("continent", aggfunc="sum").compute()
         # drop due to https://github.com/geopandas/geopandas/issues/1999
@@ -421,13 +421,13 @@ class TestDissolve:
             gpd_sum, dd_sum.drop(columns=["name", "iso_a3"]), check_like=True
         )
 
-    def test_dissolve_split_out(self):
+    def test_split_out(self):
         gpd_default = self.world.dissolve("continent")
         dd_split = self.ddf.dissolve("continent", split_out=4)
         assert dd_split.npartitions == 4
         assert_geodataframe_equal(gpd_default, dd_split.compute(), check_like=True)
 
-    def test_dissolve_dict(self):
+    def test_dict(self):
         aggfunc = {
             "pop_est": "min",
             "name": "first",
@@ -438,3 +438,8 @@ class TestDissolve:
 
         dd_dict = self.ddf.dissolve("continent", aggfunc=aggfunc).compute()
         assert_geodataframe_equal(gpd_dict, dd_dict, check_like=True)
+
+    def test_by_none(self):
+        gpd_none = self.world.dissolve()
+        dd_none = self.ddf.dissolve().compute()
+        assert_geodataframe_equal(gpd_none, dd_none, check_like=True)

@@ -452,13 +452,30 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         aggfunc : function,  string or dict, default "first"
             Aggregation function for manipulation of data associated
             with each group. Passed to dask `groupby.agg` method.
+            Note that ``aggfunc`` needs to be applicable to all column (i.e. ``"mean:``
+            cannot be used with string dtype). Select only required columns before
+            ``dissolve`` or pass a dictionary mapping ``aggfunc`` to each column
+            separately.
         split_out : int, default 1
             Number of partitions of the output
 
         **kwargs
             keyword arguments passed to `groupby`
 
+        Examples
+        --------
+        >>> ddf.dissolve("foo", split_out=12)
+
+        >>> ddf[["foo", "bar", "geometry"]].dissolve("foo", aggfunc="mean")
+
+        >>> ddf.dissolve("foo", aggfunc={"bar": "mean", "baz": "first"})
+
         """
+        if by is None:
+            by = lambda x: 0
+            drop = [self.geometry.name]
+        else:
+            drop = [by, self.geometry.name]
 
         def union(block):
             merged_geom = block.unary_union
@@ -470,9 +487,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         if isinstance(aggfunc, dict):
             data_agg = aggfunc
         else:
-            data_agg = {
-                col: aggfunc for col in self.columns.drop([by, self.geometry.name])
-            }
+            data_agg = {col: aggfunc for col in self.columns.drop(drop)}
         data_agg[self.geometry.name] = merge_geometries
         aggregated = self.groupby(by=by, **kwargs).agg(
             data_agg,
