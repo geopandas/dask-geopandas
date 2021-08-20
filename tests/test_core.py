@@ -334,6 +334,30 @@ def test_set_geometry_property_on_geodf(geodf_points):
     assert all(df.geometry == df.foo)
 
 
+def test_meta(geodf_points_crs):
+    df = geodf_points_crs
+    dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)
+
+    def check_meta(gdf, name):
+        assert isinstance(gdf, geopandas.GeoDataFrame)
+        assert isinstance(gdf.geometry, geopandas.GeoSeries)
+        assert gdf.crs == df.crs
+        assert gdf._geometry_column_name == name
+
+    meta = dask_obj._meta
+    check_meta(meta, "geometry")
+    meta_non_empty = dask_obj._meta_nonempty
+    check_meta(meta_non_empty, "geometry")
+
+    # with non-default geometry name
+    df = df.rename_geometry("foo")
+    dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)
+    meta = dask_obj._meta
+    check_meta(meta, "foo")
+    meta_non_empty = dask_obj._meta_nonempty
+    check_meta(meta_non_empty, "foo")
+
+
 def test_to_crs_geodf(geodf_points_crs):
     df = geodf_points_crs
     dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)
@@ -397,3 +421,16 @@ def test_geoseries_apply(geoseries_polygons):
 def test_geodataframe_html_repr(geodf_points):
     dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
     assert "Dask-GeoPandas GeoDataFrame" in dask_obj._repr_html_()
+
+
+def test_map_partitions_get_geometry(geodf_points):
+    # https://github.com/geopandas/dask-geopandas/issues/100
+    df = geodf_points.rename_geometry("foo")
+    dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)
+
+    def get_geometry(partition):
+        return partition.geometry
+
+    result = dask_obj.map_partitions(get_geometry).compute()
+    expected = dask_obj.geometry.compute()
+    assert_geoseries_equal(result, expected)
