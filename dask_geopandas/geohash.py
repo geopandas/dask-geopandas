@@ -218,6 +218,6 @@ def _encode_unicode(encoded_base32, precision):
     encoded_base32 = np.where(encoded_base32 == 30, 121, encoded_base32)  # y
     encoded_base32 = np.where(encoded_base32 == 31, 122, encoded_base32)  # z
 
-    encoded_base32.dtype = np.dtype("|S12")
+    encoded_base32 = encoded_base32.view(np.dtype("|S12"))
 
-    return encoded_base32.flatten().astype("U%s" % precision)
+    return encoded_base32.flatten().astype(f"U{precision}")
