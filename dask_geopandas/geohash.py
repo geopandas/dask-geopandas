@@ -49,7 +49,7 @@ def encode_geohash(coords, precision):
 
     Returns
     ---------
-    geohash: array containing geohashes for each coordinate
+    geohash: array containing geohashes for each mid point
     """
 
     quantized_coords = _encode_quantize_points(coords)
@@ -95,8 +95,8 @@ def _encode_into_uint64(quantized_coords):
 
     Parameters
     ----------
-    quantized_mat : array_like
-        coordinate pairs
+    quantized_coords : array_like
+        quantized coordinate pairs
 
     Returns
     ---------
@@ -137,15 +137,16 @@ def _encode_base32(g_uint64):
 
     Implementation based on "Geohash in Golang Assembly"
     blog (https://mmcloughlin.com/posts/geohash-assembly)
+    
     Parameters
     ----------
-    quantized_mat : array_like
-        coordinate pairs
+    g_uint64 : array_like
+        coordinate pairs encoded to uint64 values
 
     Returns
     ---------
-    quantized_coords : array_like
-        quantized coordinate pairs
+    array_like of shape (n, 12)
+        with encoded base32 values
     """
 
     mask = np.uint64(0x1F)  # equivelant to 32-1
@@ -168,11 +169,8 @@ def _encode_base32(g_uint64):
 
 def _encode_unicode(gs_uint8_mat, precision):
     """
-    Encode uint64 encoded values into unicode values
-
-    Implementation based on "Geohash in Golang Assembly"
-    blog (https://mmcloughlin.com/posts/geohash-assembly)
-
+    Encode base32 pairs into unicode string 
+    
     Parameters
     ----------
     gs_uint8_mat : array_like
@@ -182,7 +180,8 @@ def _encode_unicode(gs_uint8_mat, precision):
 
     Returns
     ---------
-    array_like containing geohash
+    array_like of shape (n, precision)
+        containing geohash for a given precision
     """
 
     # Replacement values
