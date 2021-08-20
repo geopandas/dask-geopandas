@@ -14,6 +14,9 @@ dependencies:
   - pytest
   - pytest-cov
   - hilbertcurve
+  - s3fs
+  - moto
+  - flask  # needed for moto server
   # optional dependencies
   - pyarrow
   - pip
