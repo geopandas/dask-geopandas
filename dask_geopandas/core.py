@@ -11,7 +11,10 @@ from dask.base import tokenize
 import geopandas
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
+import pygeos
+
 from .hilbert_distance import _hilbert_distance
+from .morton_distance import _morton_distance
 
 
 def _set_crs(df, crs, allow_override):
@@ -66,10 +69,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def __dask_postpersist__(self):
         return type(self), (self._name, self._meta, self.divisions)
 
-    def __repr__(self):
-        s = "<dask_geopandas.%s | %d tasks | %d npartitions>"
-        return s % (type(self).__name__, len(self.dask), self.npartitions)
-
     @classmethod
     def _bind_property(cls, attr, preserve_spatial_partitions=False):
         """Map property to partitions and bind to class"""
@@ -117,9 +116,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         # TEMP method to calculate spatial partitions for testing, need to
         # add better methods (set_partitions / repartition)
         parts = geopandas.GeoSeries(
-            self.map_partitions(lambda part: part.convex_hull.unary_union).compute()
+            self.map_partitions(
+                lambda part: pygeos.convex_hull(
+                    pygeos.geometrycollections(part.geometry.values.data)
+                )
+            ).compute(),
+            crs=self.crs,
         )
-        self.spatial_partitions = parts.convex_hull
+        self.spatial_partitions = parts
 
     def _propagate_spatial_partitions(self, new_object):
         """
@@ -339,6 +343,48 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             total_bounds=total_bounds,
             p=p,
             meta=pd.Series([], name="hilbert_distance", dtype="int"),
+        )
+
+        return distances
+
+    def morton_distance(self, p=15):
+
+        """
+        Calculate the distance of geometries along the Morton curve
+
+        The Morton curve is also known as Z-order https://en.wikipedia.org/wiki/Z-order.
+
+        The Morton distance can be used to spatially partition Dask-GeoPandas objects,
+        by mapping two-dimensional geometries along the Morton space-filing curve.
+
+        Each geometry is represented by the midpoint of its bounds and linked to the
+        Morton curve. The function returns a distance from the beginning
+        of the curve to the linked point.
+
+        Morton distance is more performant than ``hilbert_distance`` but can result in
+        less optimal partitioning.
+
+        Parameters
+        ----------
+
+        p : int
+            precision of the Morton curve
+
+        Returns
+        ----------
+        type : dask.Series
+            Series containing distances along the Morton curve
+        """
+
+        # Compute total bounds of all partitions rather than each partition
+        total_bounds = self.total_bounds
+
+        # Calculate Morton distances for each partition
+        distances = self.map_partitions(
+            _morton_distance,
+            total_bounds=total_bounds,
+            p=p,
+            meta=pd.Series([], name="morton_distance", dtype="int"),
         )
 
         return distances

@@ -16,3 +16,6 @@ dependencies:
   - hilbertcurve
   # optional dependencies
   - pyarrow
+  - pip
+  - pip:
+    - pymorton
