@@ -88,7 +88,9 @@ def _encode_quantize_points(coords):
 
 def _encode_into_uint64(quantized_coords):
     """
+
     Encode quantized coordinates into uint64
+    using both spreading and interleaving bits
 
     Implementation based on "Geohash in Golang Assembly"
     blog (https://mmcloughlin.com/posts/geohash-assembly)
@@ -105,37 +107,32 @@ def _encode_into_uint64(quantized_coords):
         quantized coordinate pairs
     """
 
+    # spread out 32 bits of x into 64 bits, where the bits occupy even bit positions.
+    x = np.uint64(quantized_coords)
+    x = x.reshape(-1, 2)
+    x = (x | (x << 16)) & 0x0000FFFF0000FFFF
+    x = (x | (x << 8)) & 0x00FF00FF00FF00FF
+    x = (x | (x << 4)) & 0x0F0F0F0F0F0F0F0F
+    x = (x | (x << 2)) & 0x3333333333333333
+    x = (x | (x << 1)) & 0x5555555555555555
+
+    # Dot
     __s1 = np.array([(1, 0), (0, 2)], dtype="uint64")
+    x = x @ __s1
+    # Interleave x and y bits so that x and y occupy even and odd bit levels
+    x = x[:, 0] | x[:, 1]
+    x = x >> 4
 
-    g_uint64 = np.uint64(quantized_coords)
-    g_uint64 = g_uint64.reshape(-1, 2)
-    g_uint64 = np.bitwise_and(
-        np.bitwise_or(g_uint64, np.left_shift(g_uint64, 16)), 0x0000FFFF0000FFFF
-    )
-    g_uint64 = np.bitwise_and(
-        np.bitwise_or(g_uint64, np.left_shift(g_uint64, 8)), 0x00FF00FF00FF00FF
-    )
-    g_uint64 = np.bitwise_and(
-        np.bitwise_or(g_uint64, np.left_shift(g_uint64, 4)), 0x0F0F0F0F0F0F0F0F
-    )
-    g_uint64 = np.bitwise_and(
-        np.bitwise_or(g_uint64, np.left_shift(g_uint64, 2)), 0x3333333333333333
-    )
-    g_uint64 = np.bitwise_and(
-        np.bitwise_or(g_uint64, np.left_shift(g_uint64, 1)), 0x5555555555555555
-    )
-    g_uint64 = np.dot(g_uint64, __s1)
-    g_uint64 = np.bitwise_or(g_uint64[:, 0], g_uint64[:, 1])
-    g_uint64 = np.right_shift(g_uint64, 4)
-
-    return g_uint64
+    return x
 
 
-def _encode_base32(g_uint64):
+def _encode_base32(encoded_uint64):
     """
-    Encode quantized coordinates into uint64
+    Encode quantized coordinates into base32 pairs
+    Encoding starts at the highest bit, consuming 5 bits for each character precision.
+    This means encoding happens 12 times for the 12 character precision or 60 bits.
 
-    Implementation based on "Geohash in Golang Assembly"
+    Implementation is based on "Geohash in Golang Assembly"
     blog (https://mmcloughlin.com/posts/geohash-assembly)
 
     Parameters
@@ -146,30 +143,33 @@ def _encode_base32(g_uint64):
     Returns
     ---------
     array_like of shape (n, 12)
-        with encoded base32 values
+        with base 32 values of type unasigned integer
     """
+    # Define 32 bit mask
+    mask = np.uint64(0x1F).flatten()  # equivelant to 32-1
+    # Return array for each character
+    c11 = (encoded_uint64 >> 0) & mask
+    c10 = (encoded_uint64 >> 5) & mask
+    c9 = (encoded_uint64 >> 10) & mask
+    c8 = (encoded_uint64 >> 15) & mask
+    c7 = (encoded_uint64 >> 20) & mask
+    c6 = (encoded_uint64 >> 25) & mask
+    c5 = (encoded_uint64 >> 30) & mask
+    c4 = (encoded_uint64 >> 35) & mask
+    c3 = (encoded_uint64 >> 40) & mask
+    c2 = (encoded_uint64 >> 45) & mask
+    c1 = (encoded_uint64 >> 50) & mask
+    c0 = (encoded_uint64 >> 55) & mask
 
-    mask = np.uint64(0x1F)  # equivelant to 32-1
-
-    c11 = np.uint8(np.bitwise_and(np.right_shift([g_uint64], 0), mask)).flatten()
-    c10 = np.uint8(np.bitwise_and(np.right_shift([g_uint64], 5), mask)).flatten()
-    c9 = np.uint8(np.bitwise_and(np.right_shift([g_uint64], 10), mask)).flatten()
-    c8 = np.uint8(np.bitwise_and(np.right_shift([g_uint64], 15), mask)).flatten()
-    c7 = np.uint8(np.bitwise_and(np.right_shift([g_uint64], 20), mask)).flatten()
-    c6 = np.uint8(np.bitwise_and(np.right_shift([g_uint64], 25), mask)).flatten()
-    c5 = np.uint8(np.bitwise_and(np.right_shift([g_uint64], 30), mask)).flatten()
-    c4 = np.uint8(np.bitwise_and(np.right_shift([g_uint64], 35), mask)).flatten()
-    c3 = np.uint8(np.bitwise_and(np.right_shift([g_uint64], 40), mask)).flatten()
-    c2 = np.uint8(np.bitwise_and(np.right_shift([g_uint64], 45), mask)).flatten()
-    c1 = np.uint8(np.bitwise_and(np.right_shift([g_uint64], 50), mask)).flatten()
-    c0 = np.uint8(np.bitwise_and(np.right_shift([g_uint64], 55), mask)).flatten()
-
-    return np.column_stack((c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11))
+    # Stack each array vertically
+    return np.uint8(np.column_stack((c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11)))
 
 
-def _encode_unicode(gs_uint8_mat, precision):
+def _encode_unicode(encoded_base32, precision):
     """
     Encode base32 pairs into unicode string
+
+    tring geohash is obtained from the integer geohash by base32 encoding.
 
     Parameters
     ----------
@@ -185,39 +185,39 @@ def _encode_unicode(gs_uint8_mat, precision):
     """
 
     # Replacement values
-    gs_uint8 = np.where(gs_uint8_mat == 0, 48, gs_uint8_mat)  # 0
-    gs_uint8 = np.where(gs_uint8 == 1, 49, gs_uint8)  # 1
-    gs_uint8 = np.where(gs_uint8 == 2, 50, gs_uint8)  # 2
-    gs_uint8 = np.where(gs_uint8 == 3, 51, gs_uint8)  # 3
-    gs_uint8 = np.where(gs_uint8 == 4, 52, gs_uint8)  # 4
-    gs_uint8 = np.where(gs_uint8 == 5, 53, gs_uint8)  # 5
-    gs_uint8 = np.where(gs_uint8 == 6, 54, gs_uint8)  # 6
-    gs_uint8 = np.where(gs_uint8 == 7, 55, gs_uint8)  # 7
-    gs_uint8 = np.where(gs_uint8 == 8, 56, gs_uint8)  # 8
-    gs_uint8 = np.where(gs_uint8 == 9, 57, gs_uint8)  # 9
-    gs_uint8 = np.where(gs_uint8 == 10, 98, gs_uint8)  # b
-    gs_uint8 = np.where(gs_uint8 == 11, 99, gs_uint8)  # c
-    gs_uint8 = np.where(gs_uint8 == 12, 100, gs_uint8)  # d
-    gs_uint8 = np.where(gs_uint8 == 13, 101, gs_uint8)  # e
-    gs_uint8 = np.where(gs_uint8 == 14, 102, gs_uint8)  # f
-    gs_uint8 = np.where(gs_uint8 == 15, 103, gs_uint8)  # g
-    gs_uint8 = np.where(gs_uint8 == 16, 104, gs_uint8)  # h
-    gs_uint8 = np.where(gs_uint8 == 17, 106, gs_uint8)  # j
-    gs_uint8 = np.where(gs_uint8 == 18, 107, gs_uint8)  # k
-    gs_uint8 = np.where(gs_uint8 == 19, 109, gs_uint8)  # m
-    gs_uint8 = np.where(gs_uint8 == 20, 110, gs_uint8)  # n
-    gs_uint8 = np.where(gs_uint8 == 21, 112, gs_uint8)  # p
-    gs_uint8 = np.where(gs_uint8 == 22, 113, gs_uint8)  # q
-    gs_uint8 = np.where(gs_uint8 == 23, 114, gs_uint8)  # r
-    gs_uint8 = np.where(gs_uint8 == 24, 115, gs_uint8)  # s
-    gs_uint8 = np.where(gs_uint8 == 25, 116, gs_uint8)  # t
-    gs_uint8 = np.where(gs_uint8 == 26, 117, gs_uint8)  # u
-    gs_uint8 = np.where(gs_uint8 == 27, 118, gs_uint8)  # v
-    gs_uint8 = np.where(gs_uint8 == 28, 119, gs_uint8)  # w
-    gs_uint8 = np.where(gs_uint8 == 29, 120, gs_uint8)  # x
-    gs_uint8 = np.where(gs_uint8 == 30, 121, gs_uint8)  # y
-    gs_uint8 = np.where(gs_uint8 == 31, 122, gs_uint8)  # z
+    encoded_base32 = np.where(encoded_base32 == 0, 48, encoded_base32)  # 0
+    encoded_base32 = np.where(encoded_base32 == 1, 49, encoded_base32)  # 1
+    encoded_base32 = np.where(encoded_base32 == 2, 50, encoded_base32)  # 2
+    encoded_base32 = np.where(encoded_base32 == 3, 51, encoded_base32)  # 3
+    encoded_base32 = np.where(encoded_base32 == 4, 52, encoded_base32)  # 4
+    encoded_base32 = np.where(encoded_base32 == 5, 53, encoded_base32)  # 5
+    encoded_base32 = np.where(encoded_base32 == 6, 54, encoded_base32)  # 6
+    encoded_base32 = np.where(encoded_base32 == 7, 55, encoded_base32)  # 7
+    encoded_base32 = np.where(encoded_base32 == 8, 56, encoded_base32)  # 8
+    encoded_base32 = np.where(encoded_base32 == 9, 57, encoded_base32)  # 9
+    encoded_base32 = np.where(encoded_base32 == 10, 98, encoded_base32)  # b
+    encoded_base32 = np.where(encoded_base32 == 11, 99, encoded_base32)  # c
+    encoded_base32 = np.where(encoded_base32 == 12, 100, encoded_base32)  # d
+    encoded_base32 = np.where(encoded_base32 == 13, 101, encoded_base32)  # e
+    encoded_base32 = np.where(encoded_base32 == 14, 102, encoded_base32)  # f
+    encoded_base32 = np.where(encoded_base32 == 15, 103, encoded_base32)  # g
+    encoded_base32 = np.where(encoded_base32 == 16, 104, encoded_base32)  # h
+    encoded_base32 = np.where(encoded_base32 == 17, 106, encoded_base32)  # j
+    encoded_base32 = np.where(encoded_base32 == 18, 107, encoded_base32)  # k
+    encoded_base32 = np.where(encoded_base32 == 19, 109, encoded_base32)  # m
+    encoded_base32 = np.where(encoded_base32 == 20, 110, encoded_base32)  # n
+    encoded_base32 = np.where(encoded_base32 == 21, 112, encoded_base32)  # p
+    encoded_base32 = np.where(encoded_base32 == 22, 113, encoded_base32)  # q
+    encoded_base32 = np.where(encoded_base32 == 23, 114, encoded_base32)  # r
+    encoded_base32 = np.where(encoded_base32 == 24, 115, encoded_base32)  # s
+    encoded_base32 = np.where(encoded_base32 == 25, 116, encoded_base32)  # t
+    encoded_base32 = np.where(encoded_base32 == 26, 117, encoded_base32)  # u
+    encoded_base32 = np.where(encoded_base32 == 27, 118, encoded_base32)  # v
+    encoded_base32 = np.where(encoded_base32 == 28, 119, encoded_base32)  # w
+    encoded_base32 = np.where(encoded_base32 == 29, 120, encoded_base32)  # x
+    encoded_base32 = np.where(encoded_base32 == 30, 121, encoded_base32)  # y
+    encoded_base32 = np.where(encoded_base32 == 31, 122, encoded_base32)  # z
 
-    gs_uint8.dtype = np.dtype("|S12")
+    encoded_base32.dtype = np.dtype("|S12")
 
-    return gs_uint8.flatten().astype("U%s" % precision)
+    return encoded_base32.flatten().astype("U%s" % precision)
