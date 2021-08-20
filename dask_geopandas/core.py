@@ -67,10 +67,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def __dask_postpersist__(self):
         return type(self), (self._name, self._meta, self.divisions)
 
-    def __repr__(self):
-        s = "<dask_geopandas.%s | %d tasks | %d npartitions>"
-        return s % (type(self).__name__, len(self.dask), self.npartitions)
-
     @classmethod
     def _bind_property(cls, attr, preserve_spatial_partitions=False):
         """Map property to partitions and bind to class"""
