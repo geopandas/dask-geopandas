@@ -79,7 +79,7 @@ def _encode_quantize_points(coords):
 
     _q = np.array([(2.0 ** 32 / 180, 0), (0, 2.0 ** 32 / (180 * 2))], dtype="float64")
 
-    quantized_coords = coords + np.array((90, 180))
+    quantized_coords = coords + np.array([90, 180])
     quantized_coords = np.dot(quantized_coords, _q)
     quantized_coords = np.floor(quantized_coords)
 
@@ -108,7 +108,7 @@ def _encode_into_uint64(quantized_coords):
     """
 
     # spread out 32 bits of x into 64 bits, where the bits occupy even bit positions.
-    x = np.uint64(quantized_coords)
+    x = quantized_coords.astype(np.uint64)
     x = x.reshape(-1, 2)
     x = (x | (x << 16)) & 0x0000FFFF0000FFFF
     x = (x | (x << 8)) & 0x00FF00FF00FF00FF
@@ -184,39 +184,46 @@ def _encode_unicode(encoded_base32, precision):
         containing geohash for a given precision
     """
 
-    # Replacement values
-    encoded_base32 = np.where(encoded_base32 == 0, 48, encoded_base32)  # 0
-    encoded_base32 = np.where(encoded_base32 == 1, 49, encoded_base32)  # 1
-    encoded_base32 = np.where(encoded_base32 == 2, 50, encoded_base32)  # 2
-    encoded_base32 = np.where(encoded_base32 == 3, 51, encoded_base32)  # 3
-    encoded_base32 = np.where(encoded_base32 == 4, 52, encoded_base32)  # 4
-    encoded_base32 = np.where(encoded_base32 == 5, 53, encoded_base32)  # 5
-    encoded_base32 = np.where(encoded_base32 == 6, 54, encoded_base32)  # 6
-    encoded_base32 = np.where(encoded_base32 == 7, 55, encoded_base32)  # 7
-    encoded_base32 = np.where(encoded_base32 == 8, 56, encoded_base32)  # 8
-    encoded_base32 = np.where(encoded_base32 == 9, 57, encoded_base32)  # 9
-    encoded_base32 = np.where(encoded_base32 == 10, 98, encoded_base32)  # b
-    encoded_base32 = np.where(encoded_base32 == 11, 99, encoded_base32)  # c
-    encoded_base32 = np.where(encoded_base32 == 12, 100, encoded_base32)  # d
-    encoded_base32 = np.where(encoded_base32 == 13, 101, encoded_base32)  # e
-    encoded_base32 = np.where(encoded_base32 == 14, 102, encoded_base32)  # f
-    encoded_base32 = np.where(encoded_base32 == 15, 103, encoded_base32)  # g
-    encoded_base32 = np.where(encoded_base32 == 16, 104, encoded_base32)  # h
-    encoded_base32 = np.where(encoded_base32 == 17, 106, encoded_base32)  # j
-    encoded_base32 = np.where(encoded_base32 == 18, 107, encoded_base32)  # k
-    encoded_base32 = np.where(encoded_base32 == 19, 109, encoded_base32)  # m
-    encoded_base32 = np.where(encoded_base32 == 20, 110, encoded_base32)  # n
-    encoded_base32 = np.where(encoded_base32 == 21, 112, encoded_base32)  # p
-    encoded_base32 = np.where(encoded_base32 == 22, 113, encoded_base32)  # q
-    encoded_base32 = np.where(encoded_base32 == 23, 114, encoded_base32)  # r
-    encoded_base32 = np.where(encoded_base32 == 24, 115, encoded_base32)  # s
-    encoded_base32 = np.where(encoded_base32 == 25, 116, encoded_base32)  # t
-    encoded_base32 = np.where(encoded_base32 == 26, 117, encoded_base32)  # u
-    encoded_base32 = np.where(encoded_base32 == 27, 118, encoded_base32)  # v
-    encoded_base32 = np.where(encoded_base32 == 28, 119, encoded_base32)  # w
-    encoded_base32 = np.where(encoded_base32 == 29, 120, encoded_base32)  # x
-    encoded_base32 = np.where(encoded_base32 == 30, 121, encoded_base32)  # y
-    encoded_base32 = np.where(encoded_base32 == 31, 122, encoded_base32)  # z
+    # Define replacement values
+    replacement = np.array(
+        [
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            98,
+            99,
+            100,
+            101,
+            102,
+            103,
+            104,
+            106,
+            107,
+            109,
+            110,
+            112,
+            113,
+            114,
+            115,
+            116,
+            117,
+            118,
+            119,
+            120,
+            121,
+            122,
+        ],
+        dtype="uint8",
+    )
+
+    encoded_base32 = replacement[encoded_base32]
 
     encoded_base32 = encoded_base32.view(np.dtype("|S12"))
 
