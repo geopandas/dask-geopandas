@@ -20,6 +20,7 @@ dependencies:
   - pygeohash
   - pip
   - pip:
+    - pymorton
     - git+https://github.com/geopandas/geopandas.git@master
     - git+https://github.com/pygeos/pygeos.git@master
     - git+https://github.com/dask/dask.git@main
