@@ -137,7 +137,7 @@ def _encode_base32(g_uint64):
 
     Implementation based on "Geohash in Golang Assembly"
     blog (https://mmcloughlin.com/posts/geohash-assembly)
-    
+
     Parameters
     ----------
     g_uint64 : array_like
@@ -169,8 +169,8 @@ def _encode_base32(g_uint64):
 
 def _encode_unicode(gs_uint8_mat, precision):
     """
-    Encode base32 pairs into unicode string 
-    
+    Encode base32 pairs into unicode string
+
     Parameters
     ----------
     gs_uint8_mat : array_like
