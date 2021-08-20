@@ -392,7 +392,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return distances
 
-    def geohash(self, precision=15):
+    def geohash(self, precision=12):
 
         """
         A function that encodes geometry mid points using Geohash for a given precision
@@ -408,6 +408,13 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         type : pandas.Series
             Series containing Geohash
         """
+
+        if precision in range(1, 13, 1):
+            pass
+        else:
+            raise ValueError(
+                "The Geohash precision only accepts an integer value between 1 and 12"
+            )
 
         # Calculate hilbert distances for each partition
         geohashes = self.map_partitions(
