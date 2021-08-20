@@ -395,7 +395,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def geohash(self, precision=12):
 
         """
-        A function that encodes geometry mid points using Geohash for a given precision
+        Calculate geohash based on the middle points of the geometry bounds
+        for a given precision
 
         Parameters
         ----------
@@ -403,7 +404,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             precision of the Geohash
 
         Returns
-
         ----------
         type : pandas.Series
             Series containing Geohash
