@@ -30,6 +30,8 @@ def test_parquet_roundtrip(tmp_path):
     result = dask_geopandas.read_parquet(basedir)
     assert result.npartitions == 4
     assert_geodataframe_equal(result.compute(), df)
+    # reading back correctly sets the CRS in meta
+    assert result.crs == df.crs
     # reading back also populates the spatial partitioning property
     assert result.spatial_partitions is not None
 
