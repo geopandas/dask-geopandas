@@ -38,7 +38,7 @@ def geoseries_polygons():
 def geohash_dask(geoseries):
 
     precision = 12
-
+    raw = True
     bounds = geoseries.bounds.to_numpy()
     x_mids, y_mids = _calculate_mid_points(bounds)
 
@@ -47,7 +47,7 @@ def geohash_dask(geoseries):
     expected = geohash_vec(y_mids, x_mids, precision)
 
     ddf = from_geopandas(geoseries, npartitions=1)
-    result = ddf.geohash(precision).compute()
+    result = ddf.geohash(precision, raw).compute()
 
     assert_array_equal(np.array(result), expected)
     assert isinstance(result, pd.Series)
