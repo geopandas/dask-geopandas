@@ -1,9 +1,11 @@
 """
 Geohash implementation
 
-The code is originally based on the neathgeohash package, Copyright (c) 2020 Marek Dwulit, MIT License
+The code is originally based on the neathgeohash package,
+Copyright (c) 2020 Marek Dwulit, MIT License
 (https://pypi.org/project/neathgeohash/#description).
-The vectorized implementation for quantization and bit interleaving is in turn based on "Geohash in Golang Assembly" blog (https://mmcloughlin.com/posts/geohash-assembly).
+The vectorized implementation for quantization and bit interleaving is in turn based on,
+"Geohash in Golang Assembly" blog (https://mmcloughlin.com/posts/geohash-assembly).
 
 """
 import numpy as np
