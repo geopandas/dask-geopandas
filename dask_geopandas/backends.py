@@ -57,7 +57,7 @@ def _nonempty_geoseries(x, idx=None):
 @meta_nonempty.register(geopandas.GeoDataFrame)
 def _nonempty_geodataframe(x):
     df = meta_nonempty_dataframe(x)
-    return geopandas.GeoDataFrame(df, crs=x.crs)
+    return geopandas.GeoDataFrame(df, geometry=x._geometry_column_name, crs=x.crs)
 
 
 @make_meta_dispatch.register((geopandas.GeoSeries, geopandas.GeoDataFrame))

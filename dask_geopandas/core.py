@@ -11,6 +11,8 @@ from dask.base import tokenize
 import geopandas
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
+import pygeos
+
 from .hilbert_distance import _hilbert_distance
 from .morton_distance import _morton_distance
 
@@ -73,10 +75,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def __dask_postpersist__(self):
         return type(self), (self._name, self._meta, self.divisions)
 
-    def __repr__(self):
-        s = "<dask_geopandas.%s | %d tasks | %d npartitions>"
-        return s % (type(self).__name__, len(self.dask), self.npartitions)
-
     @classmethod
     def _bind_property(cls, attr, preserve_spatial_partitions=False):
         """Map property to partitions and bind to class"""
@@ -124,9 +122,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         # TEMP method to calculate spatial partitions for testing, need to
         # add better methods (set_partitions / repartition)
         parts = geopandas.GeoSeries(
-            self.map_partitions(lambda part: part.convex_hull.unary_union).compute()
+            self.map_partitions(
+                lambda part: pygeos.convex_hull(
+                    pygeos.geometrycollections(part.geometry.values.data)
+                )
+            ).compute(),
+            crs=self.crs,
         )
-        self.spatial_partitions = parts.convex_hull
+        self.spatial_partitions = parts
 
     def _propagate_spatial_partitions(self, new_object):
         """
@@ -452,7 +455,11 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         self.dask = new.dask
 
     def set_geometry(self, col):
-        return self.map_partitions(M.set_geometry, col)
+        # calculate ourselves to use meta and not meta_nonempty, which would
+        # raise an error if meta is an invalid GeoDataFrame (e.g. geometry
+        # column name not yet set correctly)
+        meta = self._meta.set_geometry(col)
+        return self.map_partitions(M.set_geometry, col, meta=meta)
 
     def __getitem__(self, key):
         """
