@@ -389,6 +389,60 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return distances
 
+    def shuffle(self, by="hilbert", column=None, drop=True, npartitions=10, **kwargs):
+
+        """
+        A function that spatially shuffles a Dask-GeoSeries object by a method
+        or a user-defined column
+
+        Parameters
+        ----------
+        by : str
+            partitioning method
+        column : str
+            precomputed column
+        drop : bool
+            to drop the partitioning information held in index
+        npartitions : int
+            number to partition DataFrame
+
+        Returns
+        ----------
+        dask Series :
+            Sorted Dask-GeoPandas Series
+        """
+
+        if column is None:
+            # Calculate partition methods
+            if by == "hilbert":
+                self[by] = self.hilbert_distance(**kwargs)
+            elif by == "morton":
+                self[by] = self.morton_distance(**kwargs)
+            elif by == "geohash":
+                self[by] = self.geohash(**kwargs)
+            else:
+                raise ValueError(
+                    "Spatial partitioning only supports 'hilbert', 'morton' and 'geohash' methods"
+                )
+
+            ddf = self.set_index(by, drop=drop, sorted=False, npartitions=npartitions)
+
+        elif column is not None:
+            ddf = self.set_index(
+                column, drop=drop, sorted=True, npartitions=npartitions
+            )
+
+        # Calculate convex hull of each partition
+        ddf.calculate_spatial_partitions()
+
+        # Optional drop index
+        if drop is True:
+            ddf = ddf.reset_index()
+        else:
+            pass
+
+        return ddf
+
 
 class GeoSeries(_Frame, dd.core.Series):
     _partition_type = geopandas.GeoSeries
