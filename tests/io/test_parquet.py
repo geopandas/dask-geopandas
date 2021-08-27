@@ -46,6 +46,26 @@ def test_parquet_roundtrip(tmp_path):
     assert_geodataframe_equal(result_part0, df.iloc[:45])
 
 
+def test_roundtrip_geometry_column_name(tmp_path):
+    # basic roundtrip with different geometry column name
+    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = df.rename_geometry("geom")
+    ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+    assert ddf.geometry.name == "geom"
+
+    basedir = tmp_path / "dataset"
+    ddf.to_parquet(basedir)
+
+    result = dask_geopandas.read_parquet(basedir)
+    assert isinstance(result, dask_geopandas.GeoDataFrame)
+    assert result.geometry.name == "geom"
+    assert result.crs == df.crs
+    assert result.spatial_partitions is not None
+    # TODO this reset_index should not be necessary
+    result_gpd = result.compute().reset_index(drop=True)
+    assert_geodataframe_equal(result_gpd, df)
+
+
 def test_column_selection_push_down(tmp_path):
     # set up dataset
     df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
