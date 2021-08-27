@@ -19,13 +19,13 @@ if TYPE_CHECKING:
     import pyarrow
 
 
-def _get_partition_bounds(part):
+def _get_partition_bounds(part, fs):
     """
     Based on the part information gathered by dask, get the partition bounds
     if available.
 
     """
-    from pyarrow.parquet import read_metadata
+    from pyarrow.parquet import ParquetFile
 
     # read the metadata from the actual file (this is again file IO, but
     # we can't rely on the schema metadata, because this is only the
@@ -34,7 +34,8 @@ def _get_partition_bounds(part):
     if "piece" in part:
         path = part["piece"][0]
         if isinstance(path, str):
-            pq_metadata = read_metadata(path)
+            with fs.open(path, "rb") as f:
+                pq_metadata = ParquetFile(f).metadata
     if pq_metadata is None:
         return None
 
@@ -57,9 +58,12 @@ class GeoArrowEngine(ArrowEngine):
     @classmethod
     def read_metadata(cls, *args, **kwargs):
         meta, stats, parts, index = super().read_metadata(*args, **kwargs)
+        fs = args[0]
 
         # get spatial partitions if available
-        regions = geopandas.GeoSeries([_get_partition_bounds(part) for part in parts])
+        regions = geopandas.GeoSeries(
+            [_get_partition_bounds(part, fs) for part in parts]
+        )
         if regions.notna().all():
             # a bit hacky, but this allows us to get this passed through
             meta.attrs["spatial_partitions"] = regions
