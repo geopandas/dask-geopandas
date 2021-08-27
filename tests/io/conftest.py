@@ -25,14 +25,6 @@ def ensure_safe_environment_variables():
         os.environ.update(saved_environ)
 
 
-@pytest.fixture
-def s3so():
-    return {"client_kwargs": {"endpoint_url": "http://127.0.0.1:5555/"}}
-
-
-endpoint_uri = "http://127.0.0.1:5555/"
-
-
 @pytest.fixture(scope="session")
 def s3_server():
     """
@@ -46,6 +38,8 @@ def s3_server():
     pytest.importorskip("flask")  # server mode needs flask too
     requests = pytest.importorskip("requests")
     logging.getLogger("requests").disabled = True
+
+    endpoint_url = "http://127.0.0.1:5555/"
 
     with ensure_safe_environment_variables():
         os.environ["AWS_ACCESS_KEY_ID"] = "testing"
@@ -66,7 +60,7 @@ def s3_server():
         while True:
             try:
                 # OK to go once server is accepting connections
-                r = requests.get(endpoint_uri)
+                r = requests.get(endpoint_url)
                 if r.ok:
                     break
             except Exception:
@@ -74,7 +68,7 @@ def s3_server():
             timeout -= 0.1
             time.sleep(0.1)
             assert timeout > 0, "Timed out waiting for moto server"
-        yield endpoint_uri
+        yield endpoint_url
 
         # shut down external process
         proc.terminate()
@@ -87,21 +81,9 @@ def s3_server():
                 subprocess.call("TASKKILL /F /PID {pid} /T".format(pid=proc.pid))
 
 
-# @contextmanager
-# def s3_context(bucket=test_bucket_name, files=files):
-#     client = boto3.client("s3", endpoint_url=endpoint_uri)
-#     client.create_bucket(Bucket=bucket, ACL="public-read-write")
-#     for f, data in files.items():
-#         client.put_object(Bucket=bucket, Key=f, Body=data)
-#     fs = s3fs.S3FileSystem(
-#         anon=True, client_kwargs={"endpoint_url": "http://127.0.0.1:5555/"}
-#     )
-#     s3fs.S3FileSystem.clear_instance_cache()
-#     fs.invalidate_cache()
-#     try:
-#         yield fs
-#     finally:
-#         fs.rm(bucket, recursive=True)
+@pytest.fixture
+def s3_storage_options():
+    return {"client_kwargs": {"endpoint_url": "http://127.0.0.1:5555/"}}
 
 
 @pytest.fixture()

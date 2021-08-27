@@ -67,7 +67,7 @@ def test_column_selection_push_down(tmp_path):
     assert s.max().compute() == df["pop_est"].max()
 
 
-def test_parquet_roundtrip_s3(s3_resource, s3so):
+def test_parquet_roundtrip_s3(s3_resource, s3_storage_options):
     fs, endpoint_url = s3_resource
 
     # basic roundtrip
@@ -75,11 +75,10 @@ def test_parquet_roundtrip_s3(s3_resource, s3so):
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
 
     uri = "s3://geopandas-test/dataset.parquet"
-
-    ddf.to_parquet(uri, storage_options=s3so)
+    ddf.to_parquet(uri, storage_options=s3_storage_options)
 
     # reading back gives identical GeoDataFrame
-    result = dask_geopandas.read_parquet(uri, storage_options=s3so)
+    result = dask_geopandas.read_parquet(uri, storage_options=s3_storage_options)
     assert result.npartitions == 4
     assert_geodataframe_equal(result.compute(), df)
     # reading back correctly sets the CRS in meta
