@@ -4,6 +4,7 @@ import dask.dataframe as dd
 
 import pytest
 from geopandas.testing import assert_geodataframe_equal
+from pandas.testing import assert_series_equal
 
 
 pa = pytest.importorskip("pyarrow")
@@ -44,6 +45,28 @@ def test_parquet_roundtrip(tmp_path):
     result_part0 = geopandas.read_parquet(basedir / "part.0.parquet")
     result_part0.index.name = None
     assert_geodataframe_equal(result_part0, df.iloc[:45])
+
+
+def test_roundtrip_multiple_geometry_columns(tmp_path):
+    # basic roundtrip with different geometry column name
+    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df["geometry2"] = df.geometry.representative_point()
+    ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+
+    basedir = tmp_path / "dataset"
+    ddf.to_parquet(basedir)
+
+    result = dask_geopandas.read_parquet(basedir)
+    assert isinstance(result, dask_geopandas.GeoDataFrame)
+    assert result.crs == df.crs
+    assert result.spatial_partitions is not None
+    # TODO this reset_index should not be necessary
+    result_gpd = result.compute().reset_index(drop=True)
+    assert_geodataframe_equal(result_gpd, df)
+
+    # ensure the geometry2 column is also considered as geometry in meta
+    assert_series_equal(result.dtypes, df.dtypes)
+    assert isinstance(result["geometry2"], dask_geopandas.GeoSeries)
 
 
 def test_column_selection_push_down(tmp_path):
