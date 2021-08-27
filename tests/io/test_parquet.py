@@ -50,9 +50,22 @@ def test_roundtrip_geometry_column_name(tmp_path):
     # basic roundtrip with different geometry column name
     df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
     df = df.rename_geometry("geom")
+
+    # geopandas -> dask-geopandas roundtrip
+    path = tmp_path / "data.parquet"
+    df.to_parquet(path)
+    result = dask_geopandas.read_parquet(path)
+    assert isinstance(result, dask_geopandas.GeoDataFrame)
+    assert result.geometry.name == "geom"
+    assert result.crs == df.crs
+    assert result.spatial_partitions is not None
+    # TODO this reset_index should not be necessary
+    result_gpd = result.compute().reset_index(drop=True)
+    assert_geodataframe_equal(result_gpd, df)
+
+    # dask-geopandas -> dask-geopandas roundtrip
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
     assert ddf.geometry.name == "geom"
-
     basedir = tmp_path / "dataset"
     ddf.to_parquet(basedir)
 
