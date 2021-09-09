@@ -405,7 +405,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         ----------
         precision : int
             precision of the Geohash
-
+        raw : bool
+            to convert S12 bytes to unicode type
         Returns
         ----------
         type : pandas.Series
