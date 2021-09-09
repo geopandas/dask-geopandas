@@ -420,7 +420,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             _geohash,
             precision=precision,
             raw=raw,
-            meta=pd.Series([], name="geohash", dtype="str"),
+            meta=pd.Series([], name="geohash", dtype=object),
         )
 
         return geohashes
