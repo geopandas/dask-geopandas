@@ -6,7 +6,7 @@ def _morton_distance(gdf, total_bounds, p):
     """
     Calculate distance of geometries along Morton curve
 
-    The Morton curve is also known as Z-order https://en.wikipedia.org/wiki/Z-order
+    The Morton curve is also known as Z-order https://en.wikipedia.org/wiki/Z-order_curve
 
     Parameters
     ----------
