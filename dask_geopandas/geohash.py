@@ -26,8 +26,8 @@ def _geohash(gdf, precision, raw):
     gdf : GeoDataFrame
     precision : int
         precision of the Geohash
-    raw : bool
-        to convert S12 bytes to unicode type
+    raw : bool, default True
+        Set to False to convert the `S12` bytes to unicode strings.
     Returns
     ---------
     type : pandas.Series
