@@ -416,7 +416,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
                     "The Geohash precision only accepts an integer value between 1 and 12"
                 )
 
-        # Calculate hilbert distances for each partition
         geohashes = self.map_partitions(
             _geohash,
             precision=precision,
