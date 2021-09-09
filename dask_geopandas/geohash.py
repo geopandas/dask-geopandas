@@ -174,7 +174,7 @@ def _encode_base32(encoded_uint64):
     c0 = (encoded_uint64 >> 55) & mask
 
     # Stack each array vertically
-    return np.uint8(np.column_stack((c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11)))
+    return np.column_stack((c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11)).astype("uint8")
 
 
 def _encode_unicode(encoded_base32, precision, raw=False):
