@@ -73,14 +73,18 @@ class GeoArrowEngine(ArrowEngine):
         )
         if schema.metadata and b"geo" in schema.metadata:
             geo_meta = json.loads(schema.metadata[b"geo"])
-            crs = geo_meta["columns"][geo_meta["primary_column"]]["crs"]
+            geometry_column_name = geo_meta["primary_column"]
+            crs = geo_meta["columns"][geometry_column_name]["crs"]
         else:
+            # TODO we could allow the user to pass those explicitly if not
+            # stored in the metadata
+            geometry_column_name = None
             crs = None
 
         # Update meta to be a GeoDataFrame
         # TODO convert columns based on GEO metadata (this will now only work
         # for a default "geometry" column)
-        meta = geopandas.GeoDataFrame(meta, crs=crs)
+        meta = geopandas.GeoDataFrame(meta, geometry=geometry_column_name, crs=crs)
         return meta, index_cols, categories, index, partition_info
 
     @classmethod
