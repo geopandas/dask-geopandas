@@ -113,6 +113,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         setattr(cls, name, derived_from(original)(meth))
 
     def calculate_spatial_partitions(self):
+        """Calculate spatial partitions"""
         # TEMP method to calculate spatial partitions for testing, need to
         # add better methods (set_partitions / repartition)
         parts = geopandas.GeoSeries(
@@ -314,6 +315,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     @property
     def cx(self):
+        """
+        Coordinate based indexer to select by intersection with bounding box.
+
+        Format of input should be ``.cx[xmin:xmax, ymin:ymax]``. Any of
+        ``xmin``, ``xmax``, ``ymin``, and ``ymax`` can be provided, but input
+        must include a comma separating x and y slices. That is, ``.cx[:, :]``
+        will return the full series/frame, but ``.cx[:]`` is not implemented.
+        """
         return _CoordinateIndexer(self)
 
     def hilbert_distance(self, p=15):
@@ -331,7 +340,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Returns
         ----------
-        Distances for each partition
+        dask.Series
+            Series containing distances for each partition
         """
 
         # Compute total bounds of all partitions rather than each partition
@@ -372,7 +382,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Returns
         ----------
-        type : dask.Series
+        dask.Series
             Series containing distances along the Morton curve
         """
 
@@ -391,10 +401,22 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
 
 class GeoSeries(_Frame, dd.core.Series):
+    """Parallel GeoPandas GeoSeries
+
+    Do not use this class directly. Instead use functions like
+    :func:`dask_geopandas.read_parquet`,or :func:`dask_geopandas.from_geopandas`.
+    """
+
     _partition_type = geopandas.GeoSeries
 
 
 class GeoDataFrame(_Frame, dd.core.DataFrame):
+    """Parallel GeoPandas GeoDataFrame
+
+    Do not use this class directly. Instead use functions like
+    :func:`dask_geopandas.read_parquet`,or :func:`dask_geopandas.from_geopandas`.
+    """
+
     _partition_type = geopandas.GeoDataFrame
 
     @property
@@ -450,6 +472,7 @@ from_geopandas = dd.from_pandas
 
 
 def from_dask_dataframe(df):
+    """Create GeoDataFrame from DataFrame"""
     return df.map_partitions(geopandas.GeoDataFrame)
 
 
