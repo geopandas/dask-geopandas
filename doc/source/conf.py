@@ -15,6 +15,12 @@
 # sys.path.insert(0, os.path.abspath('.'))
 import dask_geopandas  # noqa
 
+autodoc_mock_imports = [
+    "pygeos",
+    "dask",
+    "numba",
+]
+
 # -- Project information -----------------------------------------------------
 
 project = "dask-geopandas"
@@ -40,10 +46,7 @@ extensions = [
 
 numpydoc_show_class_members = False
 autosummary_generate = True
-
-nbsphinx_execute = "auto"
-nbsphinx_allow_errors = True
-nbsphinx_kernel_name = "python3"
+jupyter_execute_notebooks = "off"
 
 
 def setup(app):

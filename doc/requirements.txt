@@ -1,0 +1,7 @@
+geopandas
+numpydoc
+pydata_sphinx_theme
+myst-nb
+myst-parser
+sphinx_copybutton
+sphinx
