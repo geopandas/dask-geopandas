@@ -64,3 +64,13 @@ def test_geohash_lines(geoseries_lines):
 
 def test_geohash_polygons(geoseries_polygons):
     geohash_dask(geoseries_polygons)
+
+
+def test_geohash_range():
+
+    geoseries = geoseries_points()
+    ddf = from_geopandas(geoseries, npartitions=1)
+
+    with pytest.raises(ValueError):
+        ddf.geohash(precision=0, raw=True)
+        ddf.geohash(precision=13, raw=True)

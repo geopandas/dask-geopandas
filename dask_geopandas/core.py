@@ -411,9 +411,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         if precision in range(1, 13, 1):
             pass
         else:
-            raise ValueError(
-                "The Geohash precision only accepts an integer value between 1 and 12"
-            )
+            if precision not in range(1, 13, 1):
+                raise ValueError(
+                    "The Geohash precision only accepts an integer value between 1 and 12"
+                )
 
         # Calculate hilbert distances for each partition
         geohashes = self.map_partitions(
