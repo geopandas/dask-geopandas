@@ -58,11 +58,6 @@ class GeoArrowEngine(ArrowEngine):
     def read_metadata(cls, *args, **kwargs):
         meta, stats, parts, index = super().read_metadata(*args, **kwargs)
 
-        # Update meta to be a GeoDataFrame
-        # TODO convert columns based on GEO metadata (this will now only work
-        # for a default "geometry" column)
-        meta = geopandas.GeoDataFrame(meta)
-
         # get spatial partitions if available
         regions = geopandas.GeoSeries([_get_partition_bounds(part) for part in parts])
         if regions.notna().all():
@@ -70,6 +65,27 @@ class GeoArrowEngine(ArrowEngine):
             meta.attrs["spatial_partitions"] = regions
 
         return (meta, stats, parts, index)
+
+    @classmethod
+    def _generate_dd_meta(cls, schema, index, categories, partition_info):
+        meta, index_cols, categories, index, partition_info = super()._generate_dd_meta(
+            schema, index, categories, partition_info
+        )
+        if schema.metadata and b"geo" in schema.metadata:
+            geo_meta = json.loads(schema.metadata[b"geo"])
+            geometry_column_name = geo_meta["primary_column"]
+            crs = geo_meta["columns"][geometry_column_name]["crs"]
+        else:
+            # TODO we could allow the user to pass those explicitly if not
+            # stored in the metadata
+            geometry_column_name = None
+            crs = None
+
+        # Update meta to be a GeoDataFrame
+        # TODO convert columns based on GEO metadata (this will now only work
+        # for a default "geometry" column)
+        meta = geopandas.GeoDataFrame(meta, geometry=geometry_column_name, crs=crs)
+        return meta, index_cols, categories, index, partition_info
 
     @classmethod
     def _arrow_table_to_pandas(
