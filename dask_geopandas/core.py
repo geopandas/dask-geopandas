@@ -15,12 +15,7 @@ import pygeos
 
 from .hilbert_distance import _hilbert_distance
 from .morton_distance import _morton_distance
-
-
-try:
-    from .geohash import _geohash
-except ImportError:
-    external_module = None
+from .geohash import _geohash
 
 
 def _set_crs(df, crs, allow_override):
