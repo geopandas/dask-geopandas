@@ -158,7 +158,7 @@ def _encode_base32(encoded_uint64):
         with base 32 values of type unasigned integer
     """
     # Define 32 bit mask
-    mask = np.uint64(0x1F).flatten()  # equivelant to 32-1
+    mask = np.uint64(0x1F).flatten()  # equivalent to 32-1
     # Return array for each character
     c11 = (encoded_uint64 >> 0) & mask
     c10 = (encoded_uint64 >> 5) & mask
