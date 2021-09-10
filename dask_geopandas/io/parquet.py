@@ -59,7 +59,9 @@ class GeoArrowEngine(ArrowEngine):
         meta, stats, parts, index = super().read_metadata(*args, **kwargs)
 
         # get spatial partitions if available
-        regions = geopandas.GeoSeries([_get_partition_bounds(part) for part in parts])
+        regions = geopandas.GeoSeries(
+            [_get_partition_bounds(part) for part in parts], crs=meta.crs
+        )
         if regions.notna().all():
             # a bit hacky, but this allows us to get this passed through
             meta.attrs["spatial_partitions"] = regions

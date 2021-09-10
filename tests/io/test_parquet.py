@@ -34,6 +34,7 @@ def test_parquet_roundtrip(tmp_path):
     assert result.crs == df.crs
     # reading back also populates the spatial partitioning property
     assert result.spatial_partitions is not None
+    assert result.spatial_partitions.crs == df.crs
 
     # the written dataset is also readable by plain geopandas
     result_gpd = geopandas.read_parquet(basedir)
