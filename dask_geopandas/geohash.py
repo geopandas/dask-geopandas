@@ -239,9 +239,9 @@ def _encode_unicode(encoded_base32, precision, raw=False):
 
     encoded_base32 = replacement[encoded_base32]
 
-    if raw is True:
+    if raw:
         encoded_base32 = encoded_base32.view(np.dtype("|S12"))
         return encoded_base32.flatten().astype(f"U{precision}")
 
-    elif raw is not True:
+    else:
         return encoded_base32.flatten()
