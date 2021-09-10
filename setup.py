@@ -5,7 +5,6 @@ import versioneer
 
 install_requires = [
     "geopandas",
-    "numpy<1.21,>=1.17",
     "dask>=2.18.0,!=2021.05.1",
     "distributed>=2.18.0,!=2021.05.1",
     "numba",
