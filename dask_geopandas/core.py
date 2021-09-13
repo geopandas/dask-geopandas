@@ -456,10 +456,10 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         aggfunc : function,  string or dict, default "first"
             Aggregation function for manipulation of data associated
             with each group. Passed to dask `groupby.agg` method.
-            Note that ``aggfunc`` needs to be applicable to all column (i.e. ``"mean:``
+            Note that ``aggfunc`` needs to be applicable to all columns (i.e. ``"mean"``
             cannot be used with string dtype). Select only required columns before
-            ``dissolve`` or pass a dictionary mapping ``aggfunc`` to each column
-            separately.
+            ``dissolve`` or pass a dictionary mapping to ``aggfunc`` to specify the
+            aggregation function for each column separately.
         split_out : int, default 1
             Number of partitions of the output
 
