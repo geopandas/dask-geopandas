@@ -56,9 +56,8 @@ def _get_partition_bounds(part, fs):
 
 class GeoArrowEngine(ArrowEngine):
     @classmethod
-    def read_metadata(cls, *args, **kwargs):
-        meta, stats, parts, index = super().read_metadata(*args, **kwargs)
-        fs = args[0]
+    def read_metadata(cls, fs, paths, **kwargs):
+        meta, stats, parts, index = super().read_metadata(fs, paths, **kwargs)
 
         # get spatial partitions if available
         regions = geopandas.GeoSeries(
