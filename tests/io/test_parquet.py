@@ -84,7 +84,7 @@ def test_roundtrip_geometry_column_name(tmp_path):
 def test_roundtrip_multiple_geometry_columns(tmp_path):
     # basic roundtrip with different geometry column name
     df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
-    df["geometry2"] = df.geometry.representative_point()
+    df["geometry2"] = df.geometry.representative_point().to_crs("EPSG:3857")
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
 
     basedir = tmp_path / "dataset"
@@ -101,6 +101,8 @@ def test_roundtrip_multiple_geometry_columns(tmp_path):
     # ensure the geometry2 column is also considered as geometry in meta
     assert_series_equal(result.dtypes, df.dtypes)
     assert isinstance(result["geometry2"], dask_geopandas.GeoSeries)
+    assert result["geometry"].crs == "EPSG:4326"
+    assert result["geometry2"].crs == "EPSG:3857"
 
 
 def test_column_selection_push_down(tmp_path):

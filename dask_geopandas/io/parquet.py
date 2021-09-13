@@ -77,19 +77,19 @@ class GeoArrowEngine(ArrowEngine):
             geo_meta = json.loads(schema.metadata[b"geo"])
             geometry_column_name = geo_meta["primary_column"]
             crs = geo_meta["columns"][geometry_column_name]["crs"]
-            geometry_columns = list(geo_meta["columns"].keys())
+            geometry_columns = geo_meta["columns"]
         else:
             # TODO we could allow the user to pass those explicitly if not
             # stored in the metadata
             geometry_column_name = None
             crs = None
-            geometry_columns = []
+            geometry_columns = {}
 
         # Update meta to be a GeoDataFrame
         meta = geopandas.GeoDataFrame(meta, geometry=geometry_column_name, crs=crs)
-        for col in geometry_columns:
+        for col, item in geometry_columns.items():
             if not col == meta._geometry_column_name:
-                meta[col] = meta[col].astype("geometry")
+                meta[col] = geopandas.GeoSeries(meta[col], crs=item["crs"])
 
         return meta, index_cols, categories, index, partition_info
 
