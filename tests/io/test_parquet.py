@@ -35,6 +35,7 @@ def test_parquet_roundtrip(tmp_path):
     assert result.crs == df.crs
     # reading back also populates the spatial partitioning property
     assert result.spatial_partitions is not None
+    assert result.spatial_partitions.crs == df.crs
 
     # the written dataset is also readable by plain geopandas
     result_gpd = geopandas.read_parquet(basedir)
@@ -45,6 +46,39 @@ def test_parquet_roundtrip(tmp_path):
     result_part0 = geopandas.read_parquet(basedir / "part.0.parquet")
     result_part0.index.name = None
     assert_geodataframe_equal(result_part0, df.iloc[:45])
+
+
+def test_roundtrip_geometry_column_name(tmp_path):
+    # basic roundtrip with different geometry column name
+    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = df.rename_geometry("geom")
+
+    # geopandas -> dask-geopandas roundtrip
+    path = tmp_path / "data.parquet"
+    df.to_parquet(path)
+    result = dask_geopandas.read_parquet(path)
+    assert isinstance(result, dask_geopandas.GeoDataFrame)
+    assert result.geometry.name == "geom"
+    assert result.crs == df.crs
+    assert result.spatial_partitions is not None
+    # TODO this reset_index should not be necessary
+    result_gpd = result.compute().reset_index(drop=True)
+    assert_geodataframe_equal(result_gpd, df)
+
+    # dask-geopandas -> dask-geopandas roundtrip
+    ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+    assert ddf.geometry.name == "geom"
+    basedir = tmp_path / "dataset"
+    ddf.to_parquet(basedir)
+
+    result = dask_geopandas.read_parquet(basedir)
+    assert isinstance(result, dask_geopandas.GeoDataFrame)
+    assert result.geometry.name == "geom"
+    assert result.crs == df.crs
+    assert result.spatial_partitions is not None
+    # TODO this reset_index should not be necessary
+    result_gpd = result.compute().reset_index(drop=True)
+    assert_geodataframe_equal(result_gpd, df)
 
 
 def test_roundtrip_multiple_geometry_columns(tmp_path):

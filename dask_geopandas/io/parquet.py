@@ -59,7 +59,9 @@ class GeoArrowEngine(ArrowEngine):
         meta, stats, parts, index = super().read_metadata(*args, **kwargs)
 
         # get spatial partitions if available
-        regions = geopandas.GeoSeries([_get_partition_bounds(part) for part in parts])
+        regions = geopandas.GeoSeries(
+            [_get_partition_bounds(part) for part in parts], crs=meta.crs
+        )
         if regions.notna().all():
             # a bit hacky, but this allows us to get this passed through
             meta.attrs["spatial_partitions"] = regions
@@ -77,11 +79,14 @@ class GeoArrowEngine(ArrowEngine):
             crs = geo_meta["columns"][geometry_column_name]["crs"]
             geometry_columns = list(geo_meta["columns"].keys())
         else:
+            # TODO we could allow the user to pass those explicitly if not
+            # stored in the metadata
+            geometry_column_name = None
             crs = None
             geometry_columns = []
 
         # Update meta to be a GeoDataFrame
-        meta = geopandas.GeoDataFrame(meta, crs=crs)
+        meta = geopandas.GeoDataFrame(meta, geometry=geometry_column_name, crs=crs)
         for col in geometry_columns:
             if not col == meta._geometry_column_name:
                 meta[col] = meta[col].astype("geometry")
