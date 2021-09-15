@@ -14,11 +14,12 @@ dependencies:
   - pytest
   - pytest-cov
   - hilbertcurve
-  - s3fs
-  - moto
-  - flask  # needed for moto server
   # optional dependencies
   - pyarrow
   - pip
   - pip:
     - pymorton
+    # installing those with conda in this environments keep hanging, so installing with pip
+    - s3fs
+    - moto
+    - flask  # needed for moto server
