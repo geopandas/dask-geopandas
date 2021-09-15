@@ -5,5 +5,5 @@
 ---
 maxdepth: 2
 ---
-Basic introduction <docs/guide/basic-intro>
+Basic introduction <guide/basic-intro>
 ```
