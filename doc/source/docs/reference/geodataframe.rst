@@ -4,7 +4,7 @@ GeoDataFrame
 .. currentmodule:: dask_geopandas
 
 A ``GeoDataFrame`` is a tabular data structure that contains a column
-which contains a ``GeoSeries`` storing geometry.
+which stores geometries (a ``GeoSeries``).
 
 Constructor
 -----------
