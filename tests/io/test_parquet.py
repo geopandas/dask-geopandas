@@ -124,3 +124,23 @@ def test_column_selection_push_down(tmp_path):
     s = ddf["pop_est"]
     assert type(s) is dd.Series
     assert s.max().compute() == df["pop_est"].max()
+
+
+def test_parquet_roundtrip_s3(s3_resource, s3_storage_options):
+    fs, endpoint_url = s3_resource
+
+    # basic roundtrip
+    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+
+    uri = "s3://geopandas-test/dataset.parquet"
+    ddf.to_parquet(uri, storage_options=s3_storage_options)
+
+    # reading back gives identical GeoDataFrame
+    result = dask_geopandas.read_parquet(uri, storage_options=s3_storage_options)
+    assert result.npartitions == 4
+    assert_geodataframe_equal(result.compute(), df)
+    # reading back correctly sets the CRS in meta
+    assert result.crs == df.crs
+    # reading back also populates the spatial partitioning property
+    assert result.spatial_partitions is not None
