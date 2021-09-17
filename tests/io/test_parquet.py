@@ -61,9 +61,7 @@ def test_roundtrip_geometry_column_name(tmp_path):
     assert result.geometry.name == "geom"
     assert result.crs == df.crs
     assert result.spatial_partitions is not None
-    # TODO this reset_index should not be necessary
-    result_gpd = result.compute().reset_index(drop=True)
-    assert_geodataframe_equal(result_gpd, df)
+    assert_geodataframe_equal(result.compute(), df)
 
     # dask-geopandas -> dask-geopandas roundtrip
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
@@ -76,9 +74,7 @@ def test_roundtrip_geometry_column_name(tmp_path):
     assert result.geometry.name == "geom"
     assert result.crs == df.crs
     assert result.spatial_partitions is not None
-    # TODO this reset_index should not be necessary
-    result_gpd = result.compute().reset_index(drop=True)
-    assert_geodataframe_equal(result_gpd, df)
+    assert_geodataframe_equal(result.compute(), df)
 
 
 def test_roundtrip_multiple_geometry_columns(tmp_path):
@@ -94,9 +90,7 @@ def test_roundtrip_multiple_geometry_columns(tmp_path):
     assert isinstance(result, dask_geopandas.GeoDataFrame)
     assert result.crs == df.crs
     assert result.spatial_partitions is not None
-    # TODO this reset_index should not be necessary
-    result_gpd = result.compute().reset_index(drop=True)
-    assert_geodataframe_equal(result_gpd, df)
+    assert_geodataframe_equal(result.compute(), df)
 
     # ensure the geometry2 column is also considered as geometry in meta
     assert_series_equal(result.dtypes, df.dtypes)
