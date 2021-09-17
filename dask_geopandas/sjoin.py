@@ -73,7 +73,13 @@ def sjoin(left, right, how="inner", op="intersects"):
     dsk = {}
     new_spatial_partitions = []
     for i, (l, r) in enumerate(zip(parts_left, parts_right)):
-        dsk[(name, i)] = (geopandas.sjoin, (left._name, l), (right._name, r), how, op)
+        dsk[(name, i)] = (
+            geopandas.sjoin,
+            (left._name, int(l)),
+            (right._name, int(r)),
+            how,
+            op,
+        )
         # TODO preserve spatial partitions of the output if only left has spatial
         # partitions
         if using_spatial_partitions:
