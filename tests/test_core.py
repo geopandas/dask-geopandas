@@ -334,6 +334,15 @@ def test_set_geometry_property_on_geodf(geodf_points):
     assert all(df.geometry == df.foo)
 
 
+def test_set_geometry_with_dask_geoseries():
+    df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
+    dask_obj = dd.from_pandas(df, npartitions=2)
+    dask_obj = dask_geopandas.from_dask_dataframe(dask_obj)
+    dask_obj = dask_obj.set_geometry(dask_geopandas.points_from_xy(dask_obj, "x", "y"))
+    expected = df.set_geometry(geopandas.points_from_xy(df["x"], df["y"]))
+    assert_geoseries_equal(dask_obj.geometry.compute(), expected.geometry)
+
+
 def test_meta(geodf_points_crs):
     df = geodf_points_crs
     dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)
