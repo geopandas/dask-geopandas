@@ -419,7 +419,10 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         # calculate ourselves to use meta and not meta_nonempty, which would
         # raise an error if meta is an invalid GeoDataFrame (e.g. geometry
         # column name not yet set correctly)
-        meta = self._meta.set_geometry(col)
+        if isinstance(col, GeoSeries):
+            meta = self._meta.set_geometry(col._meta)
+        else:
+            meta = self._meta.set_geometry(col)
         return self.map_partitions(M.set_geometry, col, meta=meta)
 
     def __getitem__(self, key):
