@@ -16,7 +16,7 @@ from .utils import _calculate_mid_points
 # Implementation based on deprecated https://pypi.org/project/neathgeohash/#description
 
 
-def _geohash(gdf, p, raw):
+def _geohash(gdf, string, p):
     """
     Calculate geohash based on the middle points of the geometry bounds
     for a given precision
@@ -24,10 +24,11 @@ def _geohash(gdf, p, raw):
     Parameters
     ----------
     gdf : GeoDataFrame
+    string : bool
+        to return string or int Geohash
     p : int
-        precision of the Geohash
-    raw : bool, default True
-        Set to False to convert the `S12` bytes to unicode strings.
+        precision of the string Geohash
+
     Returns
     ---------
     type : pandas.Series
@@ -41,12 +42,12 @@ def _geohash(gdf, p, raw):
     # Create pairs of x and y midpoints
     coords = np.array([y_mids, x_mids]).T
     # Encode coords with Geohash
-    geohash = encode_geohash(coords, p, raw)
+    geohash = encode_geohash(coords, string, p)
 
     return pd.Series(geohash, index=gdf.index, name="geohash")
 
 
-def encode_geohash(coords, p, raw):
+def encode_geohash(coords, string, p):
     """
     Calculate geohash based on coordinates for a
     given precision
@@ -55,21 +56,26 @@ def encode_geohash(coords, p, raw):
     ----------
     coords : array_like of shape (n, 2)
         array of [x, y] pairs
+    string : bool
+        to return string or int Geohash
     p : int
-        precision of the Geohash
-    raw : bool
-        to convert S12 bytes to unicode type
+        precision of the string Geohash
     Returns
     ---------
-    geohash: array containing geohashes for each mid point
+    geohash: array containing either int or string
+        geohashes for each mid point
     """
 
     quantized_coords = _encode_quantize_points(coords)
-    g_uint64 = _encode_into_uint64(quantized_coords)
-    gs_uint8_mat = _encode_base32(g_uint64)
-    geohash = _encode_unicode(gs_uint8_mat, p, raw)
+    int_geohash = _encode_into_uint64(quantized_coords)
 
-    return geohash
+    if string is True:
+        gs_uint8_mat = _encode_base32(int_geohash)
+        str_geohash = _encode_unicode(gs_uint8_mat, p)
+        return str_geohash
+
+    else:
+        return int_geohash
 
 
 def _encode_quantize_points(coords):
@@ -179,7 +185,7 @@ def _encode_base32(encoded_uint64):
     )
 
 
-def _encode_unicode(encoded_base32, p, raw=False):
+def _encode_unicode(encoded_base32, p):
     """
     Encode base32 pairs into geohash bytes with an option to return
     the geohash in unicode format
@@ -190,8 +196,7 @@ def _encode_unicode(encoded_base32, p, raw=False):
         coordinate pairs
     p : int
         precision of the Geohash
-    raw : bool
-        to convert S12 bytes to unicode type
+
     Returns
     ---------
     array_like of shape (n, precision)
@@ -239,9 +244,5 @@ def _encode_unicode(encoded_base32, p, raw=False):
 
     encoded_base32 = replacement[encoded_base32]
 
-    if raw:
-        encoded_base32 = encoded_base32.view(np.dtype("|S12"))
-        return encoded_base32.flatten().astype(f"U{p}")
-
-    else:
-        return encoded_base32.flatten()
+    encoded_base32 = encoded_base32.view(np.dtype("|S12"))
+    return encoded_base32.flatten().astype(f"U{p}")

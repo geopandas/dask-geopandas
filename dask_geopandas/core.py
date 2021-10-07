@@ -390,7 +390,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return distances
 
-    def geohash(self, p=12, raw=True):
+    def geohash(self, string=False, p=12):
 
         """
         Calculate geohash based on the middle points of the geometry bounds
@@ -398,10 +398,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Parameters
         ----------
+        string : bool
+            to return string or int Geohash
         p : int
-            precision of the Geohash
-        raw : bool, default True
-            Set to False to convert the `S12` bytes to unicode strings.
+            precision of the string Geohash
         Returns
         ----------
         type : pandas.Series
@@ -418,8 +418,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         geohashes = self.map_partitions(
             _geohash,
+            string=string,
             p=p,
-            raw=raw,
             meta=pd.Series([], name="geohash", dtype=object),
         )
 
