@@ -389,22 +389,24 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return distances
 
-    def shuffle(self, by="hilbert", column=None, drop=True, npartitions=10, **kwargs):
-
+    def spatial_shuffle(self, on="hilbert", npartitions=20, partitions=True, **kwargs):
         """
-        A function that spatially shuffles a Dask-GeoSeries object by a method
-        or a user-defined column
+        A function that shuffles a Dask-GeoSeries object based on
+        a column that contains spatial partitioning information
+
+        Dask-GeoPandas supports 3 spatial partitioning methods;
+        hilbert_distance, morton_distance and geohash
 
         Parameters
         ----------
-        by : str
-            partitioning method
-        column : str
-            precomputed column
-        drop : bool
-            to drop the partitioning information held in index
+        on : str
+            column to partition Dask DataFrame on
         npartitions : int
             number to partition DataFrame
+        partitions: bool
+            to calculate partitions to Dask DataFrame
+        kwargs : key-word arguments
+            These arguments are passed to Dask shuffle
 
         Returns
         ----------
@@ -412,34 +414,13 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             Sorted Dask-GeoPandas Series
         """
 
-        if column is None:
-            # Calculate partition methods
-            if by == "hilbert":
-                self[by] = self.hilbert_distance(**kwargs)
-            elif by == "morton":
-                self[by] = self.morton_distance(**kwargs)
-            elif by == "geohash":
-                self[by] = self.geohash(**kwargs)
-            else:
-                raise ValueError(
-                    "Spatial partitioning only supports 'hilbert', 'morton' and 'geohash' methods"
-                )
+        ddf = self.shuffle(on=on, npartitions=npartitions, **kwargs)
 
-            ddf = self.set_index(by, drop=drop, sorted=False, npartitions=npartitions)
+        ddf = ddf.set_geometry("geometry")  # temp fix for now to keep geoms
 
-        elif column is not None:
-            ddf = self.set_index(
-                column, drop=drop, sorted=True, npartitions=npartitions
-            )
-
-        # Calculate convex hull of each partition
-        ddf.calculate_spatial_partitions()
-
-        # Optional drop index
-        if drop is True:
-            ddf = ddf.reset_index()
-        else:
-            pass
+        if partitions is True:
+            # Calculate convex hull of each partition
+            ddf.calculate_spatial_partitions()
 
         return ddf
 
