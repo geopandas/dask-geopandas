@@ -16,3 +16,9 @@ dependencies:
   - hilbertcurve
   # optional dependencies
   - pyarrow
+  - pip
+  - pip:
+    - pymorton
+    # installing those with conda in this environments keep hanging, so installing with pip
+    - s3fs
+    - moto[s3,server]

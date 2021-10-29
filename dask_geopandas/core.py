@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 
 import dask.dataframe as dd
+import dask.array as da
 from dask.dataframe.core import _emulate, map_partitions, elemwise, new_dd_object
 from dask.highlevelgraph import HighLevelGraph
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
@@ -10,7 +11,10 @@ from dask.base import tokenize
 import geopandas
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
+import pygeos
+
 from .hilbert_distance import _hilbert_distance
+from .morton_distance import _morton_distance
 
 
 def _set_crs(df, crs, allow_override):
@@ -65,10 +69,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def __dask_postpersist__(self):
         return type(self), (self._name, self._meta, self.divisions)
 
-    def __repr__(self):
-        s = "<dask_geopandas.%s | %d tasks | %d npartitions>"
-        return s % (type(self).__name__, len(self.dask), self.npartitions)
-
     @classmethod
     def _bind_property(cls, attr, preserve_spatial_partitions=False):
         """Map property to partitions and bind to class"""
@@ -116,9 +116,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         # TEMP method to calculate spatial partitions for testing, need to
         # add better methods (set_partitions / repartition)
         parts = geopandas.GeoSeries(
-            self.map_partitions(lambda part: part.convex_hull.unary_union).compute()
+            self.map_partitions(
+                lambda part: pygeos.convex_hull(
+                    pygeos.geometrycollections(part.geometry.values.data)
+                )
+            ).compute(),
+            crs=self.crs,
         )
-        self.spatial_partitions = parts.convex_hull
+        self.spatial_partitions = parts
 
     def _propagate_spatial_partitions(self, new_object):
         """
@@ -188,11 +193,17 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
                 )
             )
 
-        return self.reduction(
+        total_bounds = self.reduction(
             lambda x: getattr(x, "total_bounds"),
             token="total_bounds",
             meta=self._meta.total_bounds,
             aggregate=agg,
+        )
+        return da.Array(
+            total_bounds.dask,
+            total_bounds.name,
+            chunks=((4,),),
+            dtype=total_bounds.dtype,
         )
 
     @property
@@ -336,6 +347,48 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return distances
 
+    def morton_distance(self, p=15):
+
+        """
+        Calculate the distance of geometries along the Morton curve
+
+        The Morton curve is also known as Z-order https://en.wikipedia.org/wiki/Z-order.
+
+        The Morton distance can be used to spatially partition Dask-GeoPandas objects,
+        by mapping two-dimensional geometries along the Morton space-filing curve.
+
+        Each geometry is represented by the midpoint of its bounds and linked to the
+        Morton curve. The function returns a distance from the beginning
+        of the curve to the linked point.
+
+        Morton distance is more performant than ``hilbert_distance`` but can result in
+        less optimal partitioning.
+
+        Parameters
+        ----------
+
+        p : int
+            precision of the Morton curve
+
+        Returns
+        ----------
+        type : dask.Series
+            Series containing distances along the Morton curve
+        """
+
+        # Compute total bounds of all partitions rather than each partition
+        total_bounds = self.total_bounds
+
+        # Calculate Morton distances for each partition
+        distances = self.map_partitions(
+            _morton_distance,
+            total_bounds=total_bounds,
+            p=p,
+            meta=pd.Series([], name="morton_distance", dtype="int"),
+        )
+
+        return distances
+
 
 class GeoSeries(_Frame, dd.core.Series):
     _partition_type = geopandas.GeoSeries
@@ -363,7 +416,14 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         self.dask = new.dask
 
     def set_geometry(self, col):
-        return self.map_partitions(M.set_geometry, col)
+        # calculate ourselves to use meta and not meta_nonempty, which would
+        # raise an error if meta is an invalid GeoDataFrame (e.g. geometry
+        # column name not yet set correctly)
+        if isinstance(col, GeoSeries):
+            meta = self._meta.set_geometry(col._meta)
+        else:
+            meta = self._meta.set_geometry(col)
+        return self.map_partitions(M.set_geometry, col, meta=meta)
 
     def __getitem__(self, key):
         """
@@ -393,6 +453,60 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         from .io.arrow import to_feather
 
         return to_feather(self, path, *args, **kwargs)
+
+    def dissolve(self, by=None, aggfunc="first", split_out=1, **kwargs):
+        """Dissolve geometries within `groupby` into a single geometry.
+
+        Parameters
+        ----------
+        by : string, default None
+            Column whose values define groups to be dissolved. If None,
+            whole GeoDataFrame is considered a single group.
+        aggfunc : function,  string or dict, default "first"
+            Aggregation function for manipulation of data associated
+            with each group. Passed to dask `groupby.agg` method.
+            Note that ``aggfunc`` needs to be applicable to all columns (i.e. ``"mean"``
+            cannot be used with string dtype). Select only required columns before
+            ``dissolve`` or pass a dictionary mapping to ``aggfunc`` to specify the
+            aggregation function for each column separately.
+        split_out : int, default 1
+            Number of partitions of the output
+
+        **kwargs
+            keyword arguments passed to `groupby`
+
+        Examples
+        --------
+        >>> ddf.dissolve("foo", split_out=12)
+
+        >>> ddf[["foo", "bar", "geometry"]].dissolve("foo", aggfunc="mean")
+
+        >>> ddf.dissolve("foo", aggfunc={"bar": "mean", "baz": "first"})
+
+        """
+        if by is None:
+            by = lambda x: 0
+            drop = [self.geometry.name]
+        else:
+            drop = [by, self.geometry.name]
+
+        def union(block):
+            merged_geom = block.unary_union
+            return merged_geom
+
+        merge_geometries = dd.Aggregation(
+            "merge_geometries", lambda s: s.agg(union), lambda s0: s0.agg(union)
+        )
+        if isinstance(aggfunc, dict):
+            data_agg = aggfunc
+        else:
+            data_agg = {col: aggfunc for col in self.columns.drop(drop)}
+        data_agg[self.geometry.name] = merge_geometries
+        aggregated = self.groupby(by=by, **kwargs).agg(
+            data_agg,
+            split_out=split_out,
+        )
+        return aggregated.set_crs(self.crs)
 
 
 from_geopandas = dd.from_pandas

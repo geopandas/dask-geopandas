@@ -15,13 +15,13 @@ except ImportError:
     ArrowEngine = object
 
 
-def _get_partition_bounds(part):
+def _get_partition_bounds(part, fs):
     """
     Based on the part information gathered by dask, get the partition bounds
     if available.
 
     """
-    from pyarrow.parquet import read_metadata
+    from pyarrow.parquet import ParquetFile
 
     # read the metadata from the actual file (this is again file IO, but
     # we can't rely on the schema metadata, because this is only the
@@ -30,7 +30,8 @@ def _get_partition_bounds(part):
     if "piece" in part:
         path = part["piece"][0]
         if isinstance(path, str):
-            pq_metadata = read_metadata(path)
+            with fs.open(path, "rb") as f:
+                pq_metadata = ParquetFile(f).metadata
     if pq_metadata is None:
         return None
 
@@ -51,21 +52,43 @@ def _get_partition_bounds(part):
 
 class GeoArrowEngine(GeoDatasetEngine, ArrowEngine):
     @classmethod
-    def read_metadata(cls, *args, **kwargs):
-        meta, stats, parts, index = super().read_metadata(*args, **kwargs)
-
-        # Update meta to be a GeoDataFrame
-        # TODO convert columns based on GEO metadata (this will now only work
-        # for a default "geometry" column)
-        meta = geopandas.GeoDataFrame(meta)
+    def read_metadata(cls, fs, paths, **kwargs):
+        meta, stats, parts, index = super().read_metadata(fs, paths, **kwargs)
 
         # get spatial partitions if available
-        regions = geopandas.GeoSeries([_get_partition_bounds(part) for part in parts])
+        regions = geopandas.GeoSeries(
+            [_get_partition_bounds(part, fs) for part in parts], crs=meta.crs
+        )
         if regions.notna().all():
             # a bit hacky, but this allows us to get this passed through
             meta.attrs["spatial_partitions"] = regions
 
         return (meta, stats, parts, index)
+
+    @classmethod
+    def _generate_dd_meta(cls, schema, index, categories, partition_info):
+        meta, index_cols, categories, index, partition_info = super()._generate_dd_meta(
+            schema, index, categories, partition_info
+        )
+        if schema.metadata and b"geo" in schema.metadata:
+            geo_meta = json.loads(schema.metadata[b"geo"])
+            geometry_column_name = geo_meta["primary_column"]
+            crs = geo_meta["columns"][geometry_column_name]["crs"]
+            geometry_columns = geo_meta["columns"]
+        else:
+            # TODO we could allow the user to pass those explicitly if not
+            # stored in the metadata
+            geometry_column_name = None
+            crs = None
+            geometry_columns = {}
+
+        # Update meta to be a GeoDataFrame
+        meta = geopandas.GeoDataFrame(meta, geometry=geometry_column_name, crs=crs)
+        for col, item in geometry_columns.items():
+            if not col == meta._geometry_column_name:
+                meta[col] = geopandas.GeoSeries(meta[col], crs=item["crs"])
+
+        return meta, index_cols, categories, index, partition_info
 
 
 to_parquet = partial(dd.to_parquet, engine=GeoArrowEngine)

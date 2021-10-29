@@ -1,6 +1,7 @@
 from ._version import get_versions
 
 from . import backends
+from .clip import clip
 from .core import (
     points_from_xy,
     GeoDataFrame,
@@ -26,5 +27,6 @@ __all__ = [
     "read_parquet",
     "to_feather",
     "to_parquet",
+    "clip",
     "sjoin",
 ]
