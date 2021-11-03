@@ -449,7 +449,9 @@ def test_map_partitions_get_geometry(geodf_points):
 
 def test_copy_none_spatial_partitions(geoseries_points):
     ddf = dask_geopandas.from_geopandas(geoseries_points, npartitions=2)
+    ddf.spatial_partitions = None
     ddf_copy = ddf.copy()
+    assert ddf_copy.spatial_partitions is None
 
 
 class TestDissolve:
