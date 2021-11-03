@@ -177,7 +177,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         Does not affect the underlying data.
         """
         self_copy = super().copy()
-        self_copy.spatial_partitions = self.spatial_partitions.copy()
+        if self.spatial_partitions is not None:
+            self_copy.spatial_partitions = self.spatial_partitions.copy()
         return self_copy
 
     @property
