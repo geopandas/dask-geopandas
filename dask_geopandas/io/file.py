@@ -1,4 +1,3 @@
-import copy
 from math import ceil
 
 from dask.base import tokenize
@@ -16,6 +15,9 @@ class FileFunctionWrapper:
 
     def __init__(self, columns):
         self.columns = columns
+        self.read_geometry = True
+        if columns is not None and "geometry" not in columns:
+            self.read_geometry = False
 
     def project_columns(self, columns):
         """Return a new FileFunctionWrapper object with
@@ -23,9 +25,7 @@ class FileFunctionWrapper:
         """
         if columns == self.columns:
             return self
-        func = copy.deepcopy(self)
-        func.columns = columns
-        return func
+        return FileFunctionWrapper(columns)
 
     def __call__(self, part):
         path, row_offset, batch_size = part
@@ -35,6 +35,7 @@ class FileFunctionWrapper:
         df = pyogrio.read_dataframe(
             path,
             columns=self.columns,
+            read_geometry=self.read_geometry,
             skip_features=row_offset,
             max_features=batch_size,
         )
@@ -70,7 +71,7 @@ def read_file(path, npartitions=None, chunksize=None, columns=None):
         chunksize = int(ceil(total_size / npartitions))
 
     # TODO this could be inferred from read_info ?
-    meta = pyogrio.read_dataframe(path, max_features=5)
+    meta = pyogrio.read_dataframe(path, columns=columns, max_features=5)
 
     # Define parts
     parts = []

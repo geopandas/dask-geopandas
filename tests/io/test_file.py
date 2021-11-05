@@ -37,13 +37,17 @@ def test_read_file_columns():
     df = geopandas.read_file(path)
 
     # explicit column selection
-    result = dask_geopandas.read_file(path, npartitions=4, columns=["pop_est"])
+    result = dask_geopandas.read_file(
+        path, npartitions=4, columns=["pop_est", "geometry"]
+    )
     assert isinstance(result, dask_geopandas.GeoDataFrame)
     assert result.npartitions == 4
     assert result.crs == df.crs
+    assert len(result.columns) == 2
     assert_geodataframe_equal(
         result.compute().reset_index(drop=True), df[["pop_est", "geometry"]]
     )
+    # TODO what is only selecting non-geometry column?
 
     # column selection through getitem
     ddf = dask_geopandas.read_file(path, npartitions=4)
