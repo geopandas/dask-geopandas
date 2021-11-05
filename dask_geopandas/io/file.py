@@ -1,10 +1,44 @@
+import copy
 from math import ceil
 
-from dask.delayed import delayed
-import dask.dataframe as dd
+from dask.base import tokenize
+from dask.highlevelgraph import HighLevelGraph
+from dask.layers import DataFrameIOLayer
+from dask.dataframe.core import new_dd_object
 
 
-def read_file(path, npartitions=None, chunksize=None):
+class FileFunctionWrapper:
+    """
+    GDAL File reader Function-Wrapper Class
+
+    Reads data from disk to produce a partition (given row subset to read).
+    """
+
+    def __init__(self, columns):
+        self.columns = columns
+
+    def project_columns(self, columns):
+        """Return a new FileFunctionWrapper object with
+        a sub-column projection.
+        """
+        if columns == self.columns:
+            return self
+        func = copy.deepcopy(self)
+        func.columns = columns
+        return func
+
+    def __call__(self, part):
+        path, row_offset, batch_size = part
+
+        import pyogrio
+
+        df = pyogrio.read_dataframe(
+            path, skip_features=row_offset, max_features=batch_size
+        )
+        return df
+
+
+def read_file(path, npartitions=None, chunksize=None, columns=None):
     """
     Read a GIS file into a Dask GeoDataFrame.
 
@@ -32,18 +66,27 @@ def read_file(path, npartitions=None, chunksize=None):
     if chunksize is None:
         chunksize = int(ceil(total_size / npartitions))
 
-    row_offset = 0
-    dfs = []
-
-    while row_offset < total_size:
-        batch_size = min(chunksize, total_size - row_offset)
-        df = delayed(pyogrio.read_dataframe)(
-            path, skip_features=row_offset, max_features=batch_size
-        )
-        dfs.append(df)
-        row_offset += batch_size
-
     # TODO this could be inferred from read_info ?
     meta = pyogrio.read_dataframe(path, max_features=5)
 
-    return dd.from_delayed(dfs, meta, prefix="read_file")
+    # Define parts
+    parts = []
+    row_offset = 0
+
+    while row_offset < total_size:
+        batch_size = min(chunksize, total_size - row_offset)
+        parts.append((path, row_offset, batch_size))
+        row_offset += batch_size
+
+    # Create Blockwise layer
+    label = "read-file-"
+    output_name = label + tokenize(path, chunksize, columns)
+    layer = DataFrameIOLayer(
+        output_name,
+        columns,
+        parts,
+        FileFunctionWrapper(columns),
+        label=label,
+    )
+    graph = HighLevelGraph({output_name: layer}, {output_name: set()})
+    return new_dd_object(graph, output_name, meta, [None] * (len(parts) + 1))
