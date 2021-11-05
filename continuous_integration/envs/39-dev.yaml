@@ -20,6 +20,7 @@ dependencies:
   - flask  # needed for moto server
   # optional dependencies
   - pyarrow
+  - pyogrio
   - pip
   - pip:
     - pymorton
