@@ -33,7 +33,10 @@ class FileFunctionWrapper:
         import pyogrio
 
         df = pyogrio.read_dataframe(
-            path, skip_features=row_offset, max_features=batch_size
+            path,
+            columns=self.columns,
+            skip_features=row_offset,
+            max_features=batch_size,
         )
         return df
 
