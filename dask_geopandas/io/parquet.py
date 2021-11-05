@@ -70,10 +70,10 @@ class GeoArrowEngine(ArrowEngine):
         return (meta, stats, parts, index)
 
     @classmethod
-    def _generate_dd_meta(cls, schema, index, categories, partition_info):
-        meta, index_cols, categories, index, partition_info = super()._generate_dd_meta(
-            schema, index, categories, partition_info
-        )
+    def _update_meta(cls, meta, schema):
+        """
+        Convert meta to a GeoDataFrame and update with potential GEO metadata
+        """
         if schema.metadata and b"geo" in schema.metadata:
             geo_meta = json.loads(schema.metadata[b"geo"])
             geometry_column_name = geo_meta["primary_column"]
@@ -92,7 +92,24 @@ class GeoArrowEngine(ArrowEngine):
             if not col == meta._geometry_column_name:
                 meta[col] = geopandas.GeoSeries(meta[col], crs=item["crs"])
 
+        return meta
+
+    @classmethod
+    def _generate_dd_meta(cls, schema, index, categories, partition_info):
+        """Overriding private method for dask < 2021.10.0"""
+        meta, index_cols, categories, index, partition_info = super()._generate_dd_meta(
+            schema, index, categories, partition_info
+        )
+        meta = cls._update_meta(meta, schema)
         return meta, index_cols, categories, index, partition_info
+
+    @classmethod
+    def _create_dd_meta(cls, dataset_info):
+        """Overriding private method for dask >= 2021.10.0"""
+        meta = super()._create_dd_meta(dataset_info)
+        schema = dataset_info["schema"]
+        meta = cls._update_meta(meta, schema)
+        return meta
 
     @classmethod
     def _arrow_table_to_pandas(
