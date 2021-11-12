@@ -2,7 +2,6 @@ from math import ceil
 
 from dask.base import tokenize
 from dask.highlevelgraph import HighLevelGraph
-from dask.layers import DataFrameIOLayer
 from dask.dataframe.core import new_dd_object
 
 
@@ -60,6 +59,7 @@ def read_file(path, npartitions=None, chunksize=None, columns=None):
 
     """
     import pyogrio
+    from dask.layers import DataFrameIOLayer
 
     # TODO smart inference for a good default partition size ?
     if (npartitions is None) == (chunksize is None):
