@@ -38,7 +38,7 @@ def geoseries_polygons():
 def geohash_dask(geoseries):
 
     p = 12
-    raw = True
+    string = True
     bounds = geoseries.bounds.to_numpy()
     x_mids, y_mids = _calculate_mid_points(bounds)
 
@@ -47,7 +47,7 @@ def geohash_dask(geoseries):
     expected = geohash_vec(y_mids, x_mids, p)
 
     ddf = from_geopandas(geoseries, npartitions=1)
-    result = ddf.geohash(p, raw).compute()
+    result = ddf.geohash(p=p, string=string).compute()
 
     assert_array_equal(np.array(result), expected)
     assert isinstance(result, pd.Series)
@@ -71,5 +71,5 @@ def test_geohash_range(geoseries_points):
     ddf = from_geopandas(geoseries_points, npartitions=1)
 
     with pytest.raises(ValueError):
-        ddf.geohash(p=0, raw=True)
-        ddf.geohash(p=13, raw=True)
+        ddf.geohash(p=0, string=False)
+        ddf.geohash(p=12, string=False)
