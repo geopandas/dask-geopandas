@@ -10,7 +10,7 @@ The vectorized implementation for quantization and bit interleaving is in turn b
 """
 import numpy as np
 import pandas as pd
-from .utils import _calculate_mid_points
+from ._utils import _calculate_mid_points
 
 
 # Implementation based on deprecated https://pypi.org/project/neathgeohash/#description
