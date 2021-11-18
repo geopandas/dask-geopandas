@@ -414,11 +414,16 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
                 "The Geohash precision only accepts an integer value between 1 and 12"
             )
 
+        if string is True:
+            dtype = object
+        else:
+            dtype = int
+
         geohashes = self.map_partitions(
             _geohash,
             string=string,
             p=p,
-            meta=pd.Series([], name="geohash", dtype=object),
+            meta=pd.Series([], name="geohash", dtype=dtype),
         )
 
         return geohashes
