@@ -390,7 +390,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return distances
 
-    def geohash(self, string=False, p=12):
+    def geohash(self, string=True, p=12):
 
         """
         Calculate geohash based on the middle points of the geometry bounds
