@@ -135,6 +135,21 @@ def test_points_from_xy():
     assert_geodataframe_equal(result, expected)
 
 
+def test_points_from_xy_with_crs():
+    latitude = [40.2, 66.3]
+    longitude = [-105.1, -38.2]
+    expected = geopandas.GeoSeries(
+        geopandas.points_from_xy(longitude, latitude, crs="EPSG:4326")
+    )
+    df = pd.DataFrame({"longitude": longitude, "latitude": latitude})
+    ddf = dd.from_pandas(df, npartitions=2)
+    actual = dask_geopandas.points_from_xy(
+        ddf, "longitude", "latitude", crs="EPSG:4326"
+    )
+    assert isinstance(actual, dask_geopandas.GeoSeries)
+    assert_geoseries_equal(actual.compute(), expected)
+
+
 def test_geodataframe_crs(geodf_points_crs):
     df = geodf_points_crs
     original = df.crs
