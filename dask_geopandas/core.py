@@ -398,9 +398,9 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Parameters
         ----------
-        string : bool
+        string : bool (default True)
             to return string or int Geohash
-        p : int
+        p : int (default 12)
             precision of the string Geohash
         Returns
         ----------
