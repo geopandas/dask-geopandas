@@ -146,7 +146,7 @@ def _encode_into_uint64(quantized_coords):
 
 def _encode_base32(encoded_uint64):
     """
-    Encode quantized coordinates into base32 pairs
+    Encode quantized coordinates into base32 pairs.
     Encoding starts at the highest bit, consuming 5 bits for each character precision.
     This means encoding happens 12 times for the 12 character precision or 60 bits.
 
@@ -161,7 +161,7 @@ def _encode_base32(encoded_uint64):
     Returns
     ---------
     array_like of shape (n, 12)
-        with base 32 values of type unasigned integer
+        with base 32 values as 8-bit unasigned integer
     """
     # Define 32 bit mask
     mask = np.uint64(0x1F).flatten()  # equivalent to 32-1
