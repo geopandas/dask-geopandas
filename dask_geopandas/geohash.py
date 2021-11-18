@@ -69,13 +69,13 @@ def encode_geohash(coords, string, p):
     quantized_coords = _encode_quantize_points(coords)
     int_geohash = _encode_into_uint64(quantized_coords)
 
-    if string is True:
-        gs_uint8_mat = _encode_base32(int_geohash)
-        str_geohash = _encode_unicode(gs_uint8_mat, p)
-        return str_geohash
-
-    else:
+    if not string:
         return int_geohash
+
+    gs_uint8_mat = _encode_base32(int_geohash)
+    str_geohash = _encode_unicode(gs_uint8_mat, p)
+
+    return str_geohash
 
 
 def _encode_quantize_points(coords):
