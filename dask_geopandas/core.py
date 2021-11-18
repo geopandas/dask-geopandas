@@ -408,10 +408,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             Series containing Geohash
         """
 
-        if p in range(1, 13, 1):
-            pass
-        else:
-            if p not in range(1, 13, 1):
+        if p not in range(1, 13):
                 raise ValueError(
                     "The Geohash precision only accepts an integer value between 1 and 12"
                 )
