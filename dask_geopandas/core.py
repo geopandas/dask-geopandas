@@ -394,11 +394,12 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         """
         Calculate geohash based on the middle points of the geometry bounds
-        for a given precision
+        for a given precision.
+        Only geographic coordinates (longitude, latitude) are supported.
 
         Parameters
         ----------
-        string : bool (default True)
+        as_string : bool (default True)
             to return string or int Geohash
         p : int (default 12)
             precision of the string Geohash
