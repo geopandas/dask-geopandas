@@ -409,9 +409,9 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """
 
         if p not in range(1, 13):
-                raise ValueError(
-                    "The Geohash precision only accepts an integer value between 1 and 12"
-                )
+            raise ValueError(
+                "The Geohash precision only accepts an integer value between 1 and 12"
+            )
 
         geohashes = self.map_partitions(
             _geohash,
