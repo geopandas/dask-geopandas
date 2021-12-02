@@ -16,6 +16,7 @@ dependencies:
   - hilbertcurve
   # optional dependencies
   - pyarrow
+  - pygeohash
   - pip
   - pip:
     - pymorton

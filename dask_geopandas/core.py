@@ -15,6 +15,7 @@ import pygeos
 
 from .hilbert_distance import _hilbert_distance
 from .morton_distance import _morton_distance
+from .geohash import _geohash
 
 
 def _set_crs(df, crs, allow_override):
@@ -389,6 +390,44 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         )
 
         return distances
+
+    def geohash(self, string=True, p=12):
+
+        """
+        Calculate geohash based on the middle points of the geometry bounds
+        for a given precision.
+        Only geographic coordinates (longitude, latitude) are supported.
+
+        Parameters
+        ----------
+        as_string : bool (default True)
+            to return string or int Geohash
+        p : int (default 12)
+            precision of the string Geohash
+        Returns
+        ----------
+        type : pandas.Series
+            Series containing Geohash
+        """
+
+        if p not in range(1, 13):
+            raise ValueError(
+                "The Geohash precision only accepts an integer value between 1 and 12"
+            )
+
+        if string is True:
+            dtype = object
+        else:
+            dtype = int
+
+        geohashes = self.map_partitions(
+            _geohash,
+            string=string,
+            p=p,
+            meta=pd.Series([], name="geohash", dtype=dtype),
+        )
+
+        return geohashes
 
 
 class GeoSeries(_Frame, dd.core.Series):

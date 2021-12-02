@@ -11,7 +11,6 @@ install_requires = [
     "pygeos",
 ]
 
-
 setup(
     name="dask-geopandas",
     version=versioneer.get_version(),
