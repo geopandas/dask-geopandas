@@ -135,8 +135,8 @@ def _encode_into_uint64(quantized_coords):
 
     Parameters
     ----------
-    quantized_coords : array_like
-        quantized coordinate pairs
+    quantized_coords : array_like of shape (n, 2)
+        array of quantized coordinate pairs
 
     Returns
     ---------
