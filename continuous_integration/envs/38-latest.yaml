@@ -9,7 +9,7 @@ dependencies:
   - distributed
   - geopandas
   - pygeos
-  - pyproj=2.6  # unpin when pyproj 3.1 is released with multithreading fix
+  - pyproj=3.1
   # test dependencies
   - pytest
   - pytest-cov
@@ -20,3 +20,6 @@ dependencies:
   - pip
   - pip:
     - pymorton
+    # installing those with conda in this environments keep hanging, so installing with pip
+    - s3fs
+    - moto[s3,server]

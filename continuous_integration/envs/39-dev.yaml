@@ -9,12 +9,15 @@ dependencies:
   - pandas
   - shapely
   - fiona
-  - pyproj=2.6  # unpin when pyproj 3.1 is released with multithreading fix
+  - pyproj
   - fsspec
   # test dependencies
   - pytest
   - pytest-cov
   - hilbertcurve
+  - s3fs
+  - moto
+  - flask  # needed for moto server
   # optional dependencies
   - pyarrow
   - pygeohash
