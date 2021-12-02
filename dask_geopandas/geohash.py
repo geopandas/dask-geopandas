@@ -12,9 +12,6 @@ import numpy as np
 import pandas as pd
 
 
-# Implementation based on deprecated https://pypi.org/project/neathgeohash/#description
-
-
 def _geohash(gdf, string, p):
     """
     Calculate geohash based on the middle points of the geometry bounds
