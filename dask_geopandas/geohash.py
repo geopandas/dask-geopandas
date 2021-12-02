@@ -28,6 +28,7 @@ def _geohash(gdf, string, p):
     p : int
         precision of the string Geohash
 
+
     Returns
     ---------
     type : pandas.Series
