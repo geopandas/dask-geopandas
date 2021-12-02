@@ -112,8 +112,7 @@ def _encode_quantize_points(coords):
 
     Returns
     ---------
-    quantized_coords : array_like
-        quantized coordinate pairs
+    array_like of shape (n, 2)
     """
 
     _q = np.array([(2.0 ** 32 / 180, 0), (0, 2.0 ** 32 / (180 * 2))], dtype="float64")
