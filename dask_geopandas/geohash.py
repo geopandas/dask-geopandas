@@ -87,7 +87,7 @@ def encode_geohash(coords, string, p):
         geohashes for each mid point
     """
 
-    quantized_coords = _encode_quantize_points(coords)
+    quantized_coords = _quantize_points(coords)
     int_geohash = _encode_into_uint64(quantized_coords)
 
     if not string:
@@ -99,7 +99,7 @@ def encode_geohash(coords, string, p):
     return str_geohash
 
 
-def _encode_quantize_points(coords):
+def _quantize_points(coords):
     """
     Quantize coordinates by mapping onto
     unit intervals [0, 1] and multiplying by 2^32.
