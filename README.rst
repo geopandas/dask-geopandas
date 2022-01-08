@@ -60,7 +60,7 @@ data.
 
    ddf = dask_geopandas.from_dask_dataframe(ddf)
    ddf = ddf.set_geometry(
-       dask_geopandas.points_from_xy(ddf, 'latitude', 'longitude')
+       dask_geopandas.points_from_xy(ddf, 'longitude', 'latitude')
    )
 
 Writing files (and reading back) is currently supported for the Parquet file

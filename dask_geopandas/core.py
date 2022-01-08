@@ -550,13 +550,13 @@ def from_dask_dataframe(df):
     return df.map_partitions(geopandas.GeoDataFrame)
 
 
-def points_from_xy(df, x="x", y="y", z="z"):
+def points_from_xy(df, x="x", y="y", z="z", crs=None):
     """Convert dask.dataframe of x and y (and optionally z) values to a GeoSeries."""
 
     def func(data, x, y, z):
         return geopandas.GeoSeries(
             geopandas.points_from_xy(
-                data[x], data[y], data[z] if z in df.columns else None
+                data[x], data[y], data[z] if z in df.columns else None, crs=crs
             ),
             index=data.index,
         )
