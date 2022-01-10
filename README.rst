@@ -73,7 +73,8 @@ format:
 
 .. note::
 
-   Writing to Parquet files requires installing the ``pyarrow`` library, e.g. ``pip install pyarrow``.
+   Writing to Parquet files requires installing the ``pyarrow`` library, e.g.
+   ``conda install pyarrow`` or ``pip install pyarrow``.
 
 
 Installation
