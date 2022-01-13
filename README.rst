@@ -71,6 +71,11 @@ format:
    ddf.to_parquet("path/to/dir/")
    ddf = dask_geopandas.read_parquet("path/to/dir/")
 
+.. note::
+
+   Writing to Parquet files requires installing the ``pyarrow`` library, e.g.
+   ``conda install pyarrow`` or ``pip install pyarrow``.
+
 
 Installation
 ------------
