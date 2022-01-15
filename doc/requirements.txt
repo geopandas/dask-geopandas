@@ -1,6 +1,6 @@
 geopandas
 numpydoc
-pydata_sphinx_theme
+sphinx-book-theme
 myst-nb
 myst-parser
 sphinx_copybutton
