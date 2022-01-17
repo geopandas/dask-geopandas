@@ -334,7 +334,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         p : The number of iterations used in constructing the Hilbert curve.
 
         Returns
-        ----------
+        -------
         Distances for each partition
         """
 
@@ -375,7 +375,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             precision of the Morton curve
 
         Returns
-        ----------
+        -------
         type : dask.Series
             Series containing distances along the Morton curve
         """
@@ -406,8 +406,9 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             to return string or int Geohash
         p : int (default 12)
             precision of the string Geohash
+
         Returns
-        ----------
+        -------
         type : pandas.Series
             Series containing Geohash
         """
@@ -435,13 +436,52 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         self,
         by="hilbert",
         p=None,
+        calculate_partitions=True,
         drop_index=True,
         npartitions=None,
         divisions=None,
-        inplace=False,
         **kwargs,
     ):
-        """"""
+        """
+        Shuffle the data into spatially consistent partitions.
+
+        This realigns the dataset to be spatially sorted, i.e. geometries that are
+        spatially near each other together will be within the same partition. This is
+        useful especially for overlay operations like a spatial join as it reduces the
+        number of interactions between individual partitions.
+
+        Note that ``spatial_shuffle`` uses ``set_index`` under the hood and comes with
+        all its potential performance drawbacks.
+
+        Parameters
+        ----------
+        by : string (default 'hilbert')
+            sorting method, one of {'hilbert', 'morton, 'geohash'}. See
+            ``hilbert_distance``, ``morton_distance`` and ``geohash`` methods for
+            details.
+        p : int
+            precision of the sorting method.
+        calculate_partitions : bool (default True)
+            calculate new spatial partitions after shuffling
+        drop_index : bool (default True)
+            drop the original index
+        npartitions : int, None, or 'auto'
+            The ideal number of output partitions. If None, use the same as the input.
+            If 'auto' then decide by memory use. Only used when divisions is not given.
+            If divisions is given, the number of output partitions will be
+            len(divisions) - 1.
+        divisions: list, optional
+            The “dividing lines” used to split the new index into partitions. Needs to
+            match the values returned by the sorting method.
+
+        **kwargs
+            keyword arguments passed to ``set_index``.
+
+        Returns
+        -------
+        dask_geopandas.GeoDataFrame
+
+        """
         if p is None:
             p = 15
         if by == "hilbert":
@@ -457,33 +497,28 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
                 f"'{by}' is not supported. Use one of ['hilbert', 'morton, 'geohash']."
             )
 
-        if "shuffle" in kwargs and kwargs["shuffle"] is not "tasks":
-            warnings.warn(
-                "Temporarily forcing the 'tasks' shuffle mode due to an upstream issue."
-            )
+        if "shuffle" in kwargs:
+            shuffle = kwargs.pop("shuffle")
+            if shuffle is not "tasks":
+                warnings.warn(
+                    "Temporarily forcing the 'tasks' shuffle mode due to an upstream issue."
+                )
 
-        if inplace:
-            self.set_index(
-                by,
-                drop=drop_index,
-                sorted=False,
-                npartitions=npartitions,
-                divisions=divisions,
-                inplace=True,
-                shuffle="tasks",  # temporary fix #59
-                **kwargs,
-            )
-        else:
-            return self.set_index(
-                by,
-                drop=drop_index,
-                sorted=False,
-                npartitions=npartitions,
-                divisions=divisions,
-                inplace=False,
-                shuffle="tasks",  # temporary fix #59
-                **kwargs,
-            )
+        sorted_ddf = self.set_index(
+            by,
+            drop=drop_index,
+            sorted=False,
+            npartitions=npartitions,
+            divisions=divisions,
+            inplace=False,
+            shuffle="tasks",  # temporary fix #59
+            **kwargs,
+        )
+
+        if calculate_partitions:
+            sorted_ddf.calculate_spatial_partitions()
+
+        return sorted_ddf
 
 
 class GeoSeries(_Frame, dd.core.Series):
