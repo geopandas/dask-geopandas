@@ -499,7 +499,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         if "shuffle" in kwargs:
             shuffle = kwargs.pop("shuffle")
-            if shuffle is not "tasks":
+            if shuffle != "tasks":
                 warnings.warn(
                     "Temporarily forcing the 'tasks' shuffle mode due to an upstream issue."
                 )
