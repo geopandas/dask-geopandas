@@ -429,6 +429,49 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return geohashes
 
+    def spatial_shuffle(
+        self,
+        by="hilbert",
+        p=15,
+        drop_index=True,
+        npartitions=None,
+        divisions=None,
+        inplace=False,
+        **kwargs
+    ):
+        """"""
+        if by == "hilbert":
+            by = self.hilbert_distance(p=p)
+        elif by == "morton":
+            by = self.morton_distance(p=p)
+        elif by == "geohash":
+            if p > 12:
+                p = 12
+            by = self.geohash(string=False, p=p)
+
+        if inplace:
+            self.set_index(
+                by,
+                drop=drop_index,
+                sorted=False,
+                npartitions=npartitions,
+                divisions=divisions,
+                inplace=True,
+                shuffle="tasks",  # temporary fix
+                **kwargs,
+            )
+        else:
+            return self.set_index(
+                by,
+                drop=drop_index,
+                sorted=False,
+                npartitions=npartitions,
+                divisions=divisions,
+                inplace=False,
+                shuffle="tasks",  # temporary fix
+                **kwargs,
+            )
+
 
 class GeoSeries(_Frame, dd.core.Series):
     _partition_type = geopandas.GeoSeries
