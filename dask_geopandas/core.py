@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -432,14 +434,16 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def spatial_shuffle(
         self,
         by="hilbert",
-        p=15,
+        p=None,
         drop_index=True,
         npartitions=None,
         divisions=None,
         inplace=False,
-        **kwargs
+        **kwargs,
     ):
         """"""
+        if p is None:
+            p = 15
         if by == "hilbert":
             by = self.hilbert_distance(p=p)
         elif by == "morton":
@@ -448,6 +452,15 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             if p > 12:
                 p = 12
             by = self.geohash(string=False, p=p)
+        else:
+            raise ValueError(
+                f"'{by}' is not supported. Use one of ['hilbert', 'morton, 'geohash']."
+            )
+
+        if "shuffle" in kwargs and kwargs["shuffle"] is not "tasks":
+            warnings.warn(
+                "Temporarily forcing the 'tasks' shuffle mode due to an upstream issue."
+            )
 
         if inplace:
             self.set_index(
@@ -457,7 +470,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
                 npartitions=npartitions,
                 divisions=divisions,
                 inplace=True,
-                shuffle="tasks",  # temporary fix
+                shuffle="tasks",  # temporary fix #59
                 **kwargs,
             )
         else:
@@ -468,7 +481,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
                 npartitions=npartitions,
                 divisions=divisions,
                 inplace=False,
-                shuffle="tasks",  # temporary fix
+                shuffle="tasks",  # temporary fix #59
                 **kwargs,
             )
 
