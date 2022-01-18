@@ -1,5 +1,5 @@
 import uuid
-from distutils.version import LooseVersion
+from packaging.version import Version
 
 import dask
 
@@ -13,7 +13,7 @@ from shapely.geometry.base import BaseGeometry
 import geopandas
 from geopandas.array import GeometryArray, GeometryDtype, from_shapely
 
-DASK_2021_06_0 = str(dask.__version__) >= LooseVersion("2021.06.0")
+DASK_2021_06_0 = Version(dask.__version__) >= Version("2021.06.0")
 
 if DASK_2021_06_0:
     from dask.dataframe.dispatch import make_meta_dispatch
