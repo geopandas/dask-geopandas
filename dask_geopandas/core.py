@@ -459,8 +459,9 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             sorting method, one of {'hilbert', 'morton, 'geohash'}. See
             ``hilbert_distance``, ``morton_distance`` and ``geohash`` methods for
             details.
-        p : int
-            precision of the sorting method.
+        p : int (default None)
+            precision of the sorting method. Defaults to 15 for Hilbert and Morton
+            curves and 12 for geohash.
         calculate_partitions : bool (default True)
             calculate new spatial partitions after shuffling
         drop_index : bool (default True)
@@ -480,6 +481,12 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         Returns
         -------
         dask_geopandas.GeoDataFrame
+
+        Notes
+        -----
+        This method, similarly to ``calculate_spatial_partitions``, is computed
+        partially eagerly as it needs to load the active geometry column and compute
+        spatial partitions.
 
         """
         if p is None:
@@ -511,7 +518,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             npartitions=npartitions,
             divisions=divisions,
             inplace=False,
-            shuffle="tasks",  # temporary fix #59
+            shuffle="tasks",  # temporary fix for #59
             **kwargs,
         )
 

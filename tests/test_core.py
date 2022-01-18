@@ -9,6 +9,9 @@ from dask.dataframe.core import Scalar
 import dask_geopandas
 
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
+from dask_geopandas.hilbert_distance import _hilbert_distance
+from dask_geopandas.morton_distance import _morton_distance
+from dask_geopandas.geohash import _geohash
 
 
 @pytest.fixture
@@ -511,3 +514,112 @@ class TestDissolve:
         gpd_none = self.world.dissolve()
         dd_none = self.ddf.dissolve().compute()
         assert_geodataframe_equal(gpd_none, dd_none, check_like=True)
+
+
+class TestSpatialShuffle:
+    def setup_method(self):
+        self.world = geopandas.read_file(
+            geopandas.datasets.get_path("naturalearth_lowres")
+        )
+        self.ddf = dask_geopandas.from_geopandas(self.world, npartitions=4)
+
+    def test_default(self):
+        expected = self.world.set_index(
+            _hilbert_distance(self.world, self.world.total_bounds, p=15),
+        ).sort_index()
+
+        ddf = self.ddf.spatial_shuffle()
+        assert ddf.npartitions == self.ddf.npartitions
+        assert isinstance(ddf.spatial_partitions, geopandas.GeoSeries)
+
+        assert_geodataframe_equal(ddf.compute(), expected)
+
+    @pytest.mark.parametrize(
+        "p,calculate_partitions,drop_index,npartitions",
+        [
+            (10, True, True, 8),
+            (None, False, False, None),
+        ],
+    )
+    def test_hilbert(self, p, calculate_partitions, drop_index, npartitions):
+        exp_p = p if p else 15
+        expected = self.world.set_index(
+            _hilbert_distance(self.world, self.world.total_bounds, p=exp_p),
+            drop=drop_index,
+        ).sort_index()
+
+        ddf = self.ddf.spatial_shuffle(
+            p=p,
+            calculate_partitions=calculate_partitions,
+            drop_index=drop_index,
+            npartitions=npartitions,
+        )
+
+        assert ddf.npartitions == npartitions if npartitions else self.ddf.partitions
+        if calculate_partitions:
+            assert isinstance(ddf.spatial_partitions, geopandas.GeoSeries)
+        else:
+            assert ddf.spatial_partitions is None
+
+        assert_geodataframe_equal(ddf.compute(), expected)
+
+    @pytest.mark.parametrize(
+        "p,calculate_partitions,drop_index,npartitions",
+        [
+            (10, True, True, 8),
+            (None, False, False, None),
+        ],
+    )
+    def test_morton(self, p, calculate_partitions, drop_index, npartitions):
+        exp_p = p if p else 15
+        expected = self.world.set_index(
+            _morton_distance(self.world, self.world.total_bounds, p=exp_p),
+            drop=drop_index,
+        ).sort_index()
+
+        ddf = self.ddf.spatial_shuffle(
+            "morton",
+            p=p,
+            calculate_partitions=calculate_partitions,
+            drop_index=drop_index,
+            npartitions=npartitions,
+        )
+
+        assert ddf.npartitions == npartitions if npartitions else self.ddf.partitions
+        if calculate_partitions:
+            assert isinstance(ddf.spatial_partitions, geopandas.GeoSeries)
+        else:
+            assert ddf.spatial_partitions is None
+
+        assert_geodataframe_equal(ddf.compute(), expected)
+
+    @pytest.mark.parametrize(
+        "p,calculate_partitions,drop_index,npartitions",
+        [
+            (10, True, True, 8),
+            (None, False, False, None),
+            (15, False, False, None),
+        ],
+    )
+    def test_geohash(self, p, calculate_partitions, drop_index, npartitions):
+        exp_p = p if (p and p <= 12) else 12
+        expected = self.world.set_index(
+            _geohash(self.world, string=False, p=exp_p),
+            drop=drop_index,
+        ).sort_index()
+
+        ddf = self.ddf.spatial_shuffle(
+            "geohash",
+            p=p,
+            calculate_partitions=calculate_partitions,
+            drop_index=drop_index,
+            npartitions=npartitions,
+        )
+
+        assert ddf.npartitions == npartitions if npartitions else self.ddf.partitions
+        if calculate_partitions:
+            assert isinstance(ddf.spatial_partitions, geopandas.GeoSeries)
+        else:
+            assert ddf.spatial_partitions is None
+
+        assert_geodataframe_equal(ddf.compute(), expected)
