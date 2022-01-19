@@ -7,11 +7,6 @@ from dask.highlevelgraph import HighLevelGraph
 from .core import from_geopandas, GeoDataFrame
 
 
-def partitions_are_unchanged(part_idxs: np.ndarray, npartitions: int) -> bool:
-    "Whether selecting these partition indices would result in an identical DataFrame."
-    return len(part_idxs) == npartitions and (part_idxs[:-1] < part_idxs[1:]).all()
-
-
 def sjoin(left, right, how="inner", op="intersects"):
     """
     Spatial join of two GeoDataFrames.
@@ -65,17 +60,9 @@ def sjoin(left, right, how="inner", op="intersects"):
         )
         parts_left = parts.index.values
         parts_right = parts["index_right"].values
-        # Sub-select just the partitions from each input we need---unless we need all of them.
-        left_sub = (
-            left
-            if partitions_are_unchanged(parts_left, left.npartitions)
-            else left.partitions[parts_left]
-        )
-        right_sub = (
-            right
-            if partitions_are_unchanged(parts_right, right.npartitions)
-            else right.partitions[parts_right]
-        )
+        # Sub-select just the partitions from each input we need
+        left_sub = left.partitions[parts_left]
+        right_sub = right.partitions[parts_right]
 
         joined = left_sub.map_partitions(
             geopandas.sjoin,
