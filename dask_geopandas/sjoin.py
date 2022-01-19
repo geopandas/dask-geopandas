@@ -7,6 +7,11 @@ from dask.highlevelgraph import HighLevelGraph
 from .core import from_geopandas, GeoDataFrame
 
 
+def partitions_are_unchanged(part_idxs: np.ndarray, npartitions: int) -> bool:
+    "Whether selecting these partition indices would result in an identical DataFrame."
+    return len(part_idxs) == npartitions and (part_idxs[:-1] < part_idxs[1:]).all()
+
+
 def sjoin(left, right, how="inner", op="intersects"):
     """
     Spatial join of two GeoDataFrames.
@@ -58,33 +63,52 @@ def sjoin(left, right, how="inner", op="intersects"):
             how="inner",
             op="intersects",
         )
-        parts_left = np.asarray(parts.index)
-        parts_right = np.asarray(parts["index_right"].values)
-        using_spatial_partitions = True
-    else:
-        # Unknown spatial partitions -> full cartesian (cross) product of all
-        # combinations of the partitions of the left and right dataframe
-        n_left = left.npartitions
-        n_right = right.npartitions
-        parts_left = np.repeat(np.arange(n_left), n_right)
-        parts_right = np.tile(np.arange(n_right), n_left)
-        using_spatial_partitions = False
+        parts_left = parts.index.values
+        parts_right = parts["index_right"].values
+        # Sub-select just the partitions from each input we need---unless we need all of them.
+        left_sub = (
+            left
+            if partitions_are_unchanged(parts_left, left.npartitions)
+            else left.partitions[parts_left]
+        )
+        right_sub = (
+            right
+            if partitions_are_unchanged(parts_right, right.npartitions)
+            else right.partitions[parts_right]
+        )
 
-    dsk = {}
-    new_spatial_partitions = []
-    for i, (l, r) in enumerate(zip(parts_left, parts_right)):
-        dsk[(name, i)] = (geopandas.sjoin, (left._name, l), (right._name, r), how, op)
+        joined = left_sub.map_partitions(
+            geopandas.sjoin,
+            right_sub,
+            how,
+            op,
+            enforce_metadata=False,
+            transform_divisions=False,
+            align_dataframes=False,
+            meta=meta,
+        )
+
         # TODO preserve spatial partitions of the output if only left has spatial
         # partitions
-        if using_spatial_partitions:
-            lr = left.spatial_partitions.iloc[l]
-            rr = right.spatial_partitions.iloc[r]
-            # extent = lr.intersection(rr).buffer(buffer).intersection(lr.union(rr))
-            extent = lr.intersection(rr)
-            new_spatial_partitions.append(extent)
+        joined.spatial_partitions = [
+            left.spatial_partitions.iloc[l].intersection(
+                right.spatial_partitions.iloc[r]
+            )
+            for l, r in zip(parts_left, parts_right)
+        ]
+        return joined
+
+    # Unknown spatial partitions -> full cartesian (cross) product of all
+    # combinations of the partitions of the left and right dataframe
+    n_left = left.npartitions
+    n_right = right.npartitions
+    parts_left = np.repeat(np.arange(n_left), n_right)
+    parts_right = np.tile(np.arange(n_right), n_left)
+
+    dsk = {}
+    for i, (l, r) in enumerate(zip(parts_left, parts_right)):
+        dsk[(name, i)] = (geopandas.sjoin, (left._name, l), (right._name, r), how, op)
 
     divisions = [None] * (len(dsk) + 1)
     graph = HighLevelGraph.from_collections(name, dsk, dependencies=[left, right])
-    if not using_spatial_partitions:
-        new_spatial_partitions = None
-    return GeoDataFrame(graph, name, meta, divisions, new_spatial_partitions)
+    return GeoDataFrame(graph, name, meta, divisions, None)

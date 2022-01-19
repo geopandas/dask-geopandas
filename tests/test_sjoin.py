@@ -1,17 +1,24 @@
+import pytest
+
 import geopandas
 from geopandas.testing import assert_geodataframe_equal
 
 import dask_geopandas
 
 
-def test_sjoin_dask_geopandas():
+@pytest.mark.parametrize(
+    "npartitions_left, npartitions_right", [(4, 4), (1, 3), (3, 1), (3, 4)]
+)
+def test_sjoin_dask_geopandas(npartitions_left, npartitions_right):
     df_points = geopandas.read_file(geopandas.datasets.get_path("naturalearth_cities"))
-    ddf_points = dask_geopandas.from_geopandas(df_points, npartitions=4)
+    ddf_points = dask_geopandas.from_geopandas(df_points, npartitions=npartitions_left)
 
     df_polygons = geopandas.read_file(
         geopandas.datasets.get_path("naturalearth_lowres")
     )
-    ddf_polygons = dask_geopandas.from_geopandas(df_polygons, npartitions=4)
+    ddf_polygons = dask_geopandas.from_geopandas(
+        df_polygons, npartitions=npartitions_right
+    )
 
     expected = geopandas.sjoin(df_points, df_polygons, op="within", how="inner")
     expected = expected.sort_index()
