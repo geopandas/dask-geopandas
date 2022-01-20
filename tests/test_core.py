@@ -535,23 +535,21 @@ class TestSpatialShuffle:
         assert_geodataframe_equal(ddf.compute(), expected)
 
     @pytest.mark.parametrize(
-        "p,calculate_partitions,drop_index,npartitions",
+        "p,calculate_partitions,npartitions",
         [
-            (10, True, True, 8),
-            (None, False, False, None),
+            (10, True, 8),
+            (None, False, None),
         ],
     )
-    def test_hilbert(self, p, calculate_partitions, drop_index, npartitions):
+    def test_hilbert(self, p, calculate_partitions, npartitions):
         exp_p = p if p else 15
         expected = self.world.set_index(
             _hilbert_distance(self.world, self.world.total_bounds, p=exp_p),
-            drop=drop_index,
         ).sort_index()
 
         ddf = self.ddf.spatial_shuffle(
             p=p,
             calculate_partitions=calculate_partitions,
-            drop_index=drop_index,
             npartitions=npartitions,
         )
 
@@ -564,24 +562,22 @@ class TestSpatialShuffle:
         assert_geodataframe_equal(ddf.compute(), expected)
 
     @pytest.mark.parametrize(
-        "p,calculate_partitions,drop_index,npartitions",
+        "p,calculate_partitions,npartitions",
         [
-            (10, True, True, 8),
-            (None, False, False, None),
+            (10, True, 8),
+            (None, False, None),
         ],
     )
-    def test_morton(self, p, calculate_partitions, drop_index, npartitions):
+    def test_morton(self, p, calculate_partitions, npartitions):
         exp_p = p if p else 15
         expected = self.world.set_index(
             _morton_distance(self.world, self.world.total_bounds, p=exp_p),
-            drop=drop_index,
         ).sort_index()
 
         ddf = self.ddf.spatial_shuffle(
             "morton",
             p=p,
             calculate_partitions=calculate_partitions,
-            drop_index=drop_index,
             npartitions=npartitions,
         )
 
@@ -594,25 +590,23 @@ class TestSpatialShuffle:
         assert_geodataframe_equal(ddf.compute(), expected)
 
     @pytest.mark.parametrize(
-        "p,calculate_partitions,drop_index,npartitions",
+        "p,calculate_partitions,npartitions",
         [
-            (10, True, True, 8),
-            (None, False, False, None),
-            (15, False, False, None),
+            (10, True, 8),
+            (None, False, None),
+            (15, False, None),
         ],
     )
-    def test_geohash(self, p, calculate_partitions, drop_index, npartitions):
+    def test_geohash(self, p, calculate_partitions, npartitions):
         exp_p = p if (p and p <= 12) else 12
         expected = self.world.set_index(
             _geohash(self.world, string=False, p=exp_p),
-            drop=drop_index,
         ).sort_index()
 
         ddf = self.ddf.spatial_shuffle(
             "geohash",
             p=p,
             calculate_partitions=calculate_partitions,
-            drop_index=drop_index,
             npartitions=npartitions,
         )
 

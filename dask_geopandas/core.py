@@ -437,7 +437,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         by="hilbert",
         p=None,
         calculate_partitions=True,
-        drop_index=True,
         npartitions=None,
         divisions=None,
         **kwargs,
@@ -449,6 +448,9 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         spatially near each other together will be within the same partition. This is
         useful especially for overlay operations like a spatial join as it reduces the
         number of interactions between individual partitions.
+
+        The spatial information is stored in the index and will replace the existing
+        index.
 
         Note that ``spatial_shuffle`` uses ``set_index`` under the hood and comes with
         all its potential performance drawbacks.
@@ -464,8 +466,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             curves and 12 for geohash.
         calculate_partitions : bool (default True)
             calculate new spatial partitions after shuffling
-        drop_index : bool (default True)
-            drop the original index
         npartitions : int, None, or 'auto'
             The ideal number of output partitions. If None, use the same as the input.
             If 'auto' then decide by memory use. Only used when divisions is not given.
@@ -513,7 +513,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         sorted_ddf = self.set_index(
             by,
-            drop=drop_index,
             sorted=False,
             npartitions=npartitions,
             divisions=divisions,
