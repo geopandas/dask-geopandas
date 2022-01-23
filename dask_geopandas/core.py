@@ -445,7 +445,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         Shuffle the data into spatially consistent partitions.
 
         This realigns the dataset to be spatially sorted, i.e. geometries that are
-        spatially near each other together will be within the same partition. This is
+        spatially near each other will be within the same partition. This is
         useful especially for overlay operations like a spatial join as it reduces the
         number of interactions between individual partitions.
 
@@ -458,14 +458,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         Parameters
         ----------
         by : string (default 'hilbert')
-            sorting method, one of {'hilbert', 'morton, 'geohash'}. See
+            Spatial sorting method, one of {'hilbert', 'morton', 'geohash'}. See
             ``hilbert_distance``, ``morton_distance`` and ``geohash`` methods for
             details.
         p : int (default None)
-            precision of the sorting method. Defaults to 15 for Hilbert and Morton
+            Precision of the sorting method. Defaults to 15 for Hilbert and Morton
             curves and 12 for geohash.
         calculate_partitions : bool (default True)
-            calculate new spatial partitions after shuffling
+            Calculate new spatial partitions after shuffling
         npartitions : int, None, or 'auto'
             The ideal number of output partitions. If None, use the same as the input.
             If 'auto' then decide by memory use. Only used when divisions is not given.
@@ -476,7 +476,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             match the values returned by the sorting method.
 
         **kwargs
-            keyword arguments passed to ``set_index``.
+            Keyword arguments passed to ``set_index``.
 
         Returns
         -------
