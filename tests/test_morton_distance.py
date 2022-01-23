@@ -37,16 +37,16 @@ def morton_distance_dask(geoseries):
 
     bounds = geoseries.bounds.to_numpy()
     total_bounds = geoseries.total_bounds
-    coords = _continuous_to_discrete_coords(total_bounds, bounds, p=15)
+    x_coords, y_coords = _continuous_to_discrete_coords(total_bounds, bounds, p=15)
 
     ddf = from_geopandas(geoseries, npartitions=1)
     result = ddf.morton_distance().compute()
 
     expected = []
 
-    for i in range(len(coords)):
-        x = int(coords[i][0])
-        y = int(coords[i][1])
+    for i in range(len(x_coords)):
+        x = int(x_coords[i])
+        y = int(y_coords[i])
         expected.append(interleave(x, y))
 
     assert list(result) == expected

@@ -1,5 +1,7 @@
 import pytest
 import pandas as pd
+import numpy as np
+
 from pandas.testing import assert_index_equal
 from hilbertcurve.hilbertcurve import HilbertCurve
 from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
@@ -37,7 +39,8 @@ def hilbert_distance_dask(geoseries):
 
     bounds = geoseries.bounds.to_numpy()
     total_bounds = geoseries.total_bounds
-    coords = _continuous_to_discrete_coords(total_bounds, bounds, p=15)
+    x, y = _continuous_to_discrete_coords(total_bounds, bounds, p=15)
+    coords = np.stack((x, y), axis=1)
 
     hilbert_curve = HilbertCurve(p=15, n=2)
     expected = hilbert_curve.distances_from_points(coords)
