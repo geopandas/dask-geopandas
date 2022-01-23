@@ -46,7 +46,7 @@ extensions = [
 
 numpydoc_show_class_members = False
 autosummary_generate = True
-jupyter_execute_notebooks = "force"
+jupyter_execute_notebooks = "auto"
 
 
 def setup(app):
