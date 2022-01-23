@@ -633,6 +633,9 @@ for name in [
     )
 
 
+dd.core.DataFrame.set_geometry = GeoDataFrame.set_geometry
+
+
 # Coodinate indexer (.cx)
 
 
