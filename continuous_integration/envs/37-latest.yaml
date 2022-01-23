@@ -9,11 +9,14 @@ dependencies:
   - distributed
   - geopandas
   - pygeos
-  - pyproj=2.6  # unpin when pyproj 3.1 is released with multithreading fix
+  - pyproj=2.6
+  - packaging
   # test dependencies
   - pytest
   - pytest-cov
   - hilbertcurve
+  # optional dependencies
+  - pygeohash
   - pip
   - pip:
-    - pymorton
+      - pymorton

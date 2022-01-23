@@ -15,6 +15,7 @@ import pygeos
 
 from .hilbert_distance import _hilbert_distance
 from .morton_distance import _morton_distance
+from .geohash import _geohash
 
 
 def _set_crs(df, crs, allow_override):
@@ -178,7 +179,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         Does not affect the underlying data.
         """
         self_copy = super().copy()
-        self_copy.spatial_partitions = self.spatial_partitions.copy()
+        if self.spatial_partitions is not None:
+            self_copy.spatial_partitions = self.spatial_partitions.copy()
         return self_copy
 
     @property
@@ -399,6 +401,44 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return distances
 
+    def geohash(self, string=True, p=12):
+
+        """
+        Calculate geohash based on the middle points of the geometry bounds
+        for a given precision.
+        Only geographic coordinates (longitude, latitude) are supported.
+
+        Parameters
+        ----------
+        as_string : bool (default True)
+            to return string or int Geohash
+        p : int (default 12)
+            precision of the string Geohash
+        Returns
+        ----------
+        type : pandas.Series
+            Series containing Geohash
+        """
+
+        if p not in range(1, 13):
+            raise ValueError(
+                "The Geohash precision only accepts an integer value between 1 and 12"
+            )
+
+        if string is True:
+            dtype = object
+        else:
+            dtype = int
+
+        geohashes = self.map_partitions(
+            _geohash,
+            string=string,
+            p=p,
+            meta=pd.Series([], name="geohash", dtype=dtype),
+        )
+
+        return geohashes
+
 
 class GeoSeries(_Frame, dd.core.Series):
     """Parallel GeoPandas GeoSeries
@@ -441,7 +481,10 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         # calculate ourselves to use meta and not meta_nonempty, which would
         # raise an error if meta is an invalid GeoDataFrame (e.g. geometry
         # column name not yet set correctly)
-        meta = self._meta.set_geometry(col)
+        if isinstance(col, GeoSeries):
+            meta = self._meta.set_geometry(col._meta)
+        else:
+            meta = self._meta.set_geometry(col)
         return self.map_partitions(M.set_geometry, col, meta=meta)
 
     def __getitem__(self, key):
@@ -467,6 +510,60 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
 
         return to_parquet(self, path, *args, **kwargs)
 
+    def dissolve(self, by=None, aggfunc="first", split_out=1, **kwargs):
+        """Dissolve geometries within `groupby` into a single geometry.
+
+        Parameters
+        ----------
+        by : string, default None
+            Column whose values define groups to be dissolved. If None,
+            whole GeoDataFrame is considered a single group.
+        aggfunc : function,  string or dict, default "first"
+            Aggregation function for manipulation of data associated
+            with each group. Passed to dask `groupby.agg` method.
+            Note that ``aggfunc`` needs to be applicable to all columns (i.e. ``"mean"``
+            cannot be used with string dtype). Select only required columns before
+            ``dissolve`` or pass a dictionary mapping to ``aggfunc`` to specify the
+            aggregation function for each column separately.
+        split_out : int, default 1
+            Number of partitions of the output
+
+        **kwargs
+            keyword arguments passed to `groupby`
+
+        Examples
+        --------
+        >>> ddf.dissolve("foo", split_out=12)
+
+        >>> ddf[["foo", "bar", "geometry"]].dissolve("foo", aggfunc="mean")
+
+        >>> ddf.dissolve("foo", aggfunc={"bar": "mean", "baz": "first"})
+
+        """
+        if by is None:
+            by = lambda x: 0
+            drop = [self.geometry.name]
+        else:
+            drop = [by, self.geometry.name]
+
+        def union(block):
+            merged_geom = block.unary_union
+            return merged_geom
+
+        merge_geometries = dd.Aggregation(
+            "merge_geometries", lambda s: s.agg(union), lambda s0: s0.agg(union)
+        )
+        if isinstance(aggfunc, dict):
+            data_agg = aggfunc
+        else:
+            data_agg = {col: aggfunc for col in self.columns.drop(drop)}
+        data_agg[self.geometry.name] = merge_geometries
+        aggregated = self.groupby(by=by, **kwargs).agg(
+            data_agg,
+            split_out=split_out,
+        )
+        return aggregated.set_crs(self.crs)
+
 
 from_geopandas = dd.from_pandas
 
@@ -476,13 +573,13 @@ def from_dask_dataframe(df):
     return df.map_partitions(geopandas.GeoDataFrame)
 
 
-def points_from_xy(df, x="x", y="y", z="z"):
+def points_from_xy(df, x="x", y="y", z="z", crs=None):
     """Convert dask.dataframe of x and y (and optionally z) values to a GeoSeries."""
 
     def func(data, x, y, z):
         return geopandas.GeoSeries(
             geopandas.points_from_xy(
-                data[x], data[y], data[z] if z in df.columns else None
+                data[x], data[y], data[z] if z in df.columns else None, crs=crs
             ),
             index=data.index,
         )

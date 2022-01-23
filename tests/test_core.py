@@ -1,4 +1,4 @@
-from distutils.version import LooseVersion
+from packaging.version import Version
 import pytest
 import pandas as pd
 import numpy as np
@@ -133,6 +133,21 @@ def test_points_from_xy():
     ddf = dask_geopandas.from_dask_dataframe(ddf)
     result = ddf.compute()
     assert_geodataframe_equal(result, expected)
+
+
+def test_points_from_xy_with_crs():
+    latitude = [40.2, 66.3]
+    longitude = [-105.1, -38.2]
+    expected = geopandas.GeoSeries(
+        geopandas.points_from_xy(longitude, latitude, crs="EPSG:4326")
+    )
+    df = pd.DataFrame({"longitude": longitude, "latitude": latitude})
+    ddf = dd.from_pandas(df, npartitions=2)
+    actual = dask_geopandas.points_from_xy(
+        ddf, "longitude", "latitude", crs="EPSG:4326"
+    )
+    assert isinstance(actual, dask_geopandas.GeoSeries)
+    assert_geoseries_equal(actual.compute(), expected)
 
 
 def test_geodataframe_crs(geodf_points_crs):
@@ -334,6 +349,15 @@ def test_set_geometry_property_on_geodf(geodf_points):
     assert all(df.geometry == df.foo)
 
 
+def test_set_geometry_with_dask_geoseries():
+    df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
+    dask_obj = dd.from_pandas(df, npartitions=2)
+    dask_obj = dask_geopandas.from_dask_dataframe(dask_obj)
+    dask_obj = dask_obj.set_geometry(dask_geopandas.points_from_xy(dask_obj, "x", "y"))
+    expected = df.set_geometry(geopandas.points_from_xy(df["x"], df["y"]))
+    assert_geoseries_equal(dask_obj.geometry.compute(), expected.geometry)
+
+
 def test_meta(geodf_points_crs):
     df = geodf_points_crs
     dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)
@@ -407,7 +431,7 @@ def test_propagate_on_set_crs(geodf_points):
 
 
 @pytest.mark.skipif(
-    LooseVersion(geopandas.__version__) <= LooseVersion("0.8.1"),
+    Version(geopandas.__version__) <= Version("0.8.1"),
     reason="geopandas 0.8 has bug in apply",
 )
 def test_geoseries_apply(geoseries_polygons):
@@ -436,3 +460,54 @@ def test_map_partitions_get_geometry(geodf_points):
     result = dask_obj.map_partitions(get_geometry).compute()
     expected = dask_obj.geometry.compute()
     assert_geoseries_equal(result, expected)
+
+
+def test_copy_none_spatial_partitions(geoseries_points):
+    ddf = dask_geopandas.from_geopandas(geoseries_points, npartitions=2)
+    ddf.spatial_partitions = None
+    ddf_copy = ddf.copy()
+    assert ddf_copy.spatial_partitions is None
+
+
+class TestDissolve:
+    def setup_method(self):
+        self.world = geopandas.read_file(
+            geopandas.datasets.get_path("naturalearth_lowres")
+        )
+        self.ddf = dask_geopandas.from_geopandas(self.world, npartitions=4)
+
+    def test_default(self):
+        gpd_default = self.world.dissolve("continent")
+        dd_default = self.ddf.dissolve("continent").compute()
+        assert_geodataframe_equal(gpd_default, dd_default, check_like=True)
+
+    def test_sum(self):
+        gpd_sum = self.world.dissolve("continent", aggfunc="sum")
+        dd_sum = self.ddf.dissolve("continent", aggfunc="sum").compute()
+        # drop due to https://github.com/geopandas/geopandas/issues/1999
+        assert_geodataframe_equal(
+            gpd_sum, dd_sum.drop(columns=["name", "iso_a3"]), check_like=True
+        )
+
+    def test_split_out(self):
+        gpd_default = self.world.dissolve("continent")
+        dd_split = self.ddf.dissolve("continent", split_out=4)
+        assert dd_split.npartitions == 4
+        assert_geodataframe_equal(gpd_default, dd_split.compute(), check_like=True)
+
+    def test_dict(self):
+        aggfunc = {
+            "pop_est": "min",
+            "name": "first",
+            "iso_a3": "first",
+            "gdp_md_est": "sum",
+        }
+        gpd_dict = self.world.dissolve("continent", aggfunc=aggfunc)
+
+        dd_dict = self.ddf.dissolve("continent", aggfunc=aggfunc).compute()
+        assert_geodataframe_equal(gpd_dict, dd_dict, check_like=True)
+
+    def test_by_none(self):
+        gpd_none = self.world.dissolve()
+        dd_none = self.ddf.dissolve().compute()
+        assert_geodataframe_equal(gpd_none, dd_none, check_like=True)

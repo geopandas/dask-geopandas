@@ -9,13 +9,18 @@ dependencies:
   - distributed
   - geopandas
   - pygeos
-  - pyproj=2.6  # unpin when pyproj 3.1 is released with multithreading fix
+  - pyproj
+  - packaging
   # test dependencies
   - pytest
   - pytest-cov
   - hilbertcurve
+  - s3fs
+  - moto
+  - flask # needed for moto server
   # optional dependencies
   - pyarrow
+  - pygeohash
   - pip
   - pip:
-    - pymorton
+      - pymorton
