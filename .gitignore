@@ -19,3 +19,5 @@ log
 .vscode/
 
 coverage.xml
+
+doc/source/docs/reference/api
