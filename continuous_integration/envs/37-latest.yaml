@@ -10,6 +10,7 @@ dependencies:
   - geopandas
   - pygeos
   - pyproj=2.6
+  - packaging
   # test dependencies
   - pytest
   - pytest-cov
@@ -18,4 +19,4 @@ dependencies:
   - pygeohash
   - pip
   - pip:
-    - pymorton
+      - pymorton
