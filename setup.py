@@ -9,6 +9,7 @@ install_requires = [
     "distributed>=2.18.0,!=2021.05.1",
     "numba",
     "pygeos",
+    "packaging",
 ]
 
 setup(

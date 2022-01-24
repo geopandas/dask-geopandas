@@ -1,4 +1,4 @@
-from distutils.version import LooseVersion
+from packaging.version import Version
 import pytest
 import pandas as pd
 import numpy as np
@@ -434,7 +434,7 @@ def test_propagate_on_set_crs(geodf_points):
 
 
 @pytest.mark.skipif(
-    LooseVersion(geopandas.__version__) <= LooseVersion("0.8.1"),
+    Version(geopandas.__version__) <= Version("0.8.1"),
     reason="geopandas 0.8 has bug in apply",
 )
 def test_geoseries_apply(geoseries_polygons):
