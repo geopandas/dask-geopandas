@@ -546,8 +546,8 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
 from_geopandas = dd.from_pandas
 
 
-def from_dask_dataframe(df):
-    return df.map_partitions(geopandas.GeoDataFrame)
+def from_dask_dataframe(df, geometry=None):
+    return df.map_partitions(geopandas.GeoDataFrame, geometry=geometry)
 
 
 def points_from_xy(df, x="x", y="y", z="z", crs=None):

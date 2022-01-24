@@ -352,10 +352,28 @@ def test_set_geometry_property_on_geodf(geodf_points):
 def test_set_geometry_with_dask_geoseries():
     df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
     dask_obj = dd.from_pandas(df, npartitions=2)
-    dask_obj = dask_geopandas.from_dask_dataframe(dask_obj)
     dask_obj = dask_obj.set_geometry(dask_geopandas.points_from_xy(dask_obj, "x", "y"))
     expected = df.set_geometry(geopandas.points_from_xy(df["x"], df["y"]))
     assert_geoseries_equal(dask_obj.geometry.compute(), expected.geometry)
+
+
+def test_from_dask_dataframe_with_dask_geoseries():
+    df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
+    dask_obj = dd.from_pandas(df, npartitions=2)
+    dask_obj = dask_geopandas.from_dask_dataframe(
+        dask_obj, geometry=dask_geopandas.points_from_xy(dask_obj, "x", "y")
+    )
+    expected = df.set_geometry(geopandas.points_from_xy(df["x"], df["y"]))
+    assert_geoseries_equal(dask_obj.geometry.compute(), expected.geometry)
+
+
+def test_from_dask_dataframe_with_column_name():
+    df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
+    df["geoms"] = geopandas.points_from_xy(df["x"], df["y"])
+    dask_obj = dd.from_pandas(df, npartitions=2)
+    dask_obj = dask_geopandas.from_dask_dataframe(dask_obj, geometry="geoms")
+    expected = geopandas.GeoDataFrame(df, geometry="geoms")
+    assert_geodataframe_equal(dask_obj.compute(), expected)
 
 
 def test_meta(geodf_points_crs):
