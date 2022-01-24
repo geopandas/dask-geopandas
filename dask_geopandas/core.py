@@ -569,7 +569,18 @@ from_geopandas = dd.from_pandas
 
 
 def from_dask_dataframe(df, geometry=None):
-    """Create GeoDataFrame from DataFrame"""
+    """
+    Create GeoDataFrame from dask DataFrame.
+
+    Parameters
+    ----------
+    df : dask DataFrame
+    geometry : str or array-like, optional
+        If a string, the column to use as geometry. By default, it will look
+        for a column named "geometry". If array-like or dask (Geo)Series,
+        the values will be set as 'geometry' column on the GeoDataFrame.
+
+    """
     return df.map_partitions(geopandas.GeoDataFrame, geometry=geometry)
 
 
