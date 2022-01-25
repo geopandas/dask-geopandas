@@ -568,9 +568,20 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
 from_geopandas = dd.from_pandas
 
 
-def from_dask_dataframe(df):
-    """Create GeoDataFrame from DataFrame"""
-    return df.map_partitions(geopandas.GeoDataFrame)
+def from_dask_dataframe(df, geometry=None):
+    """
+    Create GeoDataFrame from dask DataFrame.
+
+    Parameters
+    ----------
+    df : dask DataFrame
+    geometry : str or array-like, optional
+        If a string, the column to use as geometry. By default, it will look
+        for a column named "geometry". If array-like or dask (Geo)Series,
+        the values will be set as 'geometry' column on the GeoDataFrame.
+
+    """
+    return df.map_partitions(geopandas.GeoDataFrame, geometry=geometry)
 
 
 def points_from_xy(df, x="x", y="y", z="z", crs=None):
@@ -654,6 +665,9 @@ for name in [
     _Frame._bind_elemwise_operator_method(
         name, meth, original=geopandas.base.GeoPandasBase
     )
+
+
+dd.core.DataFrame.set_geometry = GeoDataFrame.set_geometry
 
 
 # Coodinate indexer (.cx)
