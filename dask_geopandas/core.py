@@ -478,6 +478,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         self.dask = new.dask
 
     def set_index(self, *args, **kwargs):
+        """Override to ensure we get GeoDataFrame with set geometry column"""
         ddf = super().set_index(*args, **kwargs)
         return ddf.set_geometry(self._meta.geometry.name)
 
