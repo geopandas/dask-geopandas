@@ -498,9 +498,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         This method, similarly to ``calculate_spatial_partitions``, is computed
         partially eagerly as it needs to load the active geometry column and compute
         spatial partitions.
-
-        Using ``split_out`` keyword may fail with the newer versions of Dask due to an
-        underlying incompatibility between Dask and GeoPandas.
         """
         if p is None:
             p = 15
@@ -516,12 +513,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             raise ValueError(
                 f"'{by}' is not supported. Use one of ['hilbert', 'morton, 'geohash']."
             )
-
-        if "split_out" in kwargs:
-            warnings.warn(
-                "Using ``split_out`` keyword may fail with the newer versions of Dask due to an "
-                "underlying incompatibility between Dask and GeoPandas."
-            )  # https://github.com/dask/dask/issues/8611
 
         if "shuffle" in kwargs:
             shuffle = kwargs.pop("shuffle")
@@ -645,7 +636,18 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
 
         >>> ddf.dissolve("foo", aggfunc={"bar": "mean", "baz": "first"})
 
+        Notes
+        -----
+        Using ``split_out`` > 1 may fail with the newer versions of Dask due to an
+        underlying incompatibility between Dask and GeoPandas.
+
         """
+        if split_out > 1:
+            warnings.warn(
+                "Using ``split_out`` > 1  may fail with the newer versions of Dask due "
+                "to an underlying incompatibility between Dask and GeoPandas."
+            )  # https://github.com/dask/dask/issues/8611
+
         if by is None:
             by = lambda x: 0
             drop = [self.geometry.name]
