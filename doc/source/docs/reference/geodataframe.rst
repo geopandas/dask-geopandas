@@ -46,6 +46,7 @@ Aggregating and exploding
    :toctree: api/
 
    GeoDataFrame.explode
+   GeoDataFrame.dissolve
 
 Indexing
 --------

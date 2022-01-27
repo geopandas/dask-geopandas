@@ -141,6 +141,7 @@ Spatial partitioning
    GeoSeries.calculate_spatial_partitions
    GeoSeries.hilbert_distance
    GeoSeries.morton_distance
+   GeoSeries.geohash
 
 
 

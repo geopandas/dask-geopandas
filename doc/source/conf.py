@@ -47,7 +47,7 @@ extensions = [
 numpydoc_show_class_members = False
 autosummary_generate = True
 jupyter_execute_notebooks = "auto"
-execution_excludepatterns = ["basic-intro.ipynb"]
+execution_excludepatterns = ["basic-intro.ipynb", "dissolve.ipynb"]
 
 
 def setup(app):
