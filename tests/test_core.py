@@ -492,6 +492,7 @@ class TestDissolve:
             gpd_sum, dd_sum.drop(columns=["name", "iso_a3"]), check_like=True
         )
 
+    @pytest.mark.xfail(reason="Dask vs geopandas incompatibility")
     def test_split_out(self):
         gpd_default = self.world.dissolve("continent")
         dd_split = self.ddf.dissolve("continent", split_out=4)
