@@ -636,18 +636,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
 
         >>> ddf.dissolve("foo", aggfunc={"bar": "mean", "baz": "first"})
 
-        Notes
-        -----
-        Using ``split_out`` > 1 may fail with the newer versions of Dask due to an
-        underlying incompatibility between Dask and GeoPandas.
-
         """
-        if split_out > 1:
-            warnings.warn(
-                "Using ``split_out`` > 1  may fail with the newer versions of Dask due "
-                "to an underlying incompatibility between Dask and GeoPandas."
-            )  # https://github.com/dask/dask/issues/8611
-
         if by is None:
             by = lambda x: 0
             drop = [self.geometry.name]
