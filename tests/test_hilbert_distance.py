@@ -39,7 +39,7 @@ def hilbert_distance_dask(geoseries):
 
     bounds = geoseries.bounds.to_numpy()
     total_bounds = geoseries.total_bounds
-    x, y = _continuous_to_discrete_coords(total_bounds, bounds, p=15)
+    x, y = _continuous_to_discrete_coords(bounds, p=15, total_bounds=total_bounds)
     coords = np.stack((x, y), axis=1)
 
     hilbert_curve = HilbertCurve(p=15, n=2)

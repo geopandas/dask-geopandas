@@ -26,25 +26,15 @@ def _hilbert_distance(gdf, total_bounds=None, p=15):
     # Calculate bounds as numpy array
     bounds = gdf.bounds.to_numpy()
 
-    if total_bounds is None:
-        total_bounds = np.array(
-            (
-                np.nanmin(bounds[:, 0]),  # minx
-                np.nanmin(bounds[:, 1]),  # miny
-                np.nanmax(bounds[:, 2]),  # maxx
-                np.nanmax(bounds[:, 3]),  # maxy
-            )
-        )
-
     # Calculate discrete coords based on total bounds and bounds
-    x, y = _continuous_to_discrete_coords(total_bounds, bounds, p)
+    x, y = _continuous_to_discrete_coords(bounds, p, total_bounds)
     # Compute distance along hilbert curve
     distances = _encode(p, x, y)
 
     return pd.Series(distances, index=gdf.index, name="hilbert_distance")
 
 
-def _continuous_to_discrete_coords(total_bounds, bounds, p):
+def _continuous_to_discrete_coords(bounds, p, total_bounds):
     """
     Calculates mid points & ranges of geoms and returns
     as discrete coords
@@ -52,11 +42,11 @@ def _continuous_to_discrete_coords(total_bounds, bounds, p):
     Parameters
     ----------
 
-    total_bounds : Total bounds of geometries - array
-
     bounds : Bounds of each geometry - array
 
     p : The number of iterations used in constructing the Hilbert curve
+
+    total_bounds : Total bounds of geometries - array
 
     Returns
     ---------
@@ -67,12 +57,17 @@ def _continuous_to_discrete_coords(total_bounds, bounds, p):
     # Hilbert Side length
     side_length = 2 ** p
 
-    # Calculate x and y range of total bound coords - returns array
-    xmin, ymin, xmax, ymax = total_bounds
-
     # Calculate mid points for x and y bound coords - returns array
     x_mids = (bounds[:, 0] + bounds[:, 2]) / 2.0
     y_mids = (bounds[:, 1] + bounds[:, 3]) / 2.0
+
+    # Calculate x and y range of total bound coords - returns array
+    if total_bounds is None:
+        total_bounds = np.array(
+            (np.nanmin(x_mids), np.nanmin(y_mids), np.nanmax(x_mids), np.nanmax(y_mids))
+        )
+
+    xmin, ymin, xmax, ymax = total_bounds
 
     # Transform continuous value to discrete integer for each dimension
     x_int = _continuous_to_discrete(x_mids, (xmin, xmax), side_length)
