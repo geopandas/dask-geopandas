@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from pandas.testing import assert_index_equal
+from pandas.testing import assert_index_equal, assert_series_equal
 from pymorton import interleave  # https://github.com/trevorprater/pymorton
 from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
 from dask_geopandas import from_geopandas
@@ -64,3 +64,11 @@ def test_morton_distance_lines(geoseries_lines):
 
 def test_morton_distance_polygons(geoseries_polygons):
     morton_distance_dask(geoseries_polygons)
+
+
+def test_specified_total_bounds(geoseries_polygons):
+    ddf = from_geopandas(geoseries_polygons, npartitions=2)
+
+    result = ddf.morton_distance(total_bounds=geoseries_polygons.total_bounds)
+    expected = ddf.morton_distance()
+    assert_series_equal(result.compute(), expected.compute())
