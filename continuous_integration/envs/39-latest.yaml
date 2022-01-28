@@ -10,16 +10,18 @@ dependencies:
   - geopandas
   - pygeos
   - pyproj
+  - packaging
   # test dependencies
   - pytest
   - pytest-cov
   - hilbertcurve
   - s3fs
   - moto
-  - flask  # needed for moto server
+  - flask # needed for moto server
   # optional dependencies
   - pyarrow
   - pyogrio
+  - pygeohash
   - pip
   - pip:
-    - pymorton
+      - pymorton

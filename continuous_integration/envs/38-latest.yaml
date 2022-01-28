@@ -10,6 +10,7 @@ dependencies:
   - geopandas
   - pygeos
   - pyproj=3.1
+  - packaging
   # test dependencies
   - pytest
   - pytest-cov
@@ -17,9 +18,10 @@ dependencies:
   # optional dependencies
   - pyarrow
   - pyogrio
+  - pygeohash
   - pip
   - pip:
-    - pymorton
-    # installing those with conda in this environments keep hanging, so installing with pip
-    - s3fs
-    - moto[s3,server]
+      - pymorton
+      # installing those with conda in this environments keep hanging, so installing with pip
+      - s3fs
+      - moto[s3,server]

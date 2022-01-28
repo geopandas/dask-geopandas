@@ -1,4 +1,4 @@
-from distutils.version import LooseVersion
+from packaging.version import Version
 import pytest
 import pandas as pd
 import numpy as np
@@ -133,6 +133,21 @@ def test_points_from_xy():
     ddf = dask_geopandas.from_dask_dataframe(ddf)
     result = ddf.compute()
     assert_geodataframe_equal(result, expected)
+
+
+def test_points_from_xy_with_crs():
+    latitude = [40.2, 66.3]
+    longitude = [-105.1, -38.2]
+    expected = geopandas.GeoSeries(
+        geopandas.points_from_xy(longitude, latitude, crs="EPSG:4326")
+    )
+    df = pd.DataFrame({"longitude": longitude, "latitude": latitude})
+    ddf = dd.from_pandas(df, npartitions=2)
+    actual = dask_geopandas.points_from_xy(
+        ddf, "longitude", "latitude", crs="EPSG:4326"
+    )
+    assert isinstance(actual, dask_geopandas.GeoSeries)
+    assert_geoseries_equal(actual.compute(), expected)
 
 
 def test_geodataframe_crs(geodf_points_crs):
@@ -337,10 +352,28 @@ def test_set_geometry_property_on_geodf(geodf_points):
 def test_set_geometry_with_dask_geoseries():
     df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
     dask_obj = dd.from_pandas(df, npartitions=2)
-    dask_obj = dask_geopandas.from_dask_dataframe(dask_obj)
     dask_obj = dask_obj.set_geometry(dask_geopandas.points_from_xy(dask_obj, "x", "y"))
     expected = df.set_geometry(geopandas.points_from_xy(df["x"], df["y"]))
     assert_geoseries_equal(dask_obj.geometry.compute(), expected.geometry)
+
+
+def test_from_dask_dataframe_with_dask_geoseries():
+    df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
+    dask_obj = dd.from_pandas(df, npartitions=2)
+    dask_obj = dask_geopandas.from_dask_dataframe(
+        dask_obj, geometry=dask_geopandas.points_from_xy(dask_obj, "x", "y")
+    )
+    expected = df.set_geometry(geopandas.points_from_xy(df["x"], df["y"]))
+    assert_geoseries_equal(dask_obj.geometry.compute(), expected.geometry)
+
+
+def test_from_dask_dataframe_with_column_name():
+    df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
+    df["geoms"] = geopandas.points_from_xy(df["x"], df["y"])
+    dask_obj = dd.from_pandas(df, npartitions=2)
+    dask_obj = dask_geopandas.from_dask_dataframe(dask_obj, geometry="geoms")
+    expected = geopandas.GeoDataFrame(df, geometry="geoms")
+    assert_geodataframe_equal(dask_obj.compute(), expected)
 
 
 def test_meta(geodf_points_crs):
@@ -416,13 +449,13 @@ def test_propagate_on_set_crs(geodf_points):
 
 
 @pytest.mark.skipif(
-    LooseVersion(geopandas.__version__) <= LooseVersion("0.8.1"),
+    Version(geopandas.__version__) <= Version("0.8.1"),
     reason="geopandas 0.8 has bug in apply",
 )
 def test_geoseries_apply(geoseries_polygons):
     # https://github.com/jsignell/dask-geopandas/issues/18
     ds = dask_geopandas.from_geopandas(geoseries_polygons, npartitions=2)
-    result = ds.apply(lambda geom: geom.area, meta="float").compute()
+    result = ds.apply(lambda geom: geom.area, meta=pd.Series(dtype=float)).compute()
     expected = geoseries_polygons.area
     pd.testing.assert_series_equal(result, expected)
 

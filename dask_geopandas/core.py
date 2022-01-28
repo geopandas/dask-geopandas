@@ -15,6 +15,7 @@ import pygeos
 
 from .hilbert_distance import _hilbert_distance
 from .morton_distance import _morton_distance
+from .geohash import _geohash
 
 
 def _set_crs(df, crs, allow_override):
@@ -113,6 +114,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         setattr(cls, name, derived_from(original)(meth))
 
     def calculate_spatial_partitions(self):
+        """Calculate spatial partitions"""
         # TEMP method to calculate spatial partitions for testing, need to
         # add better methods (set_partitions / repartition)
         parts = geopandas.GeoSeries(
@@ -315,6 +317,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     @property
     def cx(self):
+        """
+        Coordinate based indexer to select by intersection with bounding box.
+
+        Format of input should be ``.cx[xmin:xmax, ymin:ymax]``. Any of
+        ``xmin``, ``xmax``, ``ymin``, and ``ymax`` can be provided, but input
+        must include a comma separating x and y slices. That is, ``.cx[:, :]``
+        will return the full series/frame, but ``.cx[:]`` is not implemented.
+        """
         return _CoordinateIndexer(self)
 
     def hilbert_distance(self, p=15):
@@ -332,7 +342,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Returns
         ----------
-        Distances for each partition
+        dask.Series
+            Series containing distances for each partition
         """
 
         # Compute total bounds of all partitions rather than each partition
@@ -373,7 +384,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Returns
         ----------
-        type : dask.Series
+        dask.Series
             Series containing distances along the Morton curve
         """
 
@@ -390,12 +401,62 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return distances
 
+    def geohash(self, string=True, p=12):
+
+        """
+        Calculate geohash based on the middle points of the geometry bounds
+        for a given precision.
+        Only geographic coordinates (longitude, latitude) are supported.
+
+        Parameters
+        ----------
+        as_string : bool (default True)
+            to return string or int Geohash
+        p : int (default 12)
+            precision of the string Geohash
+        Returns
+        ----------
+        type : pandas.Series
+            Series containing Geohash
+        """
+
+        if p not in range(1, 13):
+            raise ValueError(
+                "The Geohash precision only accepts an integer value between 1 and 12"
+            )
+
+        if string is True:
+            dtype = object
+        else:
+            dtype = int
+
+        geohashes = self.map_partitions(
+            _geohash,
+            string=string,
+            p=p,
+            meta=pd.Series([], name="geohash", dtype=dtype),
+        )
+
+        return geohashes
+
 
 class GeoSeries(_Frame, dd.core.Series):
+    """Parallel GeoPandas GeoSeries
+
+    Do not use this class directly. Instead use functions like
+    :func:`dask_geopandas.read_parquet`,or :func:`dask_geopandas.from_geopandas`.
+    """
+
     _partition_type = geopandas.GeoSeries
 
 
 class GeoDataFrame(_Frame, dd.core.DataFrame):
+    """Parallel GeoPandas GeoDataFrame
+
+    Do not use this class directly. Instead use functions like
+    :func:`dask_geopandas.read_parquet`,or :func:`dask_geopandas.from_geopandas`.
+    """
+
     _partition_type = geopandas.GeoDataFrame
 
     @property
@@ -507,17 +568,29 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
 from_geopandas = dd.from_pandas
 
 
-def from_dask_dataframe(df):
-    return df.map_partitions(geopandas.GeoDataFrame)
+def from_dask_dataframe(df, geometry=None):
+    """
+    Create GeoDataFrame from dask DataFrame.
+
+    Parameters
+    ----------
+    df : dask DataFrame
+    geometry : str or array-like, optional
+        If a string, the column to use as geometry. By default, it will look
+        for a column named "geometry". If array-like or dask (Geo)Series,
+        the values will be set as 'geometry' column on the GeoDataFrame.
+
+    """
+    return df.map_partitions(geopandas.GeoDataFrame, geometry=geometry)
 
 
-def points_from_xy(df, x="x", y="y", z="z"):
+def points_from_xy(df, x="x", y="y", z="z", crs=None):
     """Convert dask.dataframe of x and y (and optionally z) values to a GeoSeries."""
 
     def func(data, x, y, z):
         return geopandas.GeoSeries(
             geopandas.points_from_xy(
-                data[x], data[y], data[z] if z in df.columns else None
+                data[x], data[y], data[z] if z in df.columns else None, crs=crs
             ),
             index=data.index,
         )
@@ -592,6 +665,9 @@ for name in [
     _Frame._bind_elemwise_operator_method(
         name, meth, original=geopandas.base.GeoPandasBase
     )
+
+
+dd.core.DataFrame.set_geometry = GeoDataFrame.set_geometry
 
 
 # Coodinate indexer (.cx)
