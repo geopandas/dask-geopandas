@@ -496,8 +496,9 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         Notes
         -----
         This method, similarly to ``calculate_spatial_partitions``, is computed
-        partially eagerly as it needs to load the active geometry column and compute
-        spatial partitions.
+        partially eagerly as it needs to calculate the distances for all existing
+        partitions before it can determine the divisions for the new
+        spatially-shuffled partitions.
         """
         if p is None:
             p = 15
