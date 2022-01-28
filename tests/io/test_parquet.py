@@ -138,3 +138,21 @@ def test_parquet_roundtrip_s3(s3_resource, s3_storage_options):
     assert result.crs == df.crs
     # reading back also populates the spatial partitioning property
     assert result.spatial_partitions is not None
+
+
+def test_parquet_empty_partitions(tmp_path):
+    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    # Creating filtered dask dataframe with at least one empty partition
+    ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+    ddf_filtered = ddf[ddf["pop_est"] > 1_000_000_000]
+    assert (ddf_filtered.map_partitions(len).compute() == 0).any()
+
+    basedir = tmp_path / "dataset"
+    # TODO don't write metadata file as that fails with empty partitions on
+    # inferring the schema
+    ddf_filtered.to_parquet(basedir, write_metadata_file=False)
+
+    result = dask_geopandas.read_parquet(basedir)
+    assert_geodataframe_equal(result.compute(), df[df["pop_est"] > 1_000_000_000])
+    # once one partition has no spatial extent, we don't restore the spatial partitions
+    assert result.spatial_partitions is None
