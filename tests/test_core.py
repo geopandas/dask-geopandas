@@ -458,7 +458,7 @@ def test_propagate_on_set_crs(geodf_points):
 def test_geoseries_apply(geoseries_polygons):
     # https://github.com/jsignell/dask-geopandas/issues/18
     ds = dask_geopandas.from_geopandas(geoseries_polygons, npartitions=2)
-    result = ds.apply(lambda geom: geom.area, meta="float").compute()
+    result = ds.apply(lambda geom: geom.area, meta=pd.Series(dtype=float)).compute()
     expected = geoseries_polygons.area
     pd.testing.assert_series_equal(result, expected)
 
