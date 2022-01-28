@@ -616,19 +616,24 @@ class TestSpatialShuffle:
         ],
     )
     def test_geohash(self, p, calculate_partitions, npartitions):
+        df = self.world.copy()
+        # crossing meridian and resulting 0 causes inconsistencies among environments
+        df = df[df.name != "Fiji"]
         exp_p = p if (p and p <= 12) else 12
-        expected = self.world.set_index(
-            _geohash(self.world, string=False, p=exp_p),
+        expected = df.set_index(
+            _geohash(df, string=False, p=exp_p),
         ).sort_index()
 
-        ddf = self.ddf.spatial_shuffle(
+        ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+
+        ddf = ddf.spatial_shuffle(
             "geohash",
             p=p,
             calculate_partitions=calculate_partitions,
             npartitions=npartitions,
         )
 
-        assert ddf.npartitions == npartitions if npartitions else self.ddf.partitions
+        assert ddf.npartitions == npartitions if npartitions else ddf.partitions
         if calculate_partitions:
             assert isinstance(ddf.spatial_partitions, geopandas.GeoSeries)
         else:
