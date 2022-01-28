@@ -26,7 +26,7 @@ def _morton_distance(gdf, total_bounds, p):
     # Calculate bounds as numpy array
     bounds = gdf.bounds.to_numpy()
     # Calculate discrete coords based on total bounds and bounds
-    x_int, y_int = _continuous_to_discrete_coords(total_bounds, bounds, p)
+    x_int, y_int = _continuous_to_discrete_coords(bounds, p, total_bounds)
     # Calculate distance from morton curve
     distances = _distances_from_coordinates(x_int, y_int)
 
