@@ -35,31 +35,40 @@ def geoseries_polygons():
     return geopandas.GeoSeries([t1, t2, sq1, sq2])
 
 
-def hilbert_distance_dask(geoseries):
+def hilbert_distance_dask(geoseries, level=15):
 
     bounds = geoseries.bounds.to_numpy()
     total_bounds = geoseries.total_bounds
-    x, y = _continuous_to_discrete_coords(bounds, p=15, total_bounds=total_bounds)
+    x, y = _continuous_to_discrete_coords(bounds, p=level, total_bounds=total_bounds)
     coords = np.stack((x, y), axis=1)
 
-    hilbert_curve = HilbertCurve(p=15, n=2)
+    hilbert_curve = HilbertCurve(p=level, n=2)
     expected = hilbert_curve.distances_from_points(coords)
 
     ddf = from_geopandas(geoseries, npartitions=1)
-    result = ddf.hilbert_distance().compute()
+    result = ddf.hilbert_distance(p=level).compute()
 
     assert list(result) == expected
     assert isinstance(result, pd.Series)
     assert_index_equal(ddf.index.compute(), result.index)
 
 
-def test_hilbert_distance_points(geoseries_points):
-    hilbert_distance_dask(geoseries_points)
+@pytest.mark.parametrize("level", [2, 10, 15, 16])
+def test_hilbert_distance_points(geoseries_points, level):
+    hilbert_distance_dask(geoseries_points, level)
 
 
-def test_hilbert_distance_lines(geoseries_lines):
-    hilbert_distance_dask(geoseries_lines)
+@pytest.mark.parametrize("level", [2, 10, 15, 16])
+def test_hilbert_distance_lines(geoseries_lines, level):
+    hilbert_distance_dask(geoseries_lines, level)
 
 
-def test_hilbert_distance_polygons(geoseries_polygons):
-    hilbert_distance_dask(geoseries_polygons)
+@pytest.mark.parametrize("level", [2, 10, 15, 16])
+def test_hilbert_distance_polygons(geoseries_polygons, level):
+    hilbert_distance_dask(geoseries_polygons, level)
+
+
+def test_hilbert_distance_level(geoseries_points):
+    ddf = from_geopandas(geoseries_points, npartitions=1)
+    with pytest.raises(ValueError):
+        ddf.hilbert_distance(p=20).compute()
