@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from pandas.testing import assert_index_equal
+from pandas.testing import assert_index_equal, assert_series_equal
 from hilbertcurve.hilbertcurve import HilbertCurve
 from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
 from dask_geopandas import from_geopandas
@@ -60,3 +60,11 @@ def test_hilbert_distance_lines(geoseries_lines):
 
 def test_hilbert_distance_polygons(geoseries_polygons):
     hilbert_distance_dask(geoseries_polygons)
+
+
+def test_specified_total_bounds(geoseries_polygons):
+    ddf = from_geopandas(geoseries_polygons, npartitions=2)
+
+    result = ddf.hilbert_distance(total_bounds=geoseries_polygons.total_bounds)
+    expected = ddf.hilbert_distance()
+    assert_series_equal(result.compute(), expected.compute())
