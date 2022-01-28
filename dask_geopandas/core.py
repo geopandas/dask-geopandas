@@ -327,7 +327,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """
         return _CoordinateIndexer(self)
 
-    def hilbert_distance(self, p=15):
+    def hilbert_distance(self, total_bounds=None, p=15):
 
         """
         A function that calculates the Hilbert distance between the geometry bounds
@@ -337,7 +337,11 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Parameters
         ----------
-
+        total_bounds : 4-element array, optional
+            The spatial extent in which the curve is constructed (used to
+            rescale the geometry midpoints). By default, the total bounds
+            of the full dask GeoDataFrame will be computed. If known, you
+            can pass the total bounds to avoid this extra computation.
         p : The number of iterations used in constructing the Hilbert curve.
 
         Returns
@@ -347,7 +351,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """
 
         # Compute total bounds of all partitions rather than each partition
-        total_bounds = self.total_bounds
+        if total_bounds is None:
+            total_bounds = self.total_bounds
 
         # Calculate hilbert distances for each partition
         distances = self.map_partitions(
@@ -359,7 +364,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return distances
 
-    def morton_distance(self, p=15):
+    def morton_distance(self, total_bounds=None, p=15):
 
         """
         Calculate the distance of geometries along the Morton curve
@@ -378,7 +383,11 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Parameters
         ----------
-
+        total_bounds : 4-element array, optional
+            The spatial extent in which the curve is constructed (used to
+            rescale the geometry midpoints). By default, the total bounds
+            of the full dask GeoDataFrame will be computed. If known, you
+            can pass the total bounds to avoid this extra computation.
         p : int
             precision of the Morton curve
 
@@ -389,7 +398,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """
 
         # Compute total bounds of all partitions rather than each partition
-        total_bounds = self.total_bounds
+        if total_bounds is None:
+            total_bounds = self.total_bounds
 
         # Calculate Morton distances for each partition
         distances = self.map_partitions(
