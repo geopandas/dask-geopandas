@@ -318,8 +318,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def cx(self):
         return _CoordinateIndexer(self)
 
-    def hilbert_distance(self, p=15):
-
+    def hilbert_distance(self, level=15):
         """
         A function that calculates the Hilbert distance between the geometry bounds
         and total bounds of a Dask-GeoDataFrame.
@@ -329,7 +328,9 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         Parameters
         ----------
 
-        p : The number of iterations used in constructing the Hilbert curve.
+        level : int (1 - 16), default 15
+            Determines the precision of the curve (points on the curve will
+            have coordinates in the range [0, 2^level - 1]).
 
         Returns
         ----------
@@ -343,13 +344,13 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         distances = self.map_partitions(
             _hilbert_distance,
             total_bounds=total_bounds,
-            p=p,
+            p=level,
             meta=pd.Series([], name="hilbert_distance", dtype="int"),
         )
 
         return distances
 
-    def morton_distance(self, p=15):
+    def morton_distance(self, level=15):
 
         """
         Calculate the distance of geometries along the Morton curve
@@ -369,8 +370,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         Parameters
         ----------
 
-        p : int
-            precision of the Morton curve
+        level : int
+            Determines the precision of the Morton curve.
 
         Returns
         ----------
@@ -385,7 +386,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         distances = self.map_partitions(
             _morton_distance,
             total_bounds=total_bounds,
-            p=p,
+            p=level,
             meta=pd.Series([], name="morton_distance", dtype="int"),
         )
 
