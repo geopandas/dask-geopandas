@@ -1,4 +1,7 @@
+import random
+
 import geopandas
+from shapely.geometry import Polygon
 import dask.dataframe as dd
 import dask_geopandas
 
@@ -68,3 +71,34 @@ def test_read_file_columns():
     result = ddf["geometry"]
     assert isinstance(result, dask_geopandas.GeoSeries)
     assert_geoseries_equal(result.compute().reset_index(drop=True), df["geometry"])
+
+
+def test_read_file_layer(tmp_path):
+    df_points = geopandas.GeoDataFrame(
+        {
+            "col": [1, 2, 3, 4],
+            "geometry": geopandas.points_from_xy([1, 2, 3, 4], [2, 3, 4, 1]),
+        },
+        crs=4326,
+    )
+    df_polygons = geopandas.GeoDataFrame(
+        {
+            "col": [5, 6, 7, 8],
+            "geometry": [
+                Polygon([(random.random(), random.random()) for i in range(3)])
+                for _ in range(4)
+            ],
+        },
+        crs=4326,
+    )
+
+    path = tmp_path / "test_layers.gpkg"
+    df_points.to_file(path, layer="points")
+    df_polygons.to_file(path, layer="polygons")
+
+    ddf_points = dask_geopandas.read_file(path, npartitions=2, layer="points")
+    assert_geodataframe_equal(ddf_points.compute().reset_index(drop=True), df_points)
+    ddf_polygons = dask_geopandas.read_file(path, npartitions=2, layer="polygons")
+    assert_geodataframe_equal(
+        ddf_polygons.compute().reset_index(drop=True), df_polygons
+    )
