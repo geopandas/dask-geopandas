@@ -2,37 +2,49 @@ import numpy as np
 import pandas as pd
 
 
-def _hilbert_distance(gdf, total_bounds, p):
+def _hilbert_distance(gdf, total_bounds=None, p=15):
 
     """
-    Calculate hilbert distance for a GeoDataFrame
-    int coordinates
+    Calculate the distance along a Hilbert curve.
+
+    The distances are calculated for the midpoints of the geometries in the
+    GeoDataFrame.
 
     Parameters
     ----------
     gdf : GeoDataFrame
-
-    total_bounds : Total bounds of geometries - array
-
-    p : The number of iterations used in constructing the Hilbert curve
+    total_bounds : 4-element array
+        Total bounds of geometries - array
+    p : int
+        The number of iterations used in constructing the Hilbert curve.
 
     Returns
     ---------
-    Pandas Series containing hilbert distances
-    """
+    Pandas Series containing distances along the Hilbert curve
 
-    # Compute bounds as array
+    """
+    # Calculate bounds as numpy array
     bounds = gdf.bounds.to_numpy()
+
+    if total_bounds is None:
+        total_bounds = np.array(
+            (
+                np.nanmin(bounds[:, 0]),  # minx
+                np.nanmin(bounds[:, 1]),  # miny
+                np.nanmax(bounds[:, 2]),  # maxx
+                np.nanmax(bounds[:, 3]),  # maxy
+            )
+        )
+
     # Calculate discrete coords based on total bounds and bounds
     x, y = _continuous_to_discrete_coords(total_bounds, bounds, p)
-    # Compute hilbert distances
+    # Compute distance along hilbert curve
     distances = _encode(p, x, y)
 
     return pd.Series(distances, index=gdf.index, name="hilbert_distance")
 
 
 def _continuous_to_discrete_coords(total_bounds, bounds, p):
-
     """
     Calculates mid points & ranges of geoms and returns
     as discrete coords
@@ -52,7 +64,7 @@ def _continuous_to_discrete_coords(total_bounds, bounds, p):
     Two-dimensional array Array of hilbert distances for each geom
     """
 
-    # Hilbert Side len
+    # Hilbert Side length
     side_length = 2 ** p
 
     # Calculate x and y range of total bound coords - returns array
@@ -62,7 +74,7 @@ def _continuous_to_discrete_coords(total_bounds, bounds, p):
     x_mids = (bounds[:, 0] + bounds[:, 2]) / 2.0
     y_mids = (bounds[:, 1] + bounds[:, 3]) / 2.0
 
-    # Transform continuous int to discrete int for each dimension
+    # Transform continuous value to discrete integer for each dimension
     x_int = _continuous_to_discrete(x_mids, (xmin, xmax), side_length)
     y_int = _continuous_to_discrete(y_mids, (ymin, ymax), side_length)
 
@@ -70,10 +82,9 @@ def _continuous_to_discrete_coords(total_bounds, bounds, p):
 
 
 def _continuous_to_discrete(vals, val_range, n):
-
     """
-    Convert a continuous one-dimensional array to discrete int
-    based on values and their ranges
+    Convert a continuous one-dimensional array to discrete integer values
+    based their ranges
 
     Parameters
     ----------

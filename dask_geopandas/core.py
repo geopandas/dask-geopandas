@@ -319,17 +319,19 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         return _CoordinateIndexer(self)
 
     def hilbert_distance(self, p=15):
-
         """
-        A function that calculates the Hilbert distance between the geometry bounds
-        and total bounds of a Dask-GeoDataFrame.
-        The Hilbert distance can be used to spatially partition Dask-GeoPandas objects,
-        by mapping two dimensional geometries along the Hilbert curve.
+        Calculate the distance along a Hilbert curve.
+
+        The distances are calculated for the midpoints of the geometries in the
+        GeoDataFrame, and using the total bounds of the GeoDataFrame.
+
+        The Hilbert distance can be used to spatially partition Dask-GeoPandas
+        objects, by mapping two dimensional geometries along the Hilbert curve.
 
         Parameters
         ----------
-
-        p : The number of iterations used in constructing the Hilbert curve.
+        p : int
+            The number of iterations used in constructing the Hilbert curve.
 
         Returns
         ----------
