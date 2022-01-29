@@ -566,7 +566,7 @@ class TestSpatialShuffle:
         ).sort_index()
 
         ddf = self.ddf.spatial_shuffle(
-            p=p,
+            level=p,
             calculate_partitions=calculate_partitions,
             npartitions=npartitions,
         )
@@ -594,7 +594,7 @@ class TestSpatialShuffle:
 
         ddf = self.ddf.spatial_shuffle(
             "morton",
-            p=p,
+            level=p,
             calculate_partitions=calculate_partitions,
             npartitions=npartitions,
         )
@@ -620,7 +620,7 @@ class TestSpatialShuffle:
         # crossing meridian and resulting 0 causes inconsistencies among environments
         df = df[df.name != "Fiji"]
         expected = df.set_index(
-            _geohash(df, string=False),
+            _geohash(df, string=False, p=12),
         ).sort_index()
 
         ddf = dask_geopandas.from_geopandas(df, npartitions=4)
