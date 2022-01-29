@@ -608,27 +608,25 @@ class TestSpatialShuffle:
         assert_geodataframe_equal(ddf.compute(), expected)
 
     @pytest.mark.parametrize(
-        "p,calculate_partitions,npartitions",
+        "calculate_partitions,npartitions",
         [
-            (4, True, 8),
-            (None, False, None),
-            (15, False, None),
+            (True, 8),
+            (False, None),
+            (False, None),
         ],
     )
-    def test_geohash(self, p, calculate_partitions, npartitions):
+    def test_geohash(self, calculate_partitions, npartitions):
         df = self.world.copy()
         # crossing meridian and resulting 0 causes inconsistencies among environments
         df = df[df.name != "Fiji"]
-        exp_p = p if (p and p <= 12) else 12
         expected = df.set_index(
-            _geohash(df, string=False, p=exp_p),
+            _geohash(df, string=False),
         ).sort_index()
 
         ddf = dask_geopandas.from_geopandas(df, npartitions=4)
 
         ddf = ddf.spatial_shuffle(
             "geohash",
-            p=p,
             calculate_partitions=calculate_partitions,
             npartitions=npartitions,
         )

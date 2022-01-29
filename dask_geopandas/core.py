@@ -456,7 +456,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def spatial_shuffle(
         self,
         by="hilbert",
-        p=None,
+        level=None,
         calculate_partitions=True,
         npartitions=None,
         divisions=None,
@@ -482,9 +482,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             Spatial sorting method, one of {'hilbert', 'morton', 'geohash'}. See
             ``hilbert_distance``, ``morton_distance`` and ``geohash`` methods for
             details.
-        p : int (default None)
-            Precision of the sorting method. Defaults to 15 for Hilbert and Morton
-            curves and 12 for geohash.
+        level : int (default None)
+            Level (precision) of the  Hilbert and Morton
+            curves used as a sorting method. Defaults to 15. Does not have an effect for
+            the ``'geohash'`` option.
         calculate_partitions : bool (default True)
             Calculate new spatial partitions after shuffling
         npartitions : int, None, or 'auto'
@@ -510,16 +511,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         partitions before it can determine the divisions for the new
         spatially-shuffled partitions.
         """
-        if p is None:
-            p = 15
+        if level is None:
+            level = 15
         if by == "hilbert":
-            by = self.hilbert_distance(p=p)
+            by = self.hilbert_distance(p=level)
         elif by == "morton":
-            by = self.morton_distance(p=p)
+            by = self.morton_distance(p=level)
         elif by == "geohash":
-            if p > 12:
-                p = 12
-            by = self.geohash(string=False, p=p)
+            by = self.geohash(string=False)
         else:
             raise ValueError(
                 f"'{by}' is not supported. Use one of ['hilbert', 'morton, 'geohash']."
