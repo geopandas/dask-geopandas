@@ -610,7 +610,7 @@ class TestSpatialShuffle:
     @pytest.mark.parametrize(
         "p,calculate_partitions,npartitions",
         [
-            (10, True, 8),
+            (4, True, 8),
             (None, False, None),
             (15, False, None),
         ],
