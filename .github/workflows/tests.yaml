@@ -53,7 +53,6 @@ jobs:
           use-mamba: true
 
       - name: Check and Log Environment
-        shell: bash
         run: |
           python -V
           python -c "import geopandas; geopandas.show_versions();"
@@ -61,7 +60,6 @@ jobs:
           conda list
 
       - name: Test
-        shell: bash
         run: |
           source activate test
           pytest -v -r s --color=yes --cov=dask_geopandas --cov-append --cov-report term-missing --cov-report xml .
