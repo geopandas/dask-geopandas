@@ -72,3 +72,10 @@ def test_specified_total_bounds(geoseries_polygons):
     result = ddf.morton_distance(total_bounds=geoseries_polygons.total_bounds)
     expected = ddf.morton_distance()
     assert_series_equal(result.compute(), expected.compute())
+
+
+def test_world():
+    # world without Fiji
+    morton_distance_dask(
+        geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres")).iloc[1:]
+    )

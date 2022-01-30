@@ -442,7 +442,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         if string is True:
             dtype = object
         else:
-            dtype = int
+            dtype = np.uint64
 
         geohashes = self.map_partitions(
             _geohash,
