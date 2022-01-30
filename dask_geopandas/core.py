@@ -17,6 +17,8 @@ from .hilbert_distance import _hilbert_distance
 from .morton_distance import _morton_distance
 from .geohash import _geohash
 
+import dask_geopandas
+
 
 def _set_crs(df, crs, allow_override):
     """Return a new object with crs set to ``crs``"""
@@ -573,6 +575,43 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             split_out=split_out,
         )
         return aggregated.set_crs(self.crs)
+
+    @derived_from(geopandas.GeoDataFrame)
+    def clip(self, mask, keep_geom_type=False):
+        return dask_geopandas.clip(self, mask=mask, keep_geom_type=keep_geom_type)
+
+    def sjoin(self, df, how="inner", predicate="intersects"):
+        """
+        Spatial join of two GeoDataFrames.
+
+        Parameters
+        ----------
+        df : geopandas or dask_geopandas GeoDataFrame
+            If a geopandas.GeoDataFrame is passed, it is considered as a
+            dask_geopandas.GeoDataFrame with 1 partition (without spatial
+            partitioning information).
+        how : string, default 'inner'
+            The type of join. Currently only 'inner' is supported.
+        predicate : string, default 'intersects'
+            Binary predicate how to match corresponding rows of the left and right
+            GeoDataFrame. Possible values: 'contains', 'contains_properly',
+            'covered_by', 'covers', 'crosses', 'intersects', 'overlaps',
+            'touches', 'within'.
+
+        Returns
+        -------
+        dask_geopandas.GeoDataFrame
+
+        Notes
+        -----
+        If both the left and right GeoDataFrame have spatial partitioning
+        information available (the ``spatial_partitions`` attribute is set),
+        the output partitions are determined based on intersection of the
+        spatial partitions. In all other cases, the output partitions are
+        all combinations (cartesian/cross product) of all input partition
+        of the left and right GeoDataFrame.
+        """
+        return dask_geopandas.sjoin(self, df, how=how, predicate=predicate)
 
 
 from_geopandas = dd.from_pandas
