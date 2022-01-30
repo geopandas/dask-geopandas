@@ -7,6 +7,7 @@ from shapely.geometry import Polygon, Point, LineString, MultiPoint
 import dask.dataframe as dd
 from dask.dataframe.core import Scalar
 import dask_geopandas
+import dask
 
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 from dask_geopandas.hilbert_distance import _hilbert_distance
@@ -607,11 +608,14 @@ class TestSpatialShuffle:
 
         assert_geodataframe_equal(ddf.compute(), expected)
 
+    @pytest.mark.skipif(
+        Version(dask.__version__) <= Version("2021.03.0"),
+        reason="older Dask has a bug in sorting",
+    )
     @pytest.mark.parametrize(
         "calculate_partitions,npartitions",
         [
             (True, 8),
-            (False, None),
             (False, None),
         ],
     )
