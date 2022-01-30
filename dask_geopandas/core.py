@@ -451,6 +451,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return geohashes
 
+    @derived_from(geopandas.GeoDataFrame)
+    def clip(self, mask, keep_geom_type=False):
+        return dask_geopandas.clip(self, mask=mask, keep_geom_type=keep_geom_type)
+
 
 class GeoSeries(_Frame, dd.core.Series):
     """Parallel GeoPandas GeoSeries
@@ -575,10 +579,6 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             split_out=split_out,
         )
         return aggregated.set_crs(self.crs)
-
-    @derived_from(geopandas.GeoDataFrame)
-    def clip(self, mask, keep_geom_type=False):
-        return dask_geopandas.clip(self, mask=mask, keep_geom_type=keep_geom_type)
 
     def sjoin(self, df, how="inner", predicate="intersects"):
         """

@@ -38,7 +38,10 @@ def clip(gdf, mask, keep_geom_type=False):
     }
     divisions = [None] * (len(dsk) + 1)
     graph = HighLevelGraph.from_collections(name, dsk, dependencies=[gdf])
-    result = GeoDataFrame(graph, name, gdf._meta, tuple(divisions))
+    if isinstance(gdf, GeoDataFrame):
+        result = GeoDataFrame(graph, name, gdf._meta, tuple(divisions))
+    elif isinstance(gdf, GeoSeries):
+        result = GeoSeries(graph, name, gdf._meta, tuple(divisions))
     result.spatial_partitions = new_spatial_partitions
 
     return result
