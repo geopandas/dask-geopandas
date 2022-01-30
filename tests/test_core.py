@@ -512,8 +512,8 @@ def test_clip(geodf_points):
     result = dask_obj.clip(mask).compute()
     assert_geodataframe_equal(expected, result)
 
-    expected = geopandas.clip(geodf_points.geometry, mask)
-    result = dask_obj.geometry.clip(dask_obj.geometry, mask).compute()
+    expected = geodf_points.geometry.clip(mask)
+    result = dask_obj.geometry.clip(mask).compute()
     assert_geoseries_equal(expected, result)
 
 
