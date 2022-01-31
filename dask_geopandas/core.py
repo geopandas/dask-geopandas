@@ -318,7 +318,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def cx(self):
         return _CoordinateIndexer(self)
 
-    def hilbert_distance(self, level=15):
+    def hilbert_distance(self, level=16):
         """
         A function that calculates the Hilbert distance between the geometry bounds
         and total bounds of a Dask-GeoDataFrame.
@@ -328,7 +328,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         Parameters
         ----------
 
-        level : int (1 - 16), default 15
+        level : int (1 - 16), default 16
             Determines the precision of the curve (points on the curve will
             have coordinates in the range [0, 2^level - 1]).
 
@@ -344,13 +344,13 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         distances = self.map_partitions(
             _hilbert_distance,
             total_bounds=total_bounds,
-            p=level,
+            level=level,
             meta=pd.Series([], name="hilbert_distance", dtype="int"),
         )
 
         return distances
 
-    def morton_distance(self, level=15):
+    def morton_distance(self, level=16):
 
         """
         Calculate the distance of geometries along the Morton curve
@@ -370,7 +370,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         Parameters
         ----------
 
-        level : int
+        level : int (1 - 16), default 16
             Determines the precision of the Morton curve.
 
         Returns
@@ -386,13 +386,13 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         distances = self.map_partitions(
             _morton_distance,
             total_bounds=total_bounds,
-            p=level,
+            level=level,
             meta=pd.Series([], name="morton_distance", dtype="int"),
         )
 
         return distances
 
-    def geohash(self, string=True, p=12):
+    def geohash(self, string=True, precision=12):
 
         """
         Calculate geohash based on the middle points of the geometry bounds
@@ -403,15 +403,17 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         ----------
         as_string : bool (default True)
             to return string or int Geohash
-        p : int (default 12)
-            precision of the string Geohash
+        precision : int (1 - 12), default 12
+            Precision of the string geohash values. Only used when
+            ``as_string=True``.
+
         Returns
         ----------
         type : pandas.Series
             Series containing Geohash
         """
 
-        if p not in range(1, 13):
+        if precision not in range(1, 13):
             raise ValueError(
                 "The Geohash precision only accepts an integer value between 1 and 12"
             )
@@ -424,7 +426,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         geohashes = self.map_partitions(
             _geohash,
             string=string,
-            p=p,
+            precision=precision,
             meta=pd.Series([], name="geohash", dtype=dtype),
         )
 

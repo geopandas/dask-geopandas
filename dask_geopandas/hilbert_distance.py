@@ -8,7 +8,7 @@ ngjit = jit(nopython=True, nogil=True)
 # 9252a7aba5f8bc7a435fffa2c31018af8d92942c/spatialpandas/dask.py
 
 
-def _hilbert_distance(gdf, total_bounds, p):
+def _hilbert_distance(gdf, total_bounds, level):
 
     """
     Calculate hilbert distance for a GeoDataFrame
@@ -20,7 +20,9 @@ def _hilbert_distance(gdf, total_bounds, p):
 
     total_bounds : Total bounds of geometries - array
 
-    p : The number of iterations used in constructing the Hilbert curve
+    level : int (1 - 16), default 16
+        Determines the precision of the curve (points on the curve will
+        have coordinates in the range [0, 2^level - 1]).
 
     Returns
     ---------
@@ -30,8 +32,8 @@ def _hilbert_distance(gdf, total_bounds, p):
     # Compute bounds as array
     bounds = gdf.bounds.to_numpy()
     # Compute hilbert distances
-    coords = _continuous_to_discrete_coords(total_bounds, bounds, p)
-    distances = _distances_from_coordinates(p, coords)
+    coords = _continuous_to_discrete_coords(total_bounds, bounds, level)
+    distances = _distances_from_coordinates(level, coords)
 
     return pd.Series(distances, index=gdf.index, name="hilbert_distance")
 

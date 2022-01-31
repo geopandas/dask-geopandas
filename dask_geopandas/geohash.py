@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 
-def _geohash(gdf, string, p):
+def _geohash(gdf, string, precision):
     """
     Calculate geohash based on the middle points of the geometry bounds
     for a given precision
@@ -22,7 +22,7 @@ def _geohash(gdf, string, p):
     gdf : GeoDataFrame
     string : bool
         to return string or int Geohash
-    p : int
+    precision : int
         precision of the string Geohash
 
 
@@ -39,7 +39,7 @@ def _geohash(gdf, string, p):
     # Create pairs of x and y midpoints
     coords = np.array([y_mids, x_mids]).T
     # Encode coords with Geohash
-    geohash = encode_geohash(coords, string, p)
+    geohash = encode_geohash(coords, string, precision)
 
     return pd.Series(geohash, index=gdf.index, name="geohash")
 
@@ -66,7 +66,7 @@ def _calculate_mid_points(bounds):
     return x_mids, y_mids
 
 
-def encode_geohash(coords, string, p):
+def encode_geohash(coords, string, precision):
     """
     Calculate geohash based on coordinates for a
     given precision
@@ -77,7 +77,7 @@ def encode_geohash(coords, string, p):
         array of [x, y] pairs
     string : bool
         to return string or int Geohash
-    p : int
+    precision : int
         precision of the string Geohash
     Returns
     ---------
@@ -92,7 +92,7 @@ def encode_geohash(coords, string, p):
         return int_geohash
 
     gs_uint8_mat = _encode_base32(int_geohash)
-    str_geohash = _encode_unicode(gs_uint8_mat, p)
+    str_geohash = _encode_unicode(gs_uint8_mat, precision)
 
     return str_geohash
 
@@ -203,7 +203,7 @@ def _encode_base32(encoded_uint64):
     )
 
 
-def _encode_unicode(encoded_base32, p):
+def _encode_unicode(encoded_base32, precision):
     """
     Encode base32 pairs into geohash bytes with an option to return
     the geohash in unicode format
@@ -263,4 +263,4 @@ def _encode_unicode(encoded_base32, p):
     encoded_base32 = replacement[encoded_base32]
 
     encoded_base32 = encoded_base32.view(np.dtype("|S12"))
-    return encoded_base32.flatten().astype(f"U{p}")
+    return encoded_base32.flatten().astype(f"U{precision}")

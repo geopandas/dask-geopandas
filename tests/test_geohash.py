@@ -47,7 +47,7 @@ def geohash_dask(geoseries):
     expected = geohash_vec(y_mids, x_mids, p)
 
     ddf = from_geopandas(geoseries, npartitions=1)
-    result = ddf.geohash(p=p, string=string).compute()
+    result = ddf.geohash(precision=p, string=string).compute()
 
     assert_array_equal(np.array(result), expected)
     assert isinstance(result, pd.Series)
