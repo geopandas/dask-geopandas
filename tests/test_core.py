@@ -8,7 +8,6 @@ import dask
 import dask.dataframe as dd
 from dask.dataframe.core import Scalar
 import dask_geopandas
-import dask
 
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 from dask_geopandas.hilbert_distance import _hilbert_distance
