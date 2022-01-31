@@ -239,6 +239,8 @@ def test_project(geoseries_lines):
         "overlaps",
         "touches",
         "within",
+        "covers",
+        "covered_by",
         "distance",
         "relate",
     ],
@@ -528,6 +530,36 @@ def test_copy_none_spatial_partitions(geoseries_points):
     ddf.spatial_partitions = None
     ddf_copy = ddf.copy()
     assert ddf_copy.spatial_partitions is None
+
+
+def test_sjoin():
+    # test only the method, functionality tested in test_sjoin.py
+    df_points = geopandas.read_file(geopandas.datasets.get_path("naturalearth_cities"))
+    ddf_points = dask_geopandas.from_geopandas(df_points, npartitions=4)
+
+    df_polygons = geopandas.read_file(
+        geopandas.datasets.get_path("naturalearth_lowres")
+    )
+    expected = df_points.sjoin(df_polygons, predicate="within", how="inner")
+    expected = expected.sort_index()
+
+    result = ddf_points.sjoin(df_polygons, predicate="within", how="inner")
+    assert_geodataframe_equal(expected, result.compute().sort_index())
+
+
+def test_clip(geodf_points):
+    # test only the method, functionality tested in test_clip.py
+    dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
+    dask_obj.calculate_spatial_partitions()
+    mask = geodf_points.iloc[:1]
+    mask["geometry"] = mask["geometry"].buffer(2)
+    expected = geodf_points.clip(mask)
+    result = dask_obj.clip(mask).compute()
+    assert_geodataframe_equal(expected, result)
+
+    expected = geodf_points.geometry.clip(mask)
+    result = dask_obj.geometry.clip(mask).compute()
+    assert_geoseries_equal(expected, result)
 
 
 class TestDissolve:
