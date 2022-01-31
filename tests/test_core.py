@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import geopandas
 from shapely.geometry import Polygon, Point, LineString, MultiPoint
+import dask
 import dask.dataframe as dd
 from dask.dataframe.core import Scalar
 import dask_geopandas
@@ -484,6 +485,45 @@ def test_map_partitions_get_geometry(geodf_points):
     assert_geoseries_equal(result, expected)
 
 
+@pytest.mark.parametrize(
+    "shuffle_method",
+    [
+        "disk",
+        "tasks",
+    ],
+)
+def test_set_index_preserves_class(geodf_points, shuffle_method):
+    dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
+    dask_obj = dask_obj.set_index("value1", shuffle=shuffle_method)
+
+    for partition in dask_obj.partitions:
+        assert isinstance(partition.compute(), geopandas.GeoDataFrame)
+
+    assert isinstance(dask_obj.compute(), geopandas.GeoDataFrame)
+
+
+@pytest.mark.parametrize(
+    "shuffle_method",
+    [
+        "disk",
+        "tasks",
+    ],
+)
+def test_set_index_preserves_class_and_name(geodf_points, shuffle_method):
+    df = geodf_points.rename_geometry("geom")
+    dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)
+    dask_obj = dask_obj.set_index("value1", shuffle=shuffle_method)
+
+    for partition in dask_obj.partitions:
+        part = partition.compute()
+        assert isinstance(part, geopandas.GeoDataFrame)
+        assert part.geometry.name == "geom"
+
+    computed = dask_obj.compute()
+    assert isinstance(computed, geopandas.GeoDataFrame)
+    assert computed.geometry.name == "geom"
+
+
 def test_copy_none_spatial_partitions(geoseries_points):
     ddf = dask_geopandas.from_geopandas(geoseries_points, npartitions=2)
     ddf.spatial_partitions = None
@@ -511,9 +551,27 @@ class TestDissolve:
             gpd_sum, dd_sum.drop(columns=["name", "iso_a3"]), check_like=True
         )
 
+    @pytest.mark.skipif(
+        Version(dask.__version__) == Version("2022.01.1"),
+        reason="Regression in dask 2022.01.1 https://github.com/dask/dask/issues/8611",
+    )
     def test_split_out(self):
         gpd_default = self.world.dissolve("continent")
         dd_split = self.ddf.dissolve("continent", split_out=4)
+        assert dd_split.npartitions == 4
+        assert_geodataframe_equal(gpd_default, dd_split.compute(), check_like=True)
+
+    @pytest.mark.skipif(
+        Version(dask.__version__) == Version("2022.01.1"),
+        reason="Regression in dask 2022.01.1 https://github.com/dask/dask/issues/8611",
+    )
+    @pytest.mark.xfail
+    def test_split_out_name(self):
+        gpd_default = self.world.rename_geometry("geom").dissolve("continent")
+        ddf = dask_geopandas.from_geopandas(
+            self.world.rename_geometry("geom"), npartitions=4
+        )
+        dd_split = ddf.dissolve("continent", split_out=4)
         assert dd_split.npartitions == 4
         assert_geodataframe_equal(gpd_default, dd_split.compute(), check_like=True)
 
