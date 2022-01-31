@@ -522,6 +522,7 @@ class TestDissolve:
         Version(dask.__version__) == Version("2022.01.1"),
         reason="Regression in dask 2022.01.1 https://github.com/dask/dask/issues/8611",
     )
+    @pytest.mark.xfail
     def test_split_out_name(self):
         gpd_default = self.world.rename_geometry("geom").dissolve("continent")
         ddf = dask_geopandas.from_geopandas(
