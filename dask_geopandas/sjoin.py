@@ -47,7 +47,7 @@ def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
             " in a future release. Please use the `predicate` parameter"
             " instead."
         )
-        warnings.warn(deprecation_message, FutureWarning)
+        warnings.warn(deprecation_message, FutureWarning, stacklevel=2)
     if how != "inner":
         raise NotImplementedError("Only how='inner' is supported right now")
 
