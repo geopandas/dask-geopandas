@@ -19,6 +19,8 @@ from .hilbert_distance import _hilbert_distance
 from .morton_distance import _morton_distance
 from .geohash import _geohash
 
+import dask_geopandas
+
 
 def _set_crs(df, crs, allow_override):
     """Return a new object with crs set to ``crs``"""
@@ -329,7 +331,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """
         return _CoordinateIndexer(self)
 
-    def hilbert_distance(self, p=15):
+    def hilbert_distance(self, total_bounds=None, p=15):
 
         """
         A function that calculates the Hilbert distance between the geometry bounds
@@ -339,7 +341,11 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Parameters
         ----------
-
+        total_bounds : 4-element array, optional
+            The spatial extent in which the curve is constructed (used to
+            rescale the geometry midpoints). By default, the total bounds
+            of the full dask GeoDataFrame will be computed. If known, you
+            can pass the total bounds to avoid this extra computation.
         p : The number of iterations used in constructing the Hilbert curve.
 
         Returns
@@ -349,7 +355,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """
 
         # Compute total bounds of all partitions rather than each partition
-        total_bounds = self.total_bounds
+        if total_bounds is None:
+            total_bounds = self.total_bounds
 
         # Calculate hilbert distances for each partition
         distances = self.map_partitions(
@@ -361,7 +368,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return distances
 
-    def morton_distance(self, p=15):
+    def morton_distance(self, total_bounds=None, p=15):
 
         """
         Calculate the distance of geometries along the Morton curve
@@ -380,7 +387,11 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Parameters
         ----------
-
+        total_bounds : 4-element array, optional
+            The spatial extent in which the curve is constructed (used to
+            rescale the geometry midpoints). By default, the total bounds
+            of the full dask GeoDataFrame will be computed. If known, you
+            can pass the total bounds to avoid this extra computation.
         p : int
             precision of the Morton curve
 
@@ -391,7 +402,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """
 
         # Compute total bounds of all partitions rather than each partition
-        total_bounds = self.total_bounds
+        if total_bounds is None:
+            total_bounds = self.total_bounds
 
         # Calculate Morton distances for each partition
         distances = self.map_partitions(
@@ -441,6 +453,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return geohashes
 
+    @derived_from(geopandas.GeoDataFrame)
+    def clip(self, mask, keep_geom_type=False):
+        return dask_geopandas.clip(self, mask=mask, keep_geom_type=keep_geom_type)
+
 
 class GeoSeries(_Frame, dd.core.Series):
     """Parallel GeoPandas GeoSeries
@@ -478,6 +494,11 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         self._meta = new._meta
         self._name = new._name
         self.dask = new.dask
+
+    def set_index(self, *args, **kwargs):
+        """Override to ensure we get GeoDataFrame with set geometry column"""
+        ddf = super().set_index(*args, **kwargs)
+        return ddf.set_geometry(self._meta.geometry.name)
 
     def set_geometry(self, col):
         # calculate ourselves to use meta and not meta_nonempty, which would
@@ -577,6 +598,39 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         )
         return aggregated.set_crs(self.crs)
 
+    def sjoin(self, df, how="inner", predicate="intersects"):
+        """
+        Spatial join of two GeoDataFrames.
+
+        Parameters
+        ----------
+        df : geopandas or dask_geopandas GeoDataFrame
+            If a geopandas.GeoDataFrame is passed, it is considered as a
+            dask_geopandas.GeoDataFrame with 1 partition (without spatial
+            partitioning information).
+        how : string, default 'inner'
+            The type of join. Currently only 'inner' is supported.
+        predicate : string, default 'intersects'
+            Binary predicate how to match corresponding rows of the left and right
+            GeoDataFrame. Possible values: 'contains', 'contains_properly',
+            'covered_by', 'covers', 'crosses', 'intersects', 'overlaps',
+            'touches', 'within'.
+
+        Returns
+        -------
+        dask_geopandas.GeoDataFrame
+
+        Notes
+        -----
+        If both the left and right GeoDataFrame have spatial partitioning
+        information available (the ``spatial_partitions`` attribute is set),
+        the output partitions are determined based on intersection of the
+        spatial partitions. In all other cases, the output partitions are
+        all combinations (cartesian/cross product) of all input partition
+        of the left and right GeoDataFrame.
+        """
+        return dask_geopandas.sjoin(self, df, how=how, predicate=predicate)
+
 
 from_geopandas = dd.from_pandas
 
@@ -658,6 +712,8 @@ for name in [
     "overlaps",
     "touches",
     "within",
+    "covers",
+    "covered_by",
 ]:
     meth = getattr(geopandas.base.GeoPandasBase, name)
     _Frame._bind_elemwise_comparison_method(

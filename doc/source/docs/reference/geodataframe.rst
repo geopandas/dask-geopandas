@@ -47,6 +47,22 @@ Aggregating and exploding
 
    GeoDataFrame.explode
 
+Spatial joins
+-------------
+
+.. autosummary::
+   :toctree: api/
+
+   GeoDataFrame.sjoin
+
+Overlay operations
+------------------
+
+.. autosummary::
+   :toctree: api/
+
+   GeoDataFrame.clip
+
 Indexing
 --------
 
