@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import geopandas
 from shapely.geometry import Polygon, Point, LineString, MultiPoint
+import dask
 import dask.dataframe as dd
 from dask.dataframe.core import Scalar
 import dask_geopandas
@@ -507,9 +508,26 @@ class TestDissolve:
             gpd_sum, dd_sum.drop(columns=["name", "iso_a3"]), check_like=True
         )
 
+    @pytest.mark.skipif(
+        Version(dask.__version__) == Version("2022.01.1"),
+        reason="Regression in dask 2022.01.1 https://github.com/dask/dask/issues/8611",
+    )
     def test_split_out(self):
         gpd_default = self.world.dissolve("continent")
         dd_split = self.ddf.dissolve("continent", split_out=4)
+        assert dd_split.npartitions == 4
+        assert_geodataframe_equal(gpd_default, dd_split.compute(), check_like=True)
+
+    @pytest.mark.skipif(
+        Version(dask.__version__) == Version("2022.01.1"),
+        reason="Regression in dask 2022.01.1 https://github.com/dask/dask/issues/8611",
+    )
+    def test_split_out_name(self):
+        gpd_default = self.world.rename_geometry("geom").dissolve("continent")
+        ddf = dask_geopandas.from_geopandas(
+            self.world.rename_geometry("geom"), npartitions=4
+        )
+        dd_split = ddf.dissolve("continent", split_out=4)
         assert dd_split.npartitions == 4
         assert_geodataframe_equal(gpd_default, dd_split.compute(), check_like=True)
 
