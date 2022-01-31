@@ -660,6 +660,8 @@ for name in [
     "overlaps",
     "touches",
     "within",
+    "covers",
+    "covered_by",
 ]:
     meth = getattr(geopandas.base.GeoPandasBase, name)
     _Frame._bind_elemwise_comparison_method(
