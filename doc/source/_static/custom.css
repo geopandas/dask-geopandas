@@ -1,0 +1,8 @@
+/* colors */
+
+:root {
+    --pst-color-primary: 19, 156, 90;
+    --pst-color-active-navigation: 19, 156, 90;
+    --pst-color-h2: var(--color-text-base);
+    --pst-color-link: 19, 156, 90;
+}

@@ -114,6 +114,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         setattr(cls, name, derived_from(original)(meth))
 
     def calculate_spatial_partitions(self):
+        """Calculate spatial partitions"""
         # TEMP method to calculate spatial partitions for testing, need to
         # add better methods (set_partitions / repartition)
         parts = geopandas.GeoSeries(
@@ -316,9 +317,17 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     @property
     def cx(self):
+        """
+        Coordinate based indexer to select by intersection with bounding box.
+
+        Format of input should be ``.cx[xmin:xmax, ymin:ymax]``. Any of
+        ``xmin``, ``xmax``, ``ymin``, and ``ymax`` can be provided, but input
+        must include a comma separating x and y slices. That is, ``.cx[:, :]``
+        will return the full series/frame, but ``.cx[:]`` is not implemented.
+        """
         return _CoordinateIndexer(self)
 
-    def hilbert_distance(self, p=15):
+    def hilbert_distance(self, total_bounds=None, p=15):
         """
         Calculate the distance along a Hilbert curve.
 
@@ -330,16 +339,23 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Parameters
         ----------
+        total_bounds : 4-element array, optional
+            The spatial extent in which the curve is constructed (used to
+            rescale the geometry midpoints). By default, the total bounds
+            of the full dask GeoDataFrame will be computed. If known, you
+            can pass the total bounds to avoid this extra computation.
         p : int
             The number of iterations used in constructing the Hilbert curve.
 
         Returns
         ----------
-        Distances for each partition
+        dask.Series
+            Series containing distances for each partition
         """
 
         # Compute total bounds of all partitions rather than each partition
-        total_bounds = self.total_bounds
+        if total_bounds is None:
+            total_bounds = self.total_bounds
 
         # Calculate hilbert distances for each partition
         distances = self.map_partitions(
@@ -351,7 +367,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return distances
 
-    def morton_distance(self, p=15):
+    def morton_distance(self, total_bounds=None, p=15):
 
         """
         Calculate the distance of geometries along the Morton curve
@@ -370,18 +386,23 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Parameters
         ----------
-
+        total_bounds : 4-element array, optional
+            The spatial extent in which the curve is constructed (used to
+            rescale the geometry midpoints). By default, the total bounds
+            of the full dask GeoDataFrame will be computed. If known, you
+            can pass the total bounds to avoid this extra computation.
         p : int
             precision of the Morton curve
 
         Returns
         ----------
-        type : dask.Series
+        dask.Series
             Series containing distances along the Morton curve
         """
 
         # Compute total bounds of all partitions rather than each partition
-        total_bounds = self.total_bounds
+        if total_bounds is None:
+            total_bounds = self.total_bounds
 
         # Calculate Morton distances for each partition
         distances = self.map_partitions(
@@ -433,10 +454,22 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
 
 class GeoSeries(_Frame, dd.core.Series):
+    """Parallel GeoPandas GeoSeries
+
+    Do not use this class directly. Instead use functions like
+    :func:`dask_geopandas.read_parquet`,or :func:`dask_geopandas.from_geopandas`.
+    """
+
     _partition_type = geopandas.GeoSeries
 
 
 class GeoDataFrame(_Frame, dd.core.DataFrame):
+    """Parallel GeoPandas GeoDataFrame
+
+    Do not use this class directly. Instead use functions like
+    :func:`dask_geopandas.read_parquet`,or :func:`dask_geopandas.from_geopandas`.
+    """
+
     _partition_type = geopandas.GeoDataFrame
 
     @property
@@ -456,6 +489,11 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         self._meta = new._meta
         self._name = new._name
         self.dask = new.dask
+
+    def set_index(self, *args, **kwargs):
+        """Override to ensure we get GeoDataFrame with set geometry column"""
+        ddf = super().set_index(*args, **kwargs)
+        return ddf.set_geometry(self._meta.geometry.name)
 
     def set_geometry(self, col):
         # calculate ourselves to use meta and not meta_nonempty, which would
@@ -548,8 +586,20 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
 from_geopandas = dd.from_pandas
 
 
-def from_dask_dataframe(df):
-    return df.map_partitions(geopandas.GeoDataFrame)
+def from_dask_dataframe(df, geometry=None):
+    """
+    Create GeoDataFrame from dask DataFrame.
+
+    Parameters
+    ----------
+    df : dask DataFrame
+    geometry : str or array-like, optional
+        If a string, the column to use as geometry. By default, it will look
+        for a column named "geometry". If array-like or dask (Geo)Series,
+        the values will be set as 'geometry' column on the GeoDataFrame.
+
+    """
+    return df.map_partitions(geopandas.GeoDataFrame, geometry=geometry)
 
 
 def points_from_xy(df, x="x", y="y", z="z", crs=None):
@@ -633,6 +683,9 @@ for name in [
     _Frame._bind_elemwise_operator_method(
         name, meth, original=geopandas.base.GeoPandasBase
     )
+
+
+dd.core.DataFrame.set_geometry = GeoDataFrame.set_geometry
 
 
 # Coodinate indexer (.cx)

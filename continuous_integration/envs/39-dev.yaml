@@ -10,6 +10,7 @@ dependencies:
   - fiona
   - pyproj
   - fsspec
+  - packaging
   # test dependencies
   - pytest
   - pytest-cov

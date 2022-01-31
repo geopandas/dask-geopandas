@@ -8,6 +8,7 @@ install_requires = [
     "dask>=2.18.0,!=2021.05.1",
     "distributed>=2.18.0,!=2021.05.1",
     "pygeos",
+    "packaging",
 ]
 
 setup(
