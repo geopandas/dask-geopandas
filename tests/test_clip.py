@@ -1,5 +1,5 @@
 import geopandas
-from geopandas.testing import assert_geodataframe_equal
+from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 import pytest
 import dask_geopandas
 from .test_core import geodf_points  # noqa: F401
@@ -31,3 +31,13 @@ def test_clip_dask_mask(geodf_points):  # noqa: F811
         NotImplementedError, match=r"Mask cannot be a Dask GeoDataFrame or GeoSeries."
     ):
         dask_geopandas.clip(dask_obj, mask)
+
+
+def test_clip_geoseries(geodf_points):  # noqa: F811
+    dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
+    dask_obj.calculate_spatial_partitions()
+    mask = geodf_points.iloc[:1]
+    mask["geometry"] = mask["geometry"].buffer(2)
+    expected = geopandas.clip(geodf_points.geometry, mask)
+    result = dask_geopandas.clip(dask_obj.geometry, mask).compute()
+    assert_geoseries_equal(expected, result)

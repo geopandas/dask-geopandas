@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 import versioneer
 
 install_requires = [
-    "geopandas",
+    "geopandas>=0.10",
     "dask>=2.18.0,!=2021.05.1",
     "distributed>=2.18.0,!=2021.05.1",
     "numba",

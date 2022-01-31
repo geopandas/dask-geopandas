@@ -126,6 +126,14 @@ Missing values
    GeoSeries.fillna
    GeoSeries.isna
 
+Overlay operations
+------------------
+
+.. autosummary::
+   :toctree: api/
+
+   GeoSeries.clip
+
 Indexing
 --------
 
