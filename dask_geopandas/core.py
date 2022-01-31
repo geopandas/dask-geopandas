@@ -415,7 +415,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return distances
 
-    def geohash(self, string=True, precision=12):
+    def geohash(self, as_string=True, precision=12):
 
         """
         Calculate geohash based on the middle points of the geometry bounds
@@ -441,14 +441,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
                 "The Geohash precision only accepts an integer value between 1 and 12"
             )
 
-        if string is True:
+        if as_string is True:
             dtype = object
         else:
             dtype = int
 
         geohashes = self.map_partitions(
             _geohash,
-            string=string,
+            as_string=as_string,
             precision=precision,
             meta=pd.Series([], name="geohash", dtype=dtype),
         )

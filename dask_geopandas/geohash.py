@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 
 
-def _geohash(gdf, string, precision):
+def _geohash(gdf, as_string, precision):
     """
     Calculate geohash based on the middle points of the geometry bounds
     for a given precision
@@ -20,7 +20,7 @@ def _geohash(gdf, string, precision):
     Parameters
     ----------
     gdf : GeoDataFrame
-    string : bool
+    as_string : bool
         to return string or int Geohash
     precision : int
         precision of the string Geohash
@@ -39,7 +39,7 @@ def _geohash(gdf, string, precision):
     # Create pairs of x and y midpoints
     coords = np.array([y_mids, x_mids]).T
     # Encode coords with Geohash
-    geohash = encode_geohash(coords, string, precision)
+    geohash = encode_geohash(coords, as_string, precision)
 
     return pd.Series(geohash, index=gdf.index, name="geohash")
 
@@ -66,7 +66,7 @@ def _calculate_mid_points(bounds):
     return x_mids, y_mids
 
 
-def encode_geohash(coords, string, precision):
+def encode_geohash(coords, as_string, precision):
     """
     Calculate geohash based on coordinates for a
     given precision
@@ -75,7 +75,7 @@ def encode_geohash(coords, string, precision):
     ----------
     coords : array_like of shape (n, 2)
         array of [x, y] pairs
-    string : bool
+    as_string : bool
         to return string or int Geohash
     precision : int
         precision of the string Geohash
@@ -88,7 +88,7 @@ def encode_geohash(coords, string, precision):
     quantized_coords = _quantize_points(coords)
     int_geohash = _encode_into_uint64(quantized_coords)
 
-    if not string:
+    if not as_string:
         return int_geohash
 
     gs_uint8_mat = _encode_base32(int_geohash)
