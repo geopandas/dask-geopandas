@@ -1,5 +1,3 @@
-import warnings
-
 import numpy as np
 import pandas as pd
 
@@ -524,20 +522,12 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
                 f"'{by}' is not supported. Use one of ['hilbert', 'morton, 'geohash']."
             )
 
-        if "shuffle" in kwargs:
-            shuffle = kwargs.pop("shuffle")
-            if shuffle != "tasks":
-                warnings.warn(
-                    "Temporarily forcing the 'tasks' shuffle mode due to an upstream issue."
-                )
-
         sorted_ddf = self.set_index(
             by,
             sorted=False,
             npartitions=npartitions,
             divisions=divisions,
             inplace=False,
-            shuffle="tasks",  # temporary fix for #59
             **kwargs,
         )
 
