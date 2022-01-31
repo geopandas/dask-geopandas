@@ -451,91 +451,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         return geohashes
 
-    def spatial_shuffle(
-        self,
-        by="hilbert",
-        level=None,
-        calculate_partitions=True,
-        npartitions=None,
-        divisions=None,
-        **kwargs,
-    ):
-        """
-        Shuffle the data into spatially consistent partitions.
-
-        This realigns the dataset to be spatially sorted, i.e. geometries that are
-        spatially near each other will be within the same partition. This is
-        useful especially for overlay operations like a spatial join as it reduces the
-        number of interactions between individual partitions.
-
-        The spatial information is stored in the index and will replace the existing
-        index.
-
-        Note that ``spatial_shuffle`` uses ``set_index`` under the hood and comes with
-        all its potential performance drawbacks.
-
-        Parameters
-        ----------
-        by : string (default 'hilbert')
-            Spatial sorting method, one of {'hilbert', 'morton', 'geohash'}. See
-            ``hilbert_distance``, ``morton_distance`` and ``geohash`` methods for
-            details.
-        level : int (default None)
-            Level (precision) of the  Hilbert and Morton
-            curves used as a sorting method. Defaults to 15. Does not have an effect for
-            the ``'geohash'`` option.
-        calculate_partitions : bool (default True)
-            Calculate new spatial partitions after shuffling
-        npartitions : int, None, or 'auto'
-            The ideal number of output partitions. If None, use the same as the input.
-            If 'auto' then decide by memory use. Only used when divisions is not given.
-            If divisions is given, the number of output partitions will be
-            len(divisions) - 1.
-        divisions: list, optional
-            The “dividing lines” used to split the new index into partitions. Needs to
-            match the values returned by the sorting method.
-
-        **kwargs
-            Keyword arguments passed to ``set_index``.
-
-        Returns
-        -------
-        dask_geopandas.GeoDataFrame
-
-        Notes
-        -----
-        This method, similarly to ``calculate_spatial_partitions``, is computed
-        partially eagerly as it needs to calculate the distances for all existing
-        partitions before it can determine the divisions for the new
-        spatially-shuffled partitions.
-        """
-        if level is None:
-            level = 15
-        if by == "hilbert":
-            by = self.hilbert_distance(p=level)
-        elif by == "morton":
-            by = self.morton_distance(p=level)
-        elif by == "geohash":
-            by = self.geohash(string=False)
-        else:
-            raise ValueError(
-                f"'{by}' is not supported. Use one of ['hilbert', 'morton, 'geohash']."
-            )
-
-        sorted_ddf = self.set_index(
-            by,
-            sorted=False,
-            npartitions=npartitions,
-            divisions=divisions,
-            inplace=False,
-            **kwargs,
-        )
-
-        if calculate_partitions:
-            sorted_ddf.calculate_spatial_partitions()
-
-        return sorted_ddf
-
 
 class GeoSeries(_Frame, dd.core.Series):
     """Parallel GeoPandas GeoSeries
@@ -665,6 +580,91 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             split_out=split_out,
         )
         return aggregated.set_crs(self.crs)
+
+    def spatial_shuffle(
+        self,
+        by="hilbert",
+        level=None,
+        calculate_partitions=True,
+        npartitions=None,
+        divisions=None,
+        **kwargs,
+    ):
+        """
+        Shuffle the data into spatially consistent partitions.
+
+        This realigns the dataset to be spatially sorted, i.e. geometries that are
+        spatially near each other will be within the same partition. This is
+        useful especially for overlay operations like a spatial join as it reduces the
+        number of interactions between individual partitions.
+
+        The spatial information is stored in the index and will replace the existing
+        index.
+
+        Note that ``spatial_shuffle`` uses ``set_index`` under the hood and comes with
+        all its potential performance drawbacks.
+
+        Parameters
+        ----------
+        by : string (default 'hilbert')
+            Spatial sorting method, one of {'hilbert', 'morton', 'geohash'}. See
+            ``hilbert_distance``, ``morton_distance`` and ``geohash`` methods for
+            details.
+        level : int (default None)
+            Level (precision) of the  Hilbert and Morton
+            curves used as a sorting method. Defaults to 15. Does not have an effect for
+            the ``'geohash'`` option.
+        calculate_partitions : bool (default True)
+            Calculate new spatial partitions after shuffling
+        npartitions : int, None, or 'auto'
+            The ideal number of output partitions. If None, use the same as the input.
+            If 'auto' then decide by memory use. Only used when divisions is not given.
+            If divisions is given, the number of output partitions will be
+            len(divisions) - 1.
+        divisions: list, optional
+            The “dividing lines” used to split the new index into partitions. Needs to
+            match the values returned by the sorting method.
+
+        **kwargs
+            Keyword arguments passed to ``set_index``.
+
+        Returns
+        -------
+        dask_geopandas.GeoDataFrame
+
+        Notes
+        -----
+        This method, similarly to ``calculate_spatial_partitions``, is computed
+        partially eagerly as it needs to calculate the distances for all existing
+        partitions before it can determine the divisions for the new
+        spatially-shuffled partitions.
+        """
+        if level is None:
+            level = 15
+        if by == "hilbert":
+            by = self.hilbert_distance(p=level)
+        elif by == "morton":
+            by = self.morton_distance(p=level)
+        elif by == "geohash":
+            by = self.geohash(string=False)
+        else:
+            raise ValueError(
+                f"'{by}' is not supported. Use one of ['hilbert', 'morton, 'geohash']."
+            )
+
+        sorted_ddf = self.set_index(
+            by,
+            sorted=False,
+            npartitions=npartitions,
+            divisions=divisions,
+            inplace=False,
+            **kwargs,
+        )
+
+        if calculate_partitions:
+            sorted_ddf.calculate_spatial_partitions()
+
+        return sorted_ddf
 
 
 from_geopandas = dd.from_pandas
