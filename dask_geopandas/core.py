@@ -487,6 +487,11 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         self._name = new._name
         self.dask = new.dask
 
+    def set_index(self, *args, **kwargs):
+        """Override to ensure we get GeoDataFrame with set geometry column"""
+        ddf = super().set_index(*args, **kwargs)
+        return ddf.set_geometry(self._meta.geometry.name)
+
     def set_geometry(self, col):
         # calculate ourselves to use meta and not meta_nonempty, which would
         # raise an error if meta is an invalid GeoDataFrame (e.g. geometry
