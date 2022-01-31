@@ -153,7 +153,7 @@ def _encode_into_uint64(quantized_coords):
     x = (x | (x << 1)) & 0x5555555555555555
 
     # Dot
-    __s1 = np.array([(1, 0), (0, 2)], dtype="uint64")
+    __s1 = np.array([(1, 0), (0, 2)], dtype=np.uint64)
     x = x @ __s1
     # Interleave x and y bits so that x and y occupy even and odd bit levels
     x = x[:, 0] | x[:, 1]
