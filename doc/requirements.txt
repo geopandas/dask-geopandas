@@ -1,4 +1,4 @@
-geopandas
+geopandas>=0.10
 numpydoc==1.1.0
 sphinx-book-theme
 myst-nb
