@@ -236,6 +236,8 @@ def test_project(geoseries_lines):
         "overlaps",
         "touches",
         "within",
+        "covers",
+        "covered_by",
         "distance",
         "relate",
     ],
