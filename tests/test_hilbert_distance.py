@@ -4,10 +4,33 @@ import numpy as np
 
 from pandas.testing import assert_index_equal, assert_series_equal
 from hilbertcurve.hilbertcurve import HilbertCurve
-from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
+from dask_geopandas.hilbert_distance import (
+    _hilbert_distance,
+    _continuous_to_discrete_coords,
+)
 from dask_geopandas import from_geopandas
 import geopandas
 from shapely.geometry import Point, LineString, Polygon
+
+
+def test_hilbert_distance():
+    # test the actual Hilbert Code algorithm against some hardcoded values
+    geoms = geopandas.GeoSeries.from_wkt(
+        [
+            "POINT (0 0)",
+            "POINT (1 1)",
+            "POINT (1 0)",
+            "POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))",
+        ]
+    )
+    result = _hilbert_distance(geoms, total_bounds=(0, 0, 1, 1), p=2)
+    assert result.tolist() == [0, 10, 15, 2]
+
+    result = _hilbert_distance(geoms, total_bounds=(0, 0, 1, 1), p=3)
+    assert result.tolist() == [0, 42, 63, 10]
+
+    result = _hilbert_distance(geoms, total_bounds=(0, 0, 1, 1), p=16)
+    assert result.tolist() == [0, 2863311530, 4294967295, 715827882]
 
 
 @pytest.fixture

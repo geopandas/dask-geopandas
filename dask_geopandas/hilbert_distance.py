@@ -52,10 +52,10 @@ def _continuous_to_discrete_coords(bounds, p, total_bounds):
     ---------
     Discrete two-dimensional numpy array
     Two-dimensional array Array of hilbert distances for each geom
-    """
 
+    """
     # Hilbert Side length
-    side_length = 2 ** p
+    side_length = (2 ** p) - 1
 
     # Calculate mid points for x and y bound coords - returns array
     x_mids = (bounds[:, 0] + bounds[:, 2]) / 2.0
@@ -92,12 +92,12 @@ def _continuous_to_discrete(vals, val_range, n):
     Returns
     ---------
     One-dimensional array of discrete ints
-    """
 
+    """
     width = val_range[1] - val_range[0]
     res = (vals - val_range[0]) * (n / width)
 
-    np.clip(res, 0, n - 1, out=res)
+    np.clip(res, 0, n, out=res)
     return res.astype(np.uint32)
 
 
