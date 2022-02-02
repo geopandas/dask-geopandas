@@ -10,6 +10,9 @@ from dask.dataframe.core import Scalar
 import dask_geopandas
 
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
+from dask_geopandas.hilbert_distance import _hilbert_distance
+from dask_geopandas.morton_distance import _morton_distance
+from dask_geopandas.geohash import _geohash
 
 
 @pytest.fixture
@@ -236,6 +239,8 @@ def test_project(geoseries_lines):
         "overlaps",
         "touches",
         "within",
+        "covers",
+        "covered_by",
         "distance",
         "relate",
     ],
@@ -527,6 +532,36 @@ def test_copy_none_spatial_partitions(geoseries_points):
     assert ddf_copy.spatial_partitions is None
 
 
+def test_sjoin():
+    # test only the method, functionality tested in test_sjoin.py
+    df_points = geopandas.read_file(geopandas.datasets.get_path("naturalearth_cities"))
+    ddf_points = dask_geopandas.from_geopandas(df_points, npartitions=4)
+
+    df_polygons = geopandas.read_file(
+        geopandas.datasets.get_path("naturalearth_lowres")
+    )
+    expected = df_points.sjoin(df_polygons, predicate="within", how="inner")
+    expected = expected.sort_index()
+
+    result = ddf_points.sjoin(df_polygons, predicate="within", how="inner")
+    assert_geodataframe_equal(expected, result.compute().sort_index())
+
+
+def test_clip(geodf_points):
+    # test only the method, functionality tested in test_clip.py
+    dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
+    dask_obj.calculate_spatial_partitions()
+    mask = geodf_points.iloc[:1]
+    mask["geometry"] = mask["geometry"].buffer(2)
+    expected = geodf_points.clip(mask)
+    result = dask_obj.clip(mask).compute()
+    assert_geodataframe_equal(expected, result)
+
+    expected = geodf_points.geometry.clip(mask)
+    result = dask_obj.geometry.clip(mask).compute()
+    assert_geoseries_equal(expected, result)
+
+
 class TestDissolve:
     def setup_method(self):
         self.world = geopandas.read_file(
@@ -587,3 +622,112 @@ class TestDissolve:
         gpd_none = self.world.dissolve()
         dd_none = self.ddf.dissolve().compute()
         assert_geodataframe_equal(gpd_none, dd_none, check_like=True)
+
+
+class TestSpatialShuffle:
+    def setup_method(self):
+        self.world = geopandas.read_file(
+            geopandas.datasets.get_path("naturalearth_lowres")
+        )
+        self.ddf = dask_geopandas.from_geopandas(self.world, npartitions=4)
+
+    def test_default(self):
+        expected = self.world.set_index(
+            _hilbert_distance(self.world, self.world.total_bounds, p=15),
+        ).sort_index()
+
+        ddf = self.ddf.spatial_shuffle()
+        assert ddf.npartitions == self.ddf.npartitions
+        assert isinstance(ddf.spatial_partitions, geopandas.GeoSeries)
+
+        assert_geodataframe_equal(ddf.compute(), expected)
+
+    @pytest.mark.parametrize(
+        "p,calculate_partitions,npartitions",
+        [
+            (10, True, 8),
+            (None, False, None),
+        ],
+    )
+    def test_hilbert(self, p, calculate_partitions, npartitions):
+        exp_p = p if p else 15
+        expected = self.world.set_index(
+            _hilbert_distance(self.world, self.world.total_bounds, p=exp_p),
+        ).sort_index()
+
+        ddf = self.ddf.spatial_shuffle(
+            level=p,
+            calculate_partitions=calculate_partitions,
+            npartitions=npartitions,
+        )
+
+        assert ddf.npartitions == npartitions if npartitions else self.ddf.partitions
+        if calculate_partitions:
+            assert isinstance(ddf.spatial_partitions, geopandas.GeoSeries)
+        else:
+            assert ddf.spatial_partitions is None
+
+        assert_geodataframe_equal(ddf.compute(), expected)
+
+    @pytest.mark.parametrize(
+        "p,calculate_partitions,npartitions",
+        [
+            (10, True, 8),
+            (None, False, None),
+        ],
+    )
+    def test_morton(self, p, calculate_partitions, npartitions):
+        exp_p = p if p else 15
+        expected = self.world.set_index(
+            _morton_distance(self.world, self.world.total_bounds, p=exp_p),
+        ).sort_index()
+
+        ddf = self.ddf.spatial_shuffle(
+            "morton",
+            level=p,
+            calculate_partitions=calculate_partitions,
+            npartitions=npartitions,
+        )
+
+        assert ddf.npartitions == npartitions if npartitions else self.ddf.partitions
+        if calculate_partitions:
+            assert isinstance(ddf.spatial_partitions, geopandas.GeoSeries)
+        else:
+            assert ddf.spatial_partitions is None
+
+        assert_geodataframe_equal(ddf.compute(), expected)
+
+    @pytest.mark.skipif(
+        Version(dask.__version__) <= Version("2021.03.0"),
+        reason="older Dask has a bug in sorting",
+    )
+    @pytest.mark.parametrize(
+        "calculate_partitions,npartitions",
+        [
+            (True, 8),
+            (False, None),
+        ],
+    )
+    def test_geohash(self, calculate_partitions, npartitions):
+        df = self.world.copy()
+        # crossing meridian and resulting 0 causes inconsistencies among environments
+        df = df[df.name != "Fiji"]
+        expected = df.set_index(
+            _geohash(df, string=False, p=12),
+        ).sort_index()
+
+        ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+
+        ddf = ddf.spatial_shuffle(
+            "geohash",
+            calculate_partitions=calculate_partitions,
+            npartitions=npartitions,
+        )
+
+        assert ddf.npartitions == npartitions if npartitions else ddf.partitions
+        if calculate_partitions:
+            assert isinstance(ddf.spatial_partitions, geopandas.GeoSeries)
+        else:
+            assert ddf.spatial_partitions is None
+
+        assert_geodataframe_equal(ddf.compute(), expected)

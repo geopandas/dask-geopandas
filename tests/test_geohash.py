@@ -73,3 +73,10 @@ def test_geohash_range(geoseries_points):
     with pytest.raises(ValueError):
         ddf.geohash(p=0, string=False)
         ddf.geohash(p=12, string=False)
+
+
+def test_world():
+    # world without Fiji
+    geohash_dask(
+        geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres")).iloc[1:]
+    )

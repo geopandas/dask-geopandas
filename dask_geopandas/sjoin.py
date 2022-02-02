@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import geopandas
 
@@ -7,7 +9,7 @@ from dask.highlevelgraph import HighLevelGraph
 from .core import from_geopandas, GeoDataFrame
 
 
-def sjoin(left, right, how="inner", op="intersects"):
+def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
     """
     Spatial join of two GeoDataFrames.
 
@@ -19,7 +21,7 @@ def sjoin(left, right, how="inner", op="intersects"):
         partitioning information).
     how : string, default 'inner'
         The type of join. Currently only 'inner' is supported.
-    op : string, default 'intersects'
+    predicate : string, default 'intersects'
         Binary predicate how to match corresponding rows of the left and right
         GeoDataFrame. Possible values: 'contains', 'contains_properly',
         'covered_by', 'covers', 'crosses', 'intersects', 'overlaps',
@@ -38,6 +40,14 @@ def sjoin(left, right, how="inner", op="intersects"):
     all combinations (cartesian/cross product) of all input partition
     of the left and right GeoDataFrame.
     """
+    if "op" in kwargs:
+        predicate = kwargs.pop("op")
+        deprecation_message = (
+            "The `op` parameter is deprecated and will be removed"
+            " in a future release. Please use the `predicate` parameter"
+            " instead."
+        )
+        warnings.warn(deprecation_message, FutureWarning, stacklevel=2)
     if how != "inner":
         raise NotImplementedError("Only how='inner' is supported right now")
 
@@ -46,8 +56,8 @@ def sjoin(left, right, how="inner", op="intersects"):
     if isinstance(right, geopandas.GeoDataFrame):
         right = from_geopandas(right, npartitions=1)
 
-    name = "sjoin-" + tokenize(left, right, how, op)
-    meta = geopandas.sjoin(left._meta, right._meta, how=how, op=op)
+    name = "sjoin-" + tokenize(left, right, how, predicate)
+    meta = geopandas.sjoin(left._meta, right._meta, how=how, predicate=predicate)
 
     if left.spatial_partitions is not None and right.spatial_partitions is not None:
         # Spatial partitions are known -> use them to trim down the list of
@@ -73,7 +83,13 @@ def sjoin(left, right, how="inner", op="intersects"):
     dsk = {}
     new_spatial_partitions = []
     for i, (l, r) in enumerate(zip(parts_left, parts_right)):
-        dsk[(name, i)] = (geopandas.sjoin, (left._name, l), (right._name, r), how, op)
+        dsk[(name, i)] = (
+            geopandas.sjoin,
+            (left._name, l),
+            (right._name, r),
+            how,
+            predicate,
+        )
         # TODO preserve spatial partitions of the output if only left has spatial
         # partitions
         if using_spatial_partitions:
