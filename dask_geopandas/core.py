@@ -365,7 +365,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             _hilbert_distance,
             total_bounds=total_bounds,
             level=level,
-            meta=pd.Series([], name="hilbert_distance", dtype="int"),
+            meta=pd.Series([], name="hilbert_distance", dtype="uint32"),
         )
 
         return distances
@@ -413,7 +413,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             _morton_distance,
             total_bounds=total_bounds,
             level=level,
-            meta=pd.Series([], name="morton_distance", dtype="int"),
+            meta=pd.Series([], name="morton_distance", dtype="uint32"),
         )
 
         return distances
