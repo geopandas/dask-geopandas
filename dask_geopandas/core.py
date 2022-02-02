@@ -427,8 +427,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Parameters
         ----------
-        as_string : bool (default True)
-            to return string or int Geohash
+        as_string : bool, default True
+            To return string or int Geohash.
         precision : int (1 - 12), default 12
             Precision of the string geohash values. Only used when
             ``as_string=True``.
@@ -677,13 +677,13 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         spatially-shuffled partitions.
         """
         if level is None:
-            level = 15
+            level = 16
         if by == "hilbert":
-            by = self.hilbert_distance(p=level)
+            by = self.hilbert_distance(level=level)
         elif by == "morton":
-            by = self.morton_distance(p=level)
+            by = self.morton_distance(level=level)
         elif by == "geohash":
-            by = self.geohash(string=False)
+            by = self.geohash(as_string=False)
         else:
             raise ValueError(
                 f"'{by}' is not supported. Use one of ['hilbert', 'morton, 'geohash']."

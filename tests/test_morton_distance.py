@@ -37,7 +37,7 @@ def morton_distance_dask(geoseries):
 
     bounds = geoseries.bounds.to_numpy()
     total_bounds = geoseries.total_bounds
-    coords = _continuous_to_discrete_coords(total_bounds, bounds, p=15)
+    coords = _continuous_to_discrete_coords(total_bounds, bounds, p=16)
 
     ddf = from_geopandas(geoseries, npartitions=1)
     result = ddf.morton_distance().compute()
