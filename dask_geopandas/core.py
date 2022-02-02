@@ -329,7 +329,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """
         return _CoordinateIndexer(self)
 
-    def hilbert_distance(self, total_bounds=None, p=15):
+    def hilbert_distance(self, total_bounds=None, level=16):
 
         """
         A function that calculates the Hilbert distance between the geometry bounds
@@ -339,12 +339,15 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Parameters
         ----------
+
         total_bounds : 4-element array, optional
             The spatial extent in which the curve is constructed (used to
             rescale the geometry midpoints). By default, the total bounds
             of the full dask GeoDataFrame will be computed. If known, you
             can pass the total bounds to avoid this extra computation.
-        p : The number of iterations used in constructing the Hilbert curve.
+        level : int (1 - 16), default 16
+            Determines the precision of the curve (points on the curve will
+            have coordinates in the range [0, 2^level - 1]).
 
         Returns
         -------
@@ -361,13 +364,13 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         distances = self.map_partitions(
             _hilbert_distance,
             total_bounds=total_bounds,
-            p=p,
-            meta=pd.Series([], name="hilbert_distance", dtype="int"),
+            level=level,
+            meta=pd.Series([], name="hilbert_distance", dtype="uint32"),
         )
 
         return distances
 
-    def morton_distance(self, total_bounds=None, p=15):
+    def morton_distance(self, total_bounds=None, level=16):
 
         """
         Calculate the distance of geometries along the Morton curve
@@ -386,13 +389,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Parameters
         ----------
+
         total_bounds : 4-element array, optional
             The spatial extent in which the curve is constructed (used to
             rescale the geometry midpoints). By default, the total bounds
             of the full dask GeoDataFrame will be computed. If known, you
             can pass the total bounds to avoid this extra computation.
-        p : int
-            precision of the Morton curve
+        level : int (1 - 16), default 16
+            Determines the precision of the Morton curve.
 
         Returns
         -------
@@ -408,13 +412,13 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         distances = self.map_partitions(
             _morton_distance,
             total_bounds=total_bounds,
-            p=p,
-            meta=pd.Series([], name="morton_distance", dtype="int"),
+            level=level,
+            meta=pd.Series([], name="morton_distance", dtype="uint32"),
         )
 
         return distances
 
-    def geohash(self, string=True, p=12):
+    def geohash(self, as_string=True, precision=12):
 
         """
         Calculate geohash based on the middle points of the geometry bounds
@@ -423,10 +427,11 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
         Parameters
         ----------
-        as_string : bool (default True)
-            to return string or int Geohash
-        p : int (default 12)
-            precision of the string Geohash
+        as_string : bool, default True
+            To return string or int Geohash.
+        precision : int (1 - 12), default 12
+            Precision of the string geohash values. Only used when
+            ``as_string=True``.
 
         Returns
         -------
@@ -434,20 +439,20 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             Series containing Geohash
         """
 
-        if p not in range(1, 13):
+        if precision not in range(1, 13):
             raise ValueError(
                 "The Geohash precision only accepts an integer value between 1 and 12"
             )
 
-        if string is True:
+        if as_string is True:
             dtype = object
         else:
             dtype = np.uint64
 
         geohashes = self.map_partitions(
             _geohash,
-            string=string,
-            p=p,
+            as_string=as_string,
+            precision=precision,
             meta=pd.Series([], name="geohash", dtype=dtype),
         )
 
@@ -672,13 +677,13 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         spatially-shuffled partitions.
         """
         if level is None:
-            level = 15
+            level = 16
         if by == "hilbert":
-            by = self.hilbert_distance(p=level)
+            by = self.hilbert_distance(level=level)
         elif by == "morton":
-            by = self.morton_distance(p=level)
+            by = self.morton_distance(level=level)
         elif by == "geohash":
-            by = self.geohash(string=False)
+            by = self.geohash(as_string=False)
         else:
             raise ValueError(
                 f"'{by}' is not supported. Use one of ['hilbert', 'morton, 'geohash']."
