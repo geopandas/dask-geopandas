@@ -633,7 +633,7 @@ class TestSpatialShuffle:
 
     def test_default(self):
         expected = self.world.set_index(
-            _hilbert_distance(self.world, self.world.total_bounds, p=15),
+            _hilbert_distance(self.world, self.world.total_bounds, level=16),
         ).sort_index()
 
         ddf = self.ddf.spatial_shuffle()
@@ -650,9 +650,9 @@ class TestSpatialShuffle:
         ],
     )
     def test_hilbert(self, p, calculate_partitions, npartitions):
-        exp_p = p if p else 15
+        exp_p = p if p else 16
         expected = self.world.set_index(
-            _hilbert_distance(self.world, self.world.total_bounds, p=exp_p),
+            _hilbert_distance(self.world, self.world.total_bounds, level=exp_p),
         ).sort_index()
 
         ddf = self.ddf.spatial_shuffle(
@@ -677,9 +677,9 @@ class TestSpatialShuffle:
         ],
     )
     def test_morton(self, p, calculate_partitions, npartitions):
-        exp_p = p if p else 15
+        exp_p = p if p else 16
         expected = self.world.set_index(
-            _morton_distance(self.world, self.world.total_bounds, p=exp_p),
+            _morton_distance(self.world, self.world.total_bounds, level=exp_p),
         ).sort_index()
 
         ddf = self.ddf.spatial_shuffle(
@@ -713,7 +713,7 @@ class TestSpatialShuffle:
         # crossing meridian and resulting 0 causes inconsistencies among environments
         df = df[df.name != "Fiji"]
         expected = df.set_index(
-            _geohash(df, string=False, p=12),
+            _geohash(df, as_string=False, precision=12),
         ).sort_index()
 
         ddf = dask_geopandas.from_geopandas(df, npartitions=4)

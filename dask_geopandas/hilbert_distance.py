@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 
-def _hilbert_distance(gdf, total_bounds=None, p=15):
+def _hilbert_distance(gdf, total_bounds=None, level=16):
 
     """
     Calculate the distance along a Hilbert curve.
@@ -15,8 +15,9 @@ def _hilbert_distance(gdf, total_bounds=None, p=15):
     gdf : GeoDataFrame
     total_bounds : 4-element array
         Total bounds of geometries - array
-    p : int
-        The number of iterations used in constructing the Hilbert curve.
+    level : int (1 - 16), default 16
+        Determines the precision of the curve (points on the curve will
+        have coordinates in the range [0, 2^level - 1]).
 
     Returns
     ---------
@@ -27,14 +28,14 @@ def _hilbert_distance(gdf, total_bounds=None, p=15):
     bounds = gdf.bounds.to_numpy()
 
     # Calculate discrete coords based on total bounds and bounds
-    x, y = _continuous_to_discrete_coords(bounds, p, total_bounds)
+    x, y = _continuous_to_discrete_coords(bounds, level, total_bounds)
     # Compute distance along hilbert curve
-    distances = _encode(p, x, y)
+    distances = _encode(level, x, y)
 
     return pd.Series(distances, index=gdf.index, name="hilbert_distance")
 
 
-def _continuous_to_discrete_coords(bounds, p, total_bounds):
+def _continuous_to_discrete_coords(bounds, level, total_bounds):
     """
     Calculates mid points & ranges of geoms and returns
     as discrete coords
@@ -55,7 +56,7 @@ def _continuous_to_discrete_coords(bounds, p, total_bounds):
 
     """
     # Hilbert Side length
-    side_length = (2 ** p) - 1
+    side_length = (2 ** level) - 1
 
     # Calculate mid points for x and y bound coords - returns array
     x_mids = (bounds[:, 0] + bounds[:, 2]) / 2.0

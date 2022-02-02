@@ -2,7 +2,7 @@ import pandas as pd
 from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
 
 
-def _morton_distance(gdf, total_bounds, p):
+def _morton_distance(gdf, total_bounds, level):
     """
     Calculate distance of geometries along Morton curve
 
@@ -13,8 +13,8 @@ def _morton_distance(gdf, total_bounds, p):
     gdf : GeoDataFrame
     total_bounds : array_like
         array containing xmin, ymin, xmax, ymax
-    p : int
-        precision of the Morton curve
+    level : int (1 - 16)
+        Determines the precision of the Morton curve.
 
     Returns
     -------
@@ -22,11 +22,10 @@ def _morton_distance(gdf, total_bounds, p):
         Series containing distances from Morton curve
 
     """
-
     # Calculate bounds as numpy array
     bounds = gdf.bounds.to_numpy()
     # Calculate discrete coords based on total bounds and bounds
-    x_int, y_int = _continuous_to_discrete_coords(bounds, p, total_bounds)
+    x_int, y_int = _continuous_to_discrete_coords(bounds, level, total_bounds)
     # Calculate distance from morton curve
     distances = _distances_from_coordinates(x_int, y_int)
 

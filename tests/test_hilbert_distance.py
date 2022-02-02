@@ -23,13 +23,13 @@ def test_hilbert_distance():
             "POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))",
         ]
     )
-    result = _hilbert_distance(geoms, total_bounds=(0, 0, 1, 1), p=2)
+    result = _hilbert_distance(geoms, total_bounds=(0, 0, 1, 1), level=2)
     assert result.tolist() == [0, 10, 15, 2]
 
-    result = _hilbert_distance(geoms, total_bounds=(0, 0, 1, 1), p=3)
+    result = _hilbert_distance(geoms, total_bounds=(0, 0, 1, 1), level=3)
     assert result.tolist() == [0, 42, 63, 10]
 
-    result = _hilbert_distance(geoms, total_bounds=(0, 0, 1, 1), p=16)
+    result = _hilbert_distance(geoms, total_bounds=(0, 0, 1, 1), level=16)
     assert result.tolist() == [0, 2863311530, 4294967295, 715827882]
 
 
@@ -58,18 +58,20 @@ def geoseries_polygons():
     return geopandas.GeoSeries([t1, t2, sq1, sq2])
 
 
-def hilbert_distance_dask(geoseries, level=15):
+def hilbert_distance_dask(geoseries, level=16):
 
     bounds = geoseries.bounds.to_numpy()
     total_bounds = geoseries.total_bounds
-    x, y = _continuous_to_discrete_coords(bounds, p=level, total_bounds=total_bounds)
+    x, y = _continuous_to_discrete_coords(
+        bounds, level=level, total_bounds=total_bounds
+    )
     coords = np.stack((x, y), axis=1)
 
     hilbert_curve = HilbertCurve(p=level, n=2)
     expected = hilbert_curve.distances_from_points(coords)
 
     ddf = from_geopandas(geoseries, npartitions=1)
-    result = ddf.hilbert_distance(p=level).compute()
+    result = ddf.hilbert_distance(level=level).compute()
 
     assert list(result) == expected
     assert isinstance(result, pd.Series)
@@ -94,7 +96,7 @@ def test_hilbert_distance_polygons(geoseries_polygons, level):
 def test_hilbert_distance_level(geoseries_points):
     ddf = from_geopandas(geoseries_points, npartitions=1)
     with pytest.raises(ValueError):
-        ddf.hilbert_distance(p=20).compute()
+        ddf.hilbert_distance(level=20).compute()
 
 
 def test_specified_total_bounds(geoseries_polygons):
