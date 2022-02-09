@@ -22,24 +22,23 @@ def _morton_distance(gdf, total_bounds, level):
         Series containing distances from Morton curve
 
     """
-
     # Calculate bounds as numpy array
     bounds = gdf.bounds.to_numpy()
     # Calculate discrete coords based on total bounds and bounds
-    coords = _continuous_to_discrete_coords(total_bounds, bounds, level)
+    x_int, y_int = _continuous_to_discrete_coords(bounds, level, total_bounds)
     # Calculate distance from morton curve
-    distances = _distances_from_coordinates(coords)
+    distances = _distances_from_coordinates(x_int, y_int)
 
     return pd.Series(distances, index=gdf.index, name="morton_distance")
 
 
-def _distances_from_coordinates(coords):
+def _distances_from_coordinates(x, y):
     """
     Calculate distances from geometry mid-points along Morton curve
 
     Parameters
     ----------
-    coords : array_like
+    x, y : array_like
         x, y coordinate pairs based on mid-points of geoms
 
     Returns
@@ -48,7 +47,7 @@ def _distances_from_coordinates(coords):
         Integer distances from Morton curve
     """
 
-    return _part1by1(coords[:, 0]) | (_part1by1(coords[:, 1]) << 1)
+    return _part1by1(x) | (_part1by1(y) << 1)
 
 
 def _part1by1(n):

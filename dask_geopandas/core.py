@@ -330,16 +330,17 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         return _CoordinateIndexer(self)
 
     def hilbert_distance(self, total_bounds=None, level=16):
-
         """
-        A function that calculates the Hilbert distance between the geometry bounds
-        and total bounds of a Dask-GeoDataFrame.
-        The Hilbert distance can be used to spatially partition Dask-GeoPandas objects,
-        by mapping two dimensional geometries along the Hilbert curve.
+        Calculate the distance along a Hilbert curve.
+
+        The distances are calculated for the midpoints of the geometries in the
+        GeoDataFrame, and using the total bounds of the GeoDataFrame.
+
+        The Hilbert distance can be used to spatially partition Dask-GeoPandas
+        objects, by mapping two dimensional geometries along the Hilbert curve.
 
         Parameters
         ----------
-
         total_bounds : 4-element array, optional
             The spatial extent in which the curve is constructed (used to
             rescale the geometry midpoints). By default, the total bounds
@@ -355,7 +356,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             Series containing distances for each partition
 
         """
-
         # Compute total bounds of all partitions rather than each partition
         if total_bounds is None:
             total_bounds = self.total_bounds
@@ -371,7 +371,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         return distances
 
     def morton_distance(self, total_bounds=None, level=16):
-
         """
         Calculate the distance of geometries along the Morton curve
 
