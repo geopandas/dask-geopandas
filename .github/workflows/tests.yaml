@@ -51,6 +51,7 @@ jobs:
           miniforge-version: latest
           miniforge-variant: Mambaforge
           use-mamba: true
+          channel-priority: strict
 
       - name: Check and Log Environment
         run: |
