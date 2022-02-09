@@ -104,7 +104,12 @@ def read_file(
         chunksize = int(ceil(total_size / npartitions))
 
     # TODO this could be inferred from read_info ?
-    meta = pyogrio.read_dataframe(path, layer=layer, columns=columns, max_features=5)
+    read_geometry = True
+    if columns is not None and "geometry" not in columns:
+        read_geometry = False
+    meta = pyogrio.read_dataframe(
+        path, layer=layer, columns=columns, read_geometry=read_geometry, max_features=5
+    )
 
     # Define parts
     parts = []

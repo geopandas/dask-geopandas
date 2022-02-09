@@ -6,7 +6,7 @@ import dask.dataframe as dd
 import dask_geopandas
 
 import pytest
-from pandas.testing import assert_series_equal
+from pandas.testing import assert_series_equal, assert_frame_equal
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 
 
@@ -50,7 +50,12 @@ def test_read_file_columns():
     assert_geodataframe_equal(
         result.compute().reset_index(drop=True), df[["pop_est", "geometry"]]
     )
-    # TODO what is only selecting non-geometry column?
+    # only selecting non-geometry column
+    result = dask_geopandas.read_file(path, npartitions=4, columns=["pop_est"])
+    assert type(result) == dd.DataFrame
+    assert len(result.columns) == 1
+    assert result.npartitions == 4
+    assert_frame_equal(result.compute().reset_index(drop=True), df[["pop_est"]])
 
     # column selection through getitem
     ddf = dask_geopandas.read_file(path, npartitions=4)
