@@ -73,7 +73,15 @@ def read_file(
         pass an empty list-like.
 
     """
-    import pyogrio
+    try:
+        import pyogrio
+    except ImportError as err:
+        raise ImportError(
+            "The 'read_file' function requires the 'pyogrio' package, but it is "
+            "not installed or does not import correctly."
+            f"\nImporting pyogrio resulted in: {str(err)}"
+        )
+
     from dask.layers import DataFrameIOLayer
 
     # TODO smart inference for a good default partition size ?
