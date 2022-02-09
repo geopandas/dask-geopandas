@@ -47,6 +47,22 @@ Aggregating and exploding
 
    GeoDataFrame.explode
 
+Spatial joins
+-------------
+
+.. autosummary::
+   :toctree: api/
+
+   GeoDataFrame.sjoin
+
+Overlay operations
+------------------
+
+.. autosummary::
+   :toctree: api/
+
+   GeoDataFrame.clip
+
 Indexing
 --------
 
@@ -54,6 +70,14 @@ Indexing
    :toctree: api/
 
    GeoDataFrame.cx
+
+Spatial partitioning
+--------------------
+
+.. autosummary::
+   :toctree: api/
+
+   GeoDataFrame.spatial_shuffle
 
 
 All dask ``DataFrame`` methods are also available, although they may

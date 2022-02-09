@@ -58,6 +58,8 @@ Binary Predicates
    GeoSeries.overlaps
    GeoSeries.touches
    GeoSeries.within
+   GeoSeries.covers
+   GeoSeries.covered_by
 
 
 Set-theoretic Methods
@@ -123,6 +125,14 @@ Missing values
 
    GeoSeries.fillna
    GeoSeries.isna
+
+Overlay operations
+------------------
+
+.. autosummary::
+   :toctree: api/
+
+   GeoSeries.clip
 
 Indexing
 --------
