@@ -1,11 +1,36 @@
 import pytest
 import pandas as pd
-from pandas.testing import assert_index_equal
+import numpy as np
+
+from pandas.testing import assert_index_equal, assert_series_equal
 from hilbertcurve.hilbertcurve import HilbertCurve
-from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
+from dask_geopandas.hilbert_distance import (
+    _hilbert_distance,
+    _continuous_to_discrete_coords,
+)
 from dask_geopandas import from_geopandas
 import geopandas
 from shapely.geometry import Point, LineString, Polygon
+
+
+def test_hilbert_distance():
+    # test the actual Hilbert Code algorithm against some hardcoded values
+    geoms = geopandas.GeoSeries.from_wkt(
+        [
+            "POINT (0 0)",
+            "POINT (1 1)",
+            "POINT (1 0)",
+            "POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))",
+        ]
+    )
+    result = _hilbert_distance(geoms, total_bounds=(0, 0, 1, 1), level=2)
+    assert result.tolist() == [0, 10, 15, 2]
+
+    result = _hilbert_distance(geoms, total_bounds=(0, 0, 1, 1), level=3)
+    assert result.tolist() == [0, 42, 63, 10]
+
+    result = _hilbert_distance(geoms, total_bounds=(0, 0, 1, 1), level=16)
+    assert result.tolist() == [0, 2863311530, 4294967295, 715827882]
 
 
 @pytest.fixture
@@ -33,30 +58,57 @@ def geoseries_polygons():
     return geopandas.GeoSeries([t1, t2, sq1, sq2])
 
 
-def hilbert_distance_dask(geoseries):
+def hilbert_distance_dask(geoseries, level=16):
 
     bounds = geoseries.bounds.to_numpy()
     total_bounds = geoseries.total_bounds
-    coords = _continuous_to_discrete_coords(total_bounds, bounds, p=15)
+    x, y = _continuous_to_discrete_coords(
+        bounds, level=level, total_bounds=total_bounds
+    )
+    coords = np.stack((x, y), axis=1)
 
-    hilbert_curve = HilbertCurve(p=15, n=2)
+    hilbert_curve = HilbertCurve(p=level, n=2)
     expected = hilbert_curve.distances_from_points(coords)
 
     ddf = from_geopandas(geoseries, npartitions=1)
-    result = ddf.hilbert_distance().compute()
+    result = ddf.hilbert_distance(level=level).compute()
 
     assert list(result) == expected
     assert isinstance(result, pd.Series)
     assert_index_equal(ddf.index.compute(), result.index)
 
 
-def test_hilbert_distance_points(geoseries_points):
-    hilbert_distance_dask(geoseries_points)
+@pytest.mark.parametrize("level", [2, 10, 15, 16])
+def test_hilbert_distance_points(geoseries_points, level):
+    hilbert_distance_dask(geoseries_points, level)
 
 
-def test_hilbert_distance_lines(geoseries_lines):
-    hilbert_distance_dask(geoseries_lines)
+@pytest.mark.parametrize("level", [2, 10, 15, 16])
+def test_hilbert_distance_lines(geoseries_lines, level):
+    hilbert_distance_dask(geoseries_lines, level)
 
 
-def test_hilbert_distance_polygons(geoseries_polygons):
-    hilbert_distance_dask(geoseries_polygons)
+@pytest.mark.parametrize("level", [2, 10, 15, 16])
+def test_hilbert_distance_polygons(geoseries_polygons, level):
+    hilbert_distance_dask(geoseries_polygons, level)
+
+
+def test_hilbert_distance_level(geoseries_points):
+    ddf = from_geopandas(geoseries_points, npartitions=1)
+    with pytest.raises(ValueError):
+        ddf.hilbert_distance(level=20).compute()
+
+
+def test_specified_total_bounds(geoseries_polygons):
+    ddf = from_geopandas(geoseries_polygons, npartitions=2)
+
+    result = ddf.hilbert_distance(total_bounds=geoseries_polygons.total_bounds)
+    expected = ddf.hilbert_distance()
+    assert_series_equal(result.compute(), expected.compute())
+
+
+def test_world():
+    # world without Fiji
+    hilbert_distance_dask(
+        geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres")).iloc[1:]
+    )

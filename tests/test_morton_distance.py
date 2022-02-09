@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from pandas.testing import assert_index_equal
+from pandas.testing import assert_index_equal, assert_series_equal
 from pymorton import interleave  # https://github.com/trevorprater/pymorton
 from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
 from dask_geopandas import from_geopandas
@@ -37,16 +37,18 @@ def morton_distance_dask(geoseries):
 
     bounds = geoseries.bounds.to_numpy()
     total_bounds = geoseries.total_bounds
-    coords = _continuous_to_discrete_coords(total_bounds, bounds, p=15)
+    x_coords, y_coords = _continuous_to_discrete_coords(
+        bounds, level=16, total_bounds=total_bounds
+    )
 
     ddf = from_geopandas(geoseries, npartitions=1)
     result = ddf.morton_distance().compute()
 
     expected = []
 
-    for i in range(len(coords)):
-        x = int(coords[i][0])
-        y = int(coords[i][1])
+    for i in range(len(x_coords)):
+        x = int(x_coords[i])
+        y = int(y_coords[i])
         expected.append(interleave(x, y))
 
     assert list(result) == expected
@@ -64,3 +66,18 @@ def test_morton_distance_lines(geoseries_lines):
 
 def test_morton_distance_polygons(geoseries_polygons):
     morton_distance_dask(geoseries_polygons)
+
+
+def test_specified_total_bounds(geoseries_polygons):
+    ddf = from_geopandas(geoseries_polygons, npartitions=2)
+
+    result = ddf.morton_distance(total_bounds=geoseries_polygons.total_bounds)
+    expected = ddf.morton_distance()
+    assert_series_equal(result.compute(), expected.compute())
+
+
+def test_world():
+    # world without Fiji
+    morton_distance_dask(
+        geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres")).iloc[1:]
+    )
