@@ -4,25 +4,26 @@ channels:
 dependencies:
   # required dependencies
   - python=3.9
-  - numba
   - distributed
   - pandas
   - shapely
   - fiona
-  - pyproj=2.6  # unpin when pyproj 3.1 is released with multithreading fix
+  - pyproj
   - fsspec
+  - packaging
   # test dependencies
   - pytest
   - pytest-cov
   - hilbertcurve
   - s3fs
   - moto
-  - flask  # needed for moto server
+  - flask # needed for moto server
   # optional dependencies
   - pyarrow
+  - pygeohash
   - pip
   - pip:
-    - pymorton
-    - git+https://github.com/geopandas/geopandas.git@master
-    - git+https://github.com/pygeos/pygeos.git@master
-    - git+https://github.com/dask/dask.git@main
+      - pymorton
+      - git+https://github.com/geopandas/geopandas.git@main
+      - git+https://github.com/pygeos/pygeos.git@master
+      - git+https://github.com/dask/dask.git@main

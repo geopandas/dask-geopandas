@@ -58,9 +58,8 @@ data.
 
    ddf = dd.read_csv('...')
 
-   ddf = dask_geopandas.from_dask_dataframe(ddf)
    ddf = ddf.set_geometry(
-       dask_geopandas.points_from_xy(ddf, 'latitude', 'longitude')
+       dask_geopandas.points_from_xy(ddf, 'longitude', 'latitude')
    )
 
 Writing files (and reading back) is currently supported for the Parquet file
@@ -70,6 +69,11 @@ format:
 
    ddf.to_parquet("path/to/dir/")
    ddf = dask_geopandas.read_parquet("path/to/dir/")
+
+.. note::
+
+   Writing to Parquet files requires installing the ``pyarrow`` library, e.g.
+   ``conda install pyarrow`` or ``pip install pyarrow``.
 
 
 Installation

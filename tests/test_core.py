@@ -1,14 +1,18 @@
-from distutils.version import LooseVersion
+from packaging.version import Version
 import pytest
 import pandas as pd
 import numpy as np
 import geopandas
 from shapely.geometry import Polygon, Point, LineString, MultiPoint
+import dask
 import dask.dataframe as dd
 from dask.dataframe.core import Scalar
 import dask_geopandas
 
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
+from dask_geopandas.hilbert_distance import _hilbert_distance
+from dask_geopandas.morton_distance import _morton_distance
+from dask_geopandas.geohash import _geohash
 
 
 @pytest.fixture
@@ -135,6 +139,21 @@ def test_points_from_xy():
     assert_geodataframe_equal(result, expected)
 
 
+def test_points_from_xy_with_crs():
+    latitude = [40.2, 66.3]
+    longitude = [-105.1, -38.2]
+    expected = geopandas.GeoSeries(
+        geopandas.points_from_xy(longitude, latitude, crs="EPSG:4326")
+    )
+    df = pd.DataFrame({"longitude": longitude, "latitude": latitude})
+    ddf = dd.from_pandas(df, npartitions=2)
+    actual = dask_geopandas.points_from_xy(
+        ddf, "longitude", "latitude", crs="EPSG:4326"
+    )
+    assert isinstance(actual, dask_geopandas.GeoSeries)
+    assert_geoseries_equal(actual.compute(), expected)
+
+
 def test_geodataframe_crs(geodf_points_crs):
     df = geodf_points_crs
     original = df.crs
@@ -220,6 +239,8 @@ def test_project(geoseries_lines):
         "overlaps",
         "touches",
         "within",
+        "covers",
+        "covered_by",
         "distance",
         "relate",
     ],
@@ -337,10 +358,28 @@ def test_set_geometry_property_on_geodf(geodf_points):
 def test_set_geometry_with_dask_geoseries():
     df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
     dask_obj = dd.from_pandas(df, npartitions=2)
-    dask_obj = dask_geopandas.from_dask_dataframe(dask_obj)
     dask_obj = dask_obj.set_geometry(dask_geopandas.points_from_xy(dask_obj, "x", "y"))
     expected = df.set_geometry(geopandas.points_from_xy(df["x"], df["y"]))
     assert_geoseries_equal(dask_obj.geometry.compute(), expected.geometry)
+
+
+def test_from_dask_dataframe_with_dask_geoseries():
+    df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
+    dask_obj = dd.from_pandas(df, npartitions=2)
+    dask_obj = dask_geopandas.from_dask_dataframe(
+        dask_obj, geometry=dask_geopandas.points_from_xy(dask_obj, "x", "y")
+    )
+    expected = df.set_geometry(geopandas.points_from_xy(df["x"], df["y"]))
+    assert_geoseries_equal(dask_obj.geometry.compute(), expected.geometry)
+
+
+def test_from_dask_dataframe_with_column_name():
+    df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
+    df["geoms"] = geopandas.points_from_xy(df["x"], df["y"])
+    dask_obj = dd.from_pandas(df, npartitions=2)
+    dask_obj = dask_geopandas.from_dask_dataframe(dask_obj, geometry="geoms")
+    expected = geopandas.GeoDataFrame(df, geometry="geoms")
+    assert_geodataframe_equal(dask_obj.compute(), expected)
 
 
 def test_meta(geodf_points_crs):
@@ -416,13 +455,13 @@ def test_propagate_on_set_crs(geodf_points):
 
 
 @pytest.mark.skipif(
-    LooseVersion(geopandas.__version__) <= LooseVersion("0.8.1"),
+    Version(geopandas.__version__) <= Version("0.8.1"),
     reason="geopandas 0.8 has bug in apply",
 )
 def test_geoseries_apply(geoseries_polygons):
     # https://github.com/jsignell/dask-geopandas/issues/18
     ds = dask_geopandas.from_geopandas(geoseries_polygons, npartitions=2)
-    result = ds.apply(lambda geom: geom.area, meta="float").compute()
+    result = ds.apply(lambda geom: geom.area, meta=pd.Series(dtype=float)).compute()
     expected = geoseries_polygons.area
     pd.testing.assert_series_equal(result, expected)
 
@@ -447,6 +486,82 @@ def test_map_partitions_get_geometry(geodf_points):
     assert_geoseries_equal(result, expected)
 
 
+@pytest.mark.parametrize(
+    "shuffle_method",
+    [
+        "disk",
+        "tasks",
+    ],
+)
+def test_set_index_preserves_class(geodf_points, shuffle_method):
+    dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
+    dask_obj = dask_obj.set_index("value1", shuffle=shuffle_method)
+
+    for partition in dask_obj.partitions:
+        assert isinstance(partition.compute(), geopandas.GeoDataFrame)
+
+    assert isinstance(dask_obj.compute(), geopandas.GeoDataFrame)
+
+
+@pytest.mark.parametrize(
+    "shuffle_method",
+    [
+        "disk",
+        "tasks",
+    ],
+)
+def test_set_index_preserves_class_and_name(geodf_points, shuffle_method):
+    df = geodf_points.rename_geometry("geom")
+    dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)
+    dask_obj = dask_obj.set_index("value1", shuffle=shuffle_method)
+
+    for partition in dask_obj.partitions:
+        part = partition.compute()
+        assert isinstance(part, geopandas.GeoDataFrame)
+        assert part.geometry.name == "geom"
+
+    computed = dask_obj.compute()
+    assert isinstance(computed, geopandas.GeoDataFrame)
+    assert computed.geometry.name == "geom"
+
+
+def test_copy_none_spatial_partitions(geoseries_points):
+    ddf = dask_geopandas.from_geopandas(geoseries_points, npartitions=2)
+    ddf.spatial_partitions = None
+    ddf_copy = ddf.copy()
+    assert ddf_copy.spatial_partitions is None
+
+
+def test_sjoin():
+    # test only the method, functionality tested in test_sjoin.py
+    df_points = geopandas.read_file(geopandas.datasets.get_path("naturalearth_cities"))
+    ddf_points = dask_geopandas.from_geopandas(df_points, npartitions=4)
+
+    df_polygons = geopandas.read_file(
+        geopandas.datasets.get_path("naturalearth_lowres")
+    )
+    expected = df_points.sjoin(df_polygons, predicate="within", how="inner")
+    expected = expected.sort_index()
+
+    result = ddf_points.sjoin(df_polygons, predicate="within", how="inner")
+    assert_geodataframe_equal(expected, result.compute().sort_index())
+
+
+def test_clip(geodf_points):
+    # test only the method, functionality tested in test_clip.py
+    dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
+    dask_obj.calculate_spatial_partitions()
+    mask = geodf_points.iloc[:1]
+    mask["geometry"] = mask["geometry"].buffer(2)
+    expected = geodf_points.clip(mask)
+    result = dask_obj.clip(mask).compute()
+    assert_geodataframe_equal(expected, result)
+
+    expected = geodf_points.geometry.clip(mask)
+    result = dask_obj.geometry.clip(mask).compute()
+    assert_geoseries_equal(expected, result)
+
+
 class TestDissolve:
     def setup_method(self):
         self.world = geopandas.read_file(
@@ -467,9 +582,27 @@ class TestDissolve:
             gpd_sum, dd_sum.drop(columns=["name", "iso_a3"]), check_like=True
         )
 
+    @pytest.mark.skipif(
+        Version(dask.__version__) == Version("2022.01.1"),
+        reason="Regression in dask 2022.01.1 https://github.com/dask/dask/issues/8611",
+    )
     def test_split_out(self):
         gpd_default = self.world.dissolve("continent")
         dd_split = self.ddf.dissolve("continent", split_out=4)
+        assert dd_split.npartitions == 4
+        assert_geodataframe_equal(gpd_default, dd_split.compute(), check_like=True)
+
+    @pytest.mark.skipif(
+        Version(dask.__version__) == Version("2022.01.1"),
+        reason="Regression in dask 2022.01.1 https://github.com/dask/dask/issues/8611",
+    )
+    @pytest.mark.xfail
+    def test_split_out_name(self):
+        gpd_default = self.world.rename_geometry("geom").dissolve("continent")
+        ddf = dask_geopandas.from_geopandas(
+            self.world.rename_geometry("geom"), npartitions=4
+        )
+        dd_split = ddf.dissolve("continent", split_out=4)
         assert dd_split.npartitions == 4
         assert_geodataframe_equal(gpd_default, dd_split.compute(), check_like=True)
 
@@ -489,3 +622,112 @@ class TestDissolve:
         gpd_none = self.world.dissolve()
         dd_none = self.ddf.dissolve().compute()
         assert_geodataframe_equal(gpd_none, dd_none, check_like=True)
+
+
+class TestSpatialShuffle:
+    def setup_method(self):
+        self.world = geopandas.read_file(
+            geopandas.datasets.get_path("naturalearth_lowres")
+        )
+        self.ddf = dask_geopandas.from_geopandas(self.world, npartitions=4)
+
+    def test_default(self):
+        expected = self.world.set_index(
+            _hilbert_distance(self.world, self.world.total_bounds, level=16),
+        ).sort_index()
+
+        ddf = self.ddf.spatial_shuffle()
+        assert ddf.npartitions == self.ddf.npartitions
+        assert isinstance(ddf.spatial_partitions, geopandas.GeoSeries)
+
+        assert_geodataframe_equal(ddf.compute(), expected)
+
+    @pytest.mark.parametrize(
+        "p,calculate_partitions,npartitions",
+        [
+            (10, True, 8),
+            (None, False, None),
+        ],
+    )
+    def test_hilbert(self, p, calculate_partitions, npartitions):
+        exp_p = p if p else 16
+        expected = self.world.set_index(
+            _hilbert_distance(self.world, self.world.total_bounds, level=exp_p),
+        ).sort_index()
+
+        ddf = self.ddf.spatial_shuffle(
+            level=p,
+            calculate_partitions=calculate_partitions,
+            npartitions=npartitions,
+        )
+
+        assert ddf.npartitions == npartitions if npartitions else self.ddf.partitions
+        if calculate_partitions:
+            assert isinstance(ddf.spatial_partitions, geopandas.GeoSeries)
+        else:
+            assert ddf.spatial_partitions is None
+
+        assert_geodataframe_equal(ddf.compute(), expected)
+
+    @pytest.mark.parametrize(
+        "p,calculate_partitions,npartitions",
+        [
+            (10, True, 8),
+            (None, False, None),
+        ],
+    )
+    def test_morton(self, p, calculate_partitions, npartitions):
+        exp_p = p if p else 16
+        expected = self.world.set_index(
+            _morton_distance(self.world, self.world.total_bounds, level=exp_p),
+        ).sort_index()
+
+        ddf = self.ddf.spatial_shuffle(
+            "morton",
+            level=p,
+            calculate_partitions=calculate_partitions,
+            npartitions=npartitions,
+        )
+
+        assert ddf.npartitions == npartitions if npartitions else self.ddf.partitions
+        if calculate_partitions:
+            assert isinstance(ddf.spatial_partitions, geopandas.GeoSeries)
+        else:
+            assert ddf.spatial_partitions is None
+
+        assert_geodataframe_equal(ddf.compute(), expected)
+
+    @pytest.mark.skipif(
+        Version(dask.__version__) <= Version("2021.03.0"),
+        reason="older Dask has a bug in sorting",
+    )
+    @pytest.mark.parametrize(
+        "calculate_partitions,npartitions",
+        [
+            (True, 8),
+            (False, None),
+        ],
+    )
+    def test_geohash(self, calculate_partitions, npartitions):
+        df = self.world.copy()
+        # crossing meridian and resulting 0 causes inconsistencies among environments
+        df = df[df.name != "Fiji"]
+        expected = df.set_index(
+            _geohash(df, as_string=False, precision=12),
+        ).sort_index()
+
+        ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+
+        ddf = ddf.spatial_shuffle(
+            "geohash",
+            calculate_partitions=calculate_partitions,
+            npartitions=npartitions,
+        )
+
+        assert ddf.npartitions == npartitions if npartitions else ddf.partitions
+        if calculate_partitions:
+            assert isinstance(ddf.spatial_partitions, geopandas.GeoSeries)
+        else:
+            assert ddf.spatial_partitions is None
+
+        assert_geodataframe_equal(ddf.compute(), expected)

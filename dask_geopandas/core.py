@@ -15,6 +15,9 @@ import pygeos
 
 from .hilbert_distance import _hilbert_distance
 from .morton_distance import _morton_distance
+from .geohash import _geohash
+
+import dask_geopandas
 
 
 def _set_crs(df, crs, allow_override):
@@ -113,6 +116,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         setattr(cls, name, derived_from(original)(meth))
 
     def calculate_spatial_partitions(self):
+        """Calculate spatial partitions"""
         # TEMP method to calculate spatial partitions for testing, need to
         # add better methods (set_partitions / repartition)
         parts = geopandas.GeoSeries(
@@ -177,7 +181,8 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         Does not affect the underlying data.
         """
         self_copy = super().copy()
-        self_copy.spatial_partitions = self.spatial_partitions.copy()
+        if self.spatial_partitions is not None:
+            self_copy.spatial_partitions = self.spatial_partitions.copy()
         return self_copy
 
     @property
@@ -314,41 +319,58 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     @property
     def cx(self):
+        """
+        Coordinate based indexer to select by intersection with bounding box.
+
+        Format of input should be ``.cx[xmin:xmax, ymin:ymax]``. Any of
+        ``xmin``, ``xmax``, ``ymin``, and ``ymax`` can be provided, but input
+        must include a comma separating x and y slices. That is, ``.cx[:, :]``
+        will return the full series/frame, but ``.cx[:]`` is not implemented.
+        """
         return _CoordinateIndexer(self)
 
-    def hilbert_distance(self, p=15):
-
+    def hilbert_distance(self, total_bounds=None, level=16):
         """
-        A function that calculates the Hilbert distance between the geometry bounds
-        and total bounds of a Dask-GeoDataFrame.
-        The Hilbert distance can be used to spatially partition Dask-GeoPandas objects,
-        by mapping two dimensional geometries along the Hilbert curve.
+        Calculate the distance along a Hilbert curve.
+
+        The distances are calculated for the midpoints of the geometries in the
+        GeoDataFrame, and using the total bounds of the GeoDataFrame.
+
+        The Hilbert distance can be used to spatially partition Dask-GeoPandas
+        objects, by mapping two dimensional geometries along the Hilbert curve.
 
         Parameters
         ----------
-
-        p : The number of iterations used in constructing the Hilbert curve.
+        total_bounds : 4-element array, optional
+            The spatial extent in which the curve is constructed (used to
+            rescale the geometry midpoints). By default, the total bounds
+            of the full dask GeoDataFrame will be computed. If known, you
+            can pass the total bounds to avoid this extra computation.
+        level : int (1 - 16), default 16
+            Determines the precision of the curve (points on the curve will
+            have coordinates in the range [0, 2^level - 1]).
 
         Returns
-        ----------
-        Distances for each partition
-        """
+        -------
+        dask.Series
+            Series containing distances for each partition
 
+        """
         # Compute total bounds of all partitions rather than each partition
-        total_bounds = self.total_bounds
+        if total_bounds is None:
+            total_bounds = self.total_bounds
 
         # Calculate hilbert distances for each partition
         distances = self.map_partitions(
             _hilbert_distance,
             total_bounds=total_bounds,
-            p=p,
-            meta=pd.Series([], name="hilbert_distance", dtype="int"),
+            level=level,
+            meta=pd.Series([], name="hilbert_distance", dtype="uint32"),
         )
 
         return distances
 
-    def morton_distance(self, p=15):
-
+    def morton_distance(self, total_bounds=None, level=16):
         """
         Calculate the distance of geometries along the Morton curve
 
@@ -367,34 +389,96 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         Parameters
         ----------
 
-        p : int
-            precision of the Morton curve
+        total_bounds : 4-element array, optional
+            The spatial extent in which the curve is constructed (used to
+            rescale the geometry midpoints). By default, the total bounds
+            of the full dask GeoDataFrame will be computed. If known, you
+            can pass the total bounds to avoid this extra computation.
+        level : int (1 - 16), default 16
+            Determines the precision of the Morton curve.
 
         Returns
-        ----------
-        type : dask.Series
+        -------
+        dask.Series
             Series containing distances along the Morton curve
         """
 
         # Compute total bounds of all partitions rather than each partition
-        total_bounds = self.total_bounds
+        if total_bounds is None:
+            total_bounds = self.total_bounds
 
         # Calculate Morton distances for each partition
         distances = self.map_partitions(
             _morton_distance,
             total_bounds=total_bounds,
-            p=p,
-            meta=pd.Series([], name="morton_distance", dtype="int"),
+            level=level,
+            meta=pd.Series([], name="morton_distance", dtype="uint32"),
         )
 
         return distances
 
+    def geohash(self, as_string=True, precision=12):
+
+        """
+        Calculate geohash based on the middle points of the geometry bounds
+        for a given precision.
+        Only geographic coordinates (longitude, latitude) are supported.
+
+        Parameters
+        ----------
+        as_string : bool, default True
+            To return string or int Geohash.
+        precision : int (1 - 12), default 12
+            Precision of the string geohash values. Only used when
+            ``as_string=True``.
+
+        Returns
+        -------
+        type : pandas.Series
+            Series containing Geohash
+        """
+
+        if precision not in range(1, 13):
+            raise ValueError(
+                "The Geohash precision only accepts an integer value between 1 and 12"
+            )
+
+        if as_string is True:
+            dtype = object
+        else:
+            dtype = np.uint64
+
+        geohashes = self.map_partitions(
+            _geohash,
+            as_string=as_string,
+            precision=precision,
+            meta=pd.Series([], name="geohash", dtype=dtype),
+        )
+
+        return geohashes
+
+    @derived_from(geopandas.GeoDataFrame)
+    def clip(self, mask, keep_geom_type=False):
+        return dask_geopandas.clip(self, mask=mask, keep_geom_type=keep_geom_type)
+
 
 class GeoSeries(_Frame, dd.core.Series):
+    """Parallel GeoPandas GeoSeries
+
+    Do not use this class directly. Instead use functions like
+    :func:`dask_geopandas.read_parquet`,or :func:`dask_geopandas.from_geopandas`.
+    """
+
     _partition_type = geopandas.GeoSeries
 
 
 class GeoDataFrame(_Frame, dd.core.DataFrame):
+    """Parallel GeoPandas GeoDataFrame
+
+    Do not use this class directly. Instead use functions like
+    :func:`dask_geopandas.read_parquet`,or :func:`dask_geopandas.from_geopandas`.
+    """
+
     _partition_type = geopandas.GeoDataFrame
 
     @property
@@ -414,6 +498,11 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         self._meta = new._meta
         self._name = new._name
         self.dask = new.dask
+
+    def set_index(self, *args, **kwargs):
+        """Override to ensure we get GeoDataFrame with set geometry column"""
+        ddf = super().set_index(*args, **kwargs)
+        return ddf.set_geometry(self._meta.geometry.name)
 
     def set_geometry(self, col):
         # calculate ourselves to use meta and not meta_nonempty, which would
@@ -508,21 +597,144 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         )
         return aggregated.set_crs(self.crs)
 
+    def sjoin(self, df, how="inner", predicate="intersects"):
+        """
+        Spatial join of two GeoDataFrames.
+
+        Parameters
+        ----------
+        df : geopandas or dask_geopandas GeoDataFrame
+            If a geopandas.GeoDataFrame is passed, it is considered as a
+            dask_geopandas.GeoDataFrame with 1 partition (without spatial
+            partitioning information).
+        how : string, default 'inner'
+            The type of join. Currently only 'inner' is supported.
+        predicate : string, default 'intersects'
+            Binary predicate how to match corresponding rows of the left and right
+            GeoDataFrame. Possible values: 'contains', 'contains_properly',
+            'covered_by', 'covers', 'crosses', 'intersects', 'overlaps',
+            'touches', 'within'.
+
+        Returns
+        -------
+        dask_geopandas.GeoDataFrame
+
+        Notes
+        -----
+        If both the left and right GeoDataFrame have spatial partitioning
+        information available (the ``spatial_partitions`` attribute is set),
+        the output partitions are determined based on intersection of the
+        spatial partitions. In all other cases, the output partitions are
+        all combinations (cartesian/cross product) of all input partition
+        of the left and right GeoDataFrame.
+        """
+        return dask_geopandas.sjoin(self, df, how=how, predicate=predicate)
+
+    def spatial_shuffle(
+        self,
+        by="hilbert",
+        level=None,
+        calculate_partitions=True,
+        npartitions=None,
+        divisions=None,
+        **kwargs,
+    ):
+        """
+        Shuffle the data into spatially consistent partitions.
+        This realigns the dataset to be spatially sorted, i.e. geometries that are
+        spatially near each other will be within the same partition. This is
+        useful especially for overlay operations like a spatial join as it reduces the
+        number of interactions between individual partitions.
+        The spatial information is stored in the index and will replace the existing
+        index.
+        Note that ``spatial_shuffle`` uses ``set_index`` under the hood and comes with
+        all its potential performance drawbacks.
+        Parameters
+        ----------
+        by : string (default 'hilbert')
+            Spatial sorting method, one of {'hilbert', 'morton', 'geohash'}. See
+            ``hilbert_distance``, ``morton_distance`` and ``geohash`` methods for
+            details.
+        level : int (default None)
+            Level (precision) of the  Hilbert and Morton
+            curves used as a sorting method. Defaults to 15. Does not have an effect for
+            the ``'geohash'`` option.
+        calculate_partitions : bool (default True)
+            Calculate new spatial partitions after shuffling
+        npartitions : int, None, or 'auto'
+            The ideal number of output partitions. If None, use the same as the input.
+            If 'auto' then decide by memory use. Only used when divisions is not given.
+            If divisions is given, the number of output partitions will be
+            len(divisions) - 1.
+        divisions: list, optional
+            The “dividing lines” used to split the new index into partitions. Needs to
+            match the values returned by the sorting method.
+        **kwargs
+            Keyword arguments passed to ``set_index``.
+        Returns
+        -------
+        dask_geopandas.GeoDataFrame
+        Notes
+        -----
+        This method, similarly to ``calculate_spatial_partitions``, is computed
+        partially eagerly as it needs to calculate the distances for all existing
+        partitions before it can determine the divisions for the new
+        spatially-shuffled partitions.
+        """
+        if level is None:
+            level = 16
+        if by == "hilbert":
+            by = self.hilbert_distance(level=level)
+        elif by == "morton":
+            by = self.morton_distance(level=level)
+        elif by == "geohash":
+            by = self.geohash(as_string=False)
+        else:
+            raise ValueError(
+                f"'{by}' is not supported. Use one of ['hilbert', 'morton, 'geohash']."
+            )
+
+        sorted_ddf = self.set_index(
+            by,
+            sorted=False,
+            npartitions=npartitions,
+            divisions=divisions,
+            inplace=False,
+            **kwargs,
+        )
+
+        if calculate_partitions:
+            sorted_ddf.calculate_spatial_partitions()
+
+        return sorted_ddf
+
 
 from_geopandas = dd.from_pandas
 
 
-def from_dask_dataframe(df):
-    return df.map_partitions(geopandas.GeoDataFrame)
+def from_dask_dataframe(df, geometry=None):
+    """
+    Create GeoDataFrame from dask DataFrame.
+
+    Parameters
+    ----------
+    df : dask DataFrame
+    geometry : str or array-like, optional
+        If a string, the column to use as geometry. By default, it will look
+        for a column named "geometry". If array-like or dask (Geo)Series,
+        the values will be set as 'geometry' column on the GeoDataFrame.
+
+    """
+    return df.map_partitions(geopandas.GeoDataFrame, geometry=geometry)
 
 
-def points_from_xy(df, x="x", y="y", z="z"):
+def points_from_xy(df, x="x", y="y", z="z", crs=None):
     """Convert dask.dataframe of x and y (and optionally z) values to a GeoSeries."""
 
     def func(data, x, y, z):
         return geopandas.GeoSeries(
             geopandas.points_from_xy(
-                data[x], data[y], data[z] if z in df.columns else None
+                data[x], data[y], data[z] if z in df.columns else None, crs=crs
             ),
             index=data.index,
         )
@@ -577,6 +789,8 @@ for name in [
     "overlaps",
     "touches",
     "within",
+    "covers",
+    "covered_by",
 ]:
     meth = getattr(geopandas.base.GeoPandasBase, name)
     _Frame._bind_elemwise_comparison_method(
@@ -597,6 +811,9 @@ for name in [
     _Frame._bind_elemwise_operator_method(
         name, meth, original=geopandas.base.GeoPandasBase
     )
+
+
+dd.core.DataFrame.set_geometry = GeoDataFrame.set_geometry
 
 
 # Coodinate indexer (.cx)
