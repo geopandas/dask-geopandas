@@ -1,4 +1,6 @@
 import copy
+import json
+import math
 from typing import TYPE_CHECKING
 
 from dask.base import compute_as_if_collection, tokenize
@@ -11,12 +13,58 @@ from dask.dataframe.io.utils import _get_pyarrow_dtypes, _meta_from_dtypes
 
 import pandas as pd
 import geopandas
+import shapely.geometry
 
 from fsspec.core import get_fs_token_paths
 
 
 if TYPE_CHECKING:
     import pyarrow
+
+
+def _update_meta_to_geodataframe(meta, schema_metadata):
+    """
+    Convert meta to a GeoDataFrame and update with potential GEO metadata
+    """
+    if schema_metadata and b"geo" in schema_metadata:
+        geo_meta = json.loads(schema_metadata[b"geo"])
+        geometry_column_name = geo_meta["primary_column"]
+        crs = geo_meta["columns"][geometry_column_name]["crs"]
+        geometry_columns = geo_meta["columns"]
+    else:
+        # TODO we could allow the user to pass those explicitly if not
+        # stored in the metadata
+        geometry_column_name = None
+        crs = None
+        geometry_columns = {}
+
+    # Update meta to be a GeoDataFrame
+    meta = geopandas.GeoDataFrame(meta, geometry=geometry_column_name, crs=crs)
+    for col, item in geometry_columns.items():
+        if not col == meta._geometry_column_name:
+            meta[col] = geopandas.GeoSeries(meta[col], crs=item["crs"])
+
+    return meta
+
+
+def _get_partition_bounds(schema_metadata):
+    """
+    Get the partition bounds, if available, for the dataset fragment.
+    """
+
+    metadata_str = schema_metadata.get(b"geo", None)
+    if metadata_str is None:
+        return None
+
+    metadata = json.loads(metadata_str.decode("utf-8"))
+
+    # for now only check the primary column (TODO generalize this to follow
+    # the logic of geopandas to fallback to other geometry columns)
+    geometry = metadata["primary_column"]
+    bbox = metadata["columns"][geometry].get("bbox", None)
+    if bbox is None or all(math.isnan(val) for val in bbox):
+        return None
+    return shapely.geometry.box(*bbox)
 
 
 class ArrowDatasetEngine:
@@ -216,9 +264,15 @@ def read_feather(
     )
 
     # Update meta to be a GeoDataFrame
-    # TODO convert columns based on GEO metadata (this will now only work
-    # for a default "geometry" column)
-    meta = geopandas.GeoDataFrame(meta)
+    meta = _update_meta_to_geodataframe(meta, schema.metadata)
+
+    # Construct spatial partitioning information, if available
+    spatial_partitions = geopandas.GeoSeries(
+        [_get_partition_bounds(frag.physical_schema.metadata) for frag in parts],
+        crs=meta.crs,
+    )
+    if spatial_partitions.isna().any():
+        spatial_partitions = None
 
     # Construct and return a Blockwise layer
     label = "read-feather-"
@@ -231,7 +285,9 @@ def read_feather(
         label=label,
     )
     graph = HighLevelGraph({output_name: layer}, {output_name: set()})
-    return new_dd_object(graph, output_name, meta, [None] * (len(parts) + 1))
+    result = new_dd_object(graph, output_name, meta, [None] * (len(parts) + 1))
+    result.spatial_partitions = spatial_partitions
+    return result
 
 
 def to_feather(

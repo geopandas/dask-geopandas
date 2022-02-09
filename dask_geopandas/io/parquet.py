@@ -1,12 +1,10 @@
 from functools import partial
-import json
 
 import geopandas
-import shapely.geometry
 
 import dask.dataframe as dd
 
-from .arrow import GeoDatasetEngine
+from .arrow import GeoDatasetEngine, _get_partition_bounds, _update_meta_to_geodataframe
 
 try:
     # pyarrow is imported here, but is an optional dependency
@@ -15,7 +13,7 @@ except ImportError:
     ArrowEngine = object
 
 
-def _get_partition_bounds(part, fs):
+def _get_partition_bounds_parquet(part, fs):
     """
     Based on the part information gathered by dask, get the partition bounds
     if available.
@@ -35,19 +33,7 @@ def _get_partition_bounds(part, fs):
     if pq_metadata is None:
         return None
 
-    metadata_str = pq_metadata.metadata.get(b"geo", None)
-    if metadata_str is None:
-        return None
-
-    metadata = json.loads(metadata_str.decode("utf-8"))
-
-    # for now only check the primary column (TODO generalize this to follow
-    # the logic of geopandas to fallback to other geometry columns)
-    geometry = metadata["primary_column"]
-    bbox = metadata["columns"][geometry].get("bbox", None)
-    if bbox is None:
-        return None
-    return shapely.geometry.box(*bbox)
+    return _get_partition_bounds(pq_metadata.metadata)
 
 
 class GeoArrowEngine(GeoDatasetEngine, ArrowEngine):
@@ -57,7 +43,7 @@ class GeoArrowEngine(GeoDatasetEngine, ArrowEngine):
 
         # get spatial partitions if available
         regions = geopandas.GeoSeries(
-            [_get_partition_bounds(part, fs) for part in parts], crs=meta.crs
+            [_get_partition_bounds_parquet(part, fs) for part in parts], crs=meta.crs
         )
         if regions.notna().all():
             # a bit hacky, but this allows us to get this passed through
@@ -70,25 +56,7 @@ class GeoArrowEngine(GeoDatasetEngine, ArrowEngine):
         """
         Convert meta to a GeoDataFrame and update with potential GEO metadata
         """
-        if schema.metadata and b"geo" in schema.metadata:
-            geo_meta = json.loads(schema.metadata[b"geo"])
-            geometry_column_name = geo_meta["primary_column"]
-            crs = geo_meta["columns"][geometry_column_name]["crs"]
-            geometry_columns = geo_meta["columns"]
-        else:
-            # TODO we could allow the user to pass those explicitly if not
-            # stored in the metadata
-            geometry_column_name = None
-            crs = None
-            geometry_columns = {}
-
-        # Update meta to be a GeoDataFrame
-        meta = geopandas.GeoDataFrame(meta, geometry=geometry_column_name, crs=crs)
-        for col, item in geometry_columns.items():
-            if not col == meta._geometry_column_name:
-                meta[col] = geopandas.GeoSeries(meta[col], crs=item["crs"])
-
-        return meta
+        return _update_meta_to_geodataframe(meta, schema.metadata)
 
     @classmethod
     def _generate_dd_meta(cls, schema, index, categories, partition_info):

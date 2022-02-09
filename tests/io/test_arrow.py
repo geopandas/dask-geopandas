@@ -3,7 +3,7 @@ import dask_geopandas
 import dask.dataframe as dd
 
 import pytest
-from geopandas.testing import assert_geodataframe_equal
+from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 
 
 pa = pytest.importorskip("pyarrow")
@@ -26,6 +26,8 @@ def test_read(tmp_path):
     result = dask_geopandas.read_feather(basedir)
     assert isinstance(result, dask_geopandas.GeoDataFrame)
     assert result.npartitions == 2
+    assert result.crs == df.crs
+    assert result.spatial_partitions is not None
     # TODO this reset_index should not be necessary
     result_gpd = result.compute().reset_index(drop=True)
     assert_geodataframe_equal(result_gpd, df)
@@ -81,12 +83,13 @@ def test_roundtrip(tmp_path):
     # reading back gives identical GeoDataFrame
     result = dask_geopandas.read_feather(basedir)
     assert result.npartitions == 4
+    assert result.crs == df.crs
     # TODO this reset_index should not be necessary
     result_gpd = result.compute().reset_index(drop=True)
     assert_geodataframe_equal(result_gpd, df)
-    # TODO
-    # # reading back also populates the spatial partitioning property
-    # assert result.spatial_partitions is not None
+    # reading back also populates the spatial partitioning property
+    ddf.calculate_spatial_partitions()
+    assert_geoseries_equal(result.spatial_partitions, ddf.spatial_partitions.envelope)
 
 
 def test_column_selection_push_down(tmp_path):
@@ -105,9 +108,8 @@ def test_column_selection_push_down(tmp_path):
     # selecting columns including geometry column still gives GeoDataFrame
     ddf_subset = ddf[["pop_est", "geometry"]]
     assert type(ddf_subset) is dask_geopandas.GeoDataFrame
-    # TODO
-    # # and also preserves the spatial partitioning information
-    # assert ddf_subset.spatial_partitions is not None
+    # and also preserves the spatial partitioning information
+    assert ddf_subset.spatial_partitions is not None
 
     # selecting a single non-geometry column on the dataframe should work
     s = ddf["pop_est"]
