@@ -1,5 +1,5 @@
 geopandas>=0.10
-numpydoc
+numpydoc==1.1.0
 sphinx-book-theme
 myst-nb
 myst-parser
