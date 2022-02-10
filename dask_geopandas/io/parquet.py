@@ -1,5 +1,6 @@
 from functools import partial
 import json
+import math
 from typing import TYPE_CHECKING
 
 import pandas as pd
@@ -49,7 +50,7 @@ def _get_partition_bounds(part, fs):
     # the logic of geopandas to fallback to other geometry columns)
     geometry = metadata["primary_column"]
     bbox = metadata["columns"][geometry].get("bbox", None)
-    if bbox is None:
+    if bbox is None or all(math.isnan(val) for val in bbox):
         return None
     return shapely.geometry.box(*bbox)
 
