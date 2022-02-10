@@ -139,6 +139,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         return new_object
 
     @property
+    @derived_from(geopandas.GeoSeries)
     def crs(self):
         """
         The Coordinate Reference System (CRS) represented as a ``pyproj.CRS``
@@ -160,6 +161,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         self._name = new._name
         self.dask = new.dask
 
+    @derived_from(geopandas.GeoSeries)
     def set_crs(self, value, allow_override=False):
         """Set the value of the crs on a new object"""
         new = self.map_partitions(
@@ -171,6 +173,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             )
         return new
 
+    @derived_from(geopandas.GeoSeries)
     def to_crs(self, crs=None, epsg=None):
         return self.map_partitions(M.to_crs, crs=crs, epsg=epsg)
 
@@ -318,6 +321,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         return self.map_partitions(self._partition_type.explode, enforce_metadata=False)
 
     @property
+    @derived_from(geopandas.geodataframe.GeoDataFrame)
     def cx(self):
         """
         Coordinate based indexer to select by intersection with bounding box.
@@ -504,6 +508,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         ddf = super().set_index(*args, **kwargs)
         return ddf.set_geometry(self._meta.geometry.name)
 
+    @derived_from(geopandas.GeoDataFrame)
     def set_geometry(self, col):
         # calculate ourselves to use meta and not meta_nonempty, which would
         # raise an error if meta is an invalid GeoDataFrame (e.g. geometry
@@ -531,6 +536,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             "Dask DataFrame Structure", "Dask-GeoPandas GeoDataFrame Structure"
         )
 
+    @derived_from(dd.DataFrame)
     def to_parquet(self, path, *args, **kwargs):
         """See dask_geopadandas.to_parquet docstring for more information"""
         from .io.parquet import to_parquet
@@ -538,7 +544,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         return to_parquet(self, path, *args, **kwargs)
 
     def dissolve(self, by=None, aggfunc="first", split_out=1, **kwargs):
-        """Dissolve geometries within `groupby` into a single geometry.
+        """Dissolve geometries within ``groupby`` into a single geometry.
 
         Parameters
         ----------
@@ -547,7 +553,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             whole GeoDataFrame is considered a single group.
         aggfunc : function,  string or dict, default "first"
             Aggregation function for manipulation of data associated
-            with each group. Passed to dask `groupby.agg` method.
+            with each group. Passed to dask ``groupby.agg`` method.
             Note that ``aggfunc`` needs to be applicable to all columns (i.e. ``"mean"``
             cannot be used with string dtype). Select only required columns before
             ``dissolve`` or pass a dictionary mapping to ``aggfunc`` to specify the
@@ -556,7 +562,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             Number of partitions of the output
 
         **kwargs
-            keyword arguments passed to `groupby`
+            keyword arguments passed to ``groupby``
 
         Examples
         --------
@@ -722,6 +728,7 @@ def from_dask_dataframe(df, geometry=None):
     return df.map_partitions(geopandas.GeoDataFrame, geometry=geometry)
 
 
+@derived_from(geopandas)
 def points_from_xy(df, x="x", y="y", z="z", crs=None):
     """Convert dask.dataframe of x and y (and optionally z) values to a GeoSeries."""
 
