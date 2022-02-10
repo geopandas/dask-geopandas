@@ -18,7 +18,6 @@ import dask_geopandas  # noqa
 autodoc_mock_imports = [
     "pygeos",
     "dask",
-    "numba",
 ]
 
 # -- Project information -----------------------------------------------------

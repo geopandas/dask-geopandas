@@ -23,12 +23,10 @@ See the documentation on https://dask-geopandas.readthedocs.io/en/latest/
 Installation
 ------------
 
-This package depends on GeoPandas and Dask. In addition, it is recommended to
-install PyGEOS, to have faster spatial operations and enable multithreading. See
-https://geopandas.readthedocs.io/en/latest/install.html#using-the-optional-pygeos-dependency
-for details.
+This package depends on GeoPandas, Dask and PyGEOS.
 
-One way is to use the ``conda`` package manager to create a new environment:
+One way to install all required dependencies is to use the ``conda`` package manager to
+create a new environment:
 
 ::
 
@@ -36,8 +34,7 @@ One way is to use the ``conda`` package manager to create a new environment:
     conda activate geo_env
     conda config --env --add channels conda-forge
     conda config --env --set channel_priority strict
-    conda install python=3 geopandas dask pygeos
-    pip install git+git://github.com/geopandas/dask-geopandas.git
+    conda install dask-geopandas
 
 
 
