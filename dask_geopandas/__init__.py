@@ -9,6 +9,7 @@ from .core import (
     from_geopandas,
     from_dask_dataframe,
 )
+from .io.file import read_file
 from .io.parquet import read_parquet, to_parquet
 from .sjoin import sjoin
 

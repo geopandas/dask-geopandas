@@ -11,6 +11,14 @@ GeoPandas
    from_dask_dataframe
    from_geopandas
 
+GIS files
+---------
+
+.. autosummary::
+   :toctree: api/
+
+   read_file
+
 Parquet
 -------
 .. autosummary::
