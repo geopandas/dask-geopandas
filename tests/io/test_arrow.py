@@ -4,6 +4,7 @@ import dask.dataframe as dd
 
 import pytest
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
+from pandas.testing import assert_index_equal
 
 
 pa = pytest.importorskip("pyarrow")
@@ -156,3 +157,39 @@ def test_filters(tmp_path, filter):
     result_gpd = result.compute().reset_index(drop=True)
     expected = df[df["continent"] == "Africa"].reset_index(drop=True)
     assert_geodataframe_equal(result_gpd, expected)
+
+
+def test_index(tmp_path):
+    # set up dataset
+    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    # get meaningful index by shuffling (hilbert distance)
+    df = dask_geopandas.from_geopandas(df, npartitions=1).spatial_shuffle().compute()
+    ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+
+    # roundtrip preserves the index by default
+    basedir = tmp_path / "dataset"
+    ddf.to_feather(basedir)
+    result = dask_geopandas.read_feather(basedir)
+    assert "hilbert_distance" not in result.columns
+    assert result.index.name == "hilbert_distance"
+    assert_index_equal(result.index.compute(), df.index)
+
+    # TODO not setting the index
+    with pytest.raises(NotImplementedError):
+        result = dask_geopandas.read_feather(basedir, index=False)
+    # assert "hilbert_distance" in result.columns
+    # assert result.index.name is None
+
+    # setting specific columns as the index
+    result = dask_geopandas.read_feather(basedir, index="iso_a3")
+    assert "iso_a3" not in result.columns
+    assert result.index.name == "iso_a3"
+    assert_geodataframe_equal(result.compute(), df.set_index("iso_a3"))
+
+    # not writing the index
+    basedir = tmp_path / "dataset"
+    ddf.to_feather(basedir, write_index=False)
+    result = dask_geopandas.read_feather(basedir)
+    assert "hilbert_distance" not in result.columns
+    assert result.index.name is None
+    assert result.index.compute()[0] == 0

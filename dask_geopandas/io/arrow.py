@@ -9,8 +9,6 @@ from dask.highlevelgraph import HighLevelGraph
 from dask.layers import DataFrameIOLayer
 from dask.utils import natural_sort_key, apply
 
-from dask.dataframe.io.utils import _get_pyarrow_dtypes, _meta_from_dtypes
-
 import pandas as pd
 import geopandas
 import shapely.geometry
@@ -102,15 +100,19 @@ class ArrowDatasetEngine:
         # Create dask meta
         schema = dataset.schema
         # TODO add support for `categories`keyword
-        dtypes = _get_pyarrow_dtypes(schema, categories=None)
-        if columns is None:
-            columns = list(dtypes)
-        else:
-            ex = set(columns) - set(dtypes)
+        meta = schema.empty_table().to_pandas()
+
+        if index:
+            meta = meta.set_index(index)
+
+        if columns is not None:
+            ex = set(columns) - set(meta.columns)
             if ex:
-                raise ValueError(f"Requested columns {ex} not in schema {set(dtypes)}")
-        index = [index] if isinstance(index, str) else index
-        meta = _meta_from_dtypes(columns, dtypes, index, [])
+                raise ValueError(
+                    f"Requested columns {ex} not in schema {set(meta.columns)}"
+                )
+            meta = meta[columns]
+
         return fragments, meta, schema, filter
 
     @classmethod
@@ -251,8 +253,10 @@ def read_feather(
         Predicates can also be expressed as a List[Tuple]. These are evaluated
         as an AND conjunction. To express OR in predictates, one must use the
         List[List[Tuple]] notation.
-    index: str
-        Column name to set as index.
+    index : str, list or False, default None
+        Field name(s) to use as the output frame index. By default will be
+        inferred from the pandas metadata (if present in the files). Use False
+        to read all fields as columns.
     storage_options: None or dict
         Further parameters to pass to the bytes backend.
 
@@ -261,6 +265,9 @@ def read_feather(
     dask_geopandas.GeoDataFrame (even if there is only one column)
 
     """
+    if index is False:
+        raise NotImplementedError("Specifying index=False is not yet implemented")
+
     # Get engine
     engine = FeatherDatasetEngine
 
