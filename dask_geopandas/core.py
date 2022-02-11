@@ -641,14 +641,18 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
     ):
         """
         Shuffle the data into spatially consistent partitions.
+
         This realigns the dataset to be spatially sorted, i.e. geometries that are
         spatially near each other will be within the same partition. This is
         useful especially for overlay operations like a spatial join as it reduces the
         number of interactions between individual partitions.
+
         The spatial information is stored in the index and will replace the existing
         index.
+
         Note that ``spatial_shuffle`` uses ``set_index`` under the hood and comes with
         all its potential performance drawbacks.
+
         Parameters
         ----------
         by : string (default 'hilbert')
@@ -671,9 +675,11 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             match the values returned by the sorting method.
         **kwargs
             Keyword arguments passed to ``set_index``.
+
         Returns
         -------
         dask_geopandas.GeoDataFrame
+
         Notes
         -----
         This method, similarly to ``calculate_spatial_partitions``, is computed
