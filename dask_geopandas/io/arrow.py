@@ -34,7 +34,7 @@ def _update_meta_to_geodataframe(meta, schema_metadata):
         # stored in the metadata
         raise ValueError(
             "Missing geo metadata in the Parquet/Feather file. "
-            "Use dask.dataframe.read_parquet/read_feather() instead."
+            "Use dask.dataframe.read_parquet/pandas.read_feather() instead."
         )
 
     # Update meta to be a GeoDataFrame
