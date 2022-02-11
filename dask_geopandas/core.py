@@ -543,6 +543,12 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
 
         return to_parquet(self, path, *args, **kwargs)
 
+    def to_feather(self, path, *args, **kwargs):
+        """See dask_geopadandas.to_feather docstring for more information"""
+        from .io.arrow import to_feather
+
+        return to_feather(self, path, *args, **kwargs)
+
     def dissolve(self, by=None, aggfunc="first", split_out=1, **kwargs):
         """Dissolve geometries within ``groupby`` into a single geometry.
 
