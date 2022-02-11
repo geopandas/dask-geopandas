@@ -37,6 +37,13 @@ def _get_partition_bounds_parquet(part, fs):
 
 
 class GeoArrowEngine(GeoDatasetEngine, ArrowEngine):
+    """
+    Engine for reading geospatial Parquet datasets. Subclasses dask's
+    ArrowEngine for Parquet, but overriding some methods to ensure we
+    correctly read/write GeoDataFrames.
+
+    """
+
     @classmethod
     def read_metadata(cls, fs, paths, **kwargs):
         meta, stats, parts, index = super().read_metadata(fs, paths, **kwargs)

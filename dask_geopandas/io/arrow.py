@@ -65,6 +65,13 @@ def _get_partition_bounds(schema_metadata):
 
 
 class ArrowDatasetEngine:
+    """
+    Custom IO engine based on pyarrow.dataset.
+
+    This is designed after dask's ArrowDatasetEngine for Parquet IO (but simpler
+    with less options, and not dealing with a legacy engine) and ArrowORCEngine
+    for ORC IO (but using pyarrow.dataset for the read_metadata discovery).
+    """
 
     file_format: str
 
@@ -144,6 +151,14 @@ class ArrowDatasetEngine:
 
 
 class GeoDatasetEngine:
+    """
+    Mixin to combine with an IO Engine (the custom engine defined above for
+    Feather IO, or dask's engine for Parquet IO) that holds the custom logic
+    for geospatial data: overriding the arrow <-> pandas conversions to ensure
+    we read/write GeoDataFrames.
+
+    """
+
     @classmethod
     def _arrow_table_to_pandas(
         cls, arrow_table: "pyarrow.Table", categories, **kwargs
@@ -336,7 +351,9 @@ def to_feather(
     write_index : boolean, default True
         Whether or not to write the index. Defaults to True.
     storage_options : dict, default None
-        Key/value pairs to be passed on to the file-system backend, if any.
+        Key/value pairs to be passed on to the file-system backend, if any
+        (inferred from the path, such as "s3://...").
+        Please see ``fsspec`` for more details.
     compute : bool, default True
         If True (default) then the result is computed immediately. If False
         then a ``dask.delayed`` object is returned for future computation.
