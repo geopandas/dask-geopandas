@@ -348,8 +348,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         total_bounds : 4-element array, optional
             The spatial extent in which the curve is constructed (used to
             rescale the geometry midpoints). By default, the total bounds
-            of the full dask GeoDataFrame will be computed. If known, you
-            can pass the total bounds to avoid this extra computation.
+            of the full dask GeoDataFrame will be computed (from the spatial
+            partitions, if available, otherwise computed from the full
+            dataframe). If known, you can pass the total bounds to avoid this
+            extra computation.
         level : int (1 - 16), default 16
             Determines the precision of the curve (points on the curve will
             have coordinates in the range [0, 2^level - 1]).
@@ -362,7 +364,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """
         # Compute total bounds of all partitions rather than each partition
         if total_bounds is None:
-            total_bounds = self.total_bounds
+            if self.spatial_partitions is not None:
+                total_bounds = self.spatial_partitions.total_bounds
+            else:
+                total_bounds = self.total_bounds
 
         # Calculate hilbert distances for each partition
         distances = self.map_partitions(
@@ -396,8 +401,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         total_bounds : 4-element array, optional
             The spatial extent in which the curve is constructed (used to
             rescale the geometry midpoints). By default, the total bounds
-            of the full dask GeoDataFrame will be computed. If known, you
-            can pass the total bounds to avoid this extra computation.
+            of the full dask GeoDataFrame will be computed (from the spatial
+            partitions, if available, otherwise computed from the full
+            dataframe). If known, you can pass the total bounds to avoid this
+            extra computation.
         level : int (1 - 16), default 16
             Determines the precision of the Morton curve.
 
@@ -405,11 +412,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         -------
         dask.Series
             Series containing distances along the Morton curve
-        """
 
+        """
         # Compute total bounds of all partitions rather than each partition
         if total_bounds is None:
-            total_bounds = self.total_bounds
+            if self.spatial_partitions is not None:
+                total_bounds = self.spatial_partitions.total_bounds
+            else:
+                total_bounds = self.total_bounds
 
         # Calculate Morton distances for each partition
         distances = self.map_partitions(
