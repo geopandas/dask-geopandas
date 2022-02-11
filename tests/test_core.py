@@ -792,3 +792,16 @@ def test_to_wkb_series(geoseries_points, hex):
     result = dask_obj.to_wkb(hex=hex).compute()
 
     assert_series_equal(expected, result)
+
+
+@pytest.mark.parametrize("coord", ["x", "y", "z"])
+def test_get_coord(coord):
+    p1 = Point(1, 2, 3)
+    p2 = Point(2, 3, 4)
+    p3 = Point(3, 4, 5)
+    p4 = Point(4, 1, 7)
+    s = geopandas.GeoSeries([p1, p2, p3, p4])
+    dask_obj = dask_geopandas.from_geopandas(s, npartitions=2)
+    expected = getattr(s, coord)
+    result = getattr(dask_obj, coord).compute()
+    assert_series_equal(expected, result)
