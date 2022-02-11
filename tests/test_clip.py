@@ -5,14 +5,20 @@ import dask_geopandas
 from .test_core import geodf_points  # noqa: F401
 
 
-def test_clip(geodf_points):  # noqa: F811
-    dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
+def test_clip():
+    cities = geopandas.read_file(geopandas.datasets.get_path("naturalearth_cities"))
+    dask_obj = dask_geopandas.from_geopandas(cities, npartitions=4)
     dask_obj.calculate_spatial_partitions()
-    mask = geodf_points.iloc[:1]
-    mask["geometry"] = mask["geometry"].buffer(2)
-    expected = geopandas.clip(geodf_points, mask)
-    result = dask_geopandas.clip(dask_obj, mask).compute()
-    assert_geodataframe_equal(expected, result)
+    mask = geopandas.read_file(
+        geopandas.datasets.get_path("naturalearth_lowres")
+    ).query("continent == 'Africa'")
+    expected = geopandas.clip(cities, mask)
+    clipped = dask_geopandas.clip(dask_obj, mask)
+
+    assert isinstance(clipped.spatial_partitions, geopandas.GeoSeries)
+
+    result = clipped.compute()
+    assert_geodataframe_equal(expected.sort_index(), result.sort_index())
 
 
 def test_clip_no_spatial_partitions(geodf_points):  # noqa: F811
