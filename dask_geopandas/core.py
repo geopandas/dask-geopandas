@@ -795,6 +795,7 @@ for name in [
     "geometry",
     "x",
     "y",
+    "z",
 ]:
     GeoSeries._bind_property(name)
 
