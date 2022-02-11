@@ -6,6 +6,7 @@ from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
 from dask_geopandas import from_geopandas
 import geopandas
 from shapely.geometry import Point, LineString, Polygon
+from shapely.wkt import loads
 
 
 @pytest.fixture
@@ -81,3 +82,20 @@ def test_world():
     morton_distance_dask(
         geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres")).iloc[1:]
     )
+
+
+@pytest.mark.parametrize(
+    "empty",
+    [
+        None,
+        loads("POLYGON EMPTY"),
+    ],
+)
+def test_empty(geoseries_polygons, empty):
+    s = geoseries_polygons
+    s.iloc[-1] = empty
+    dask_obj = from_geopandas(s, npartitions=2)
+    with pytest.raises(
+        ValueError, match="cannot be computed on a GeoSeries with empty"
+    ):
+        dask_obj.morton_distance().compute()

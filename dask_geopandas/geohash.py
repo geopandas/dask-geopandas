@@ -8,6 +8,8 @@ The vectorized implementation for quantization and bit interleaving is in turn b
 "Geohash in Golang Assembly" blog (https://mmcloughlin.com/posts/geohash-assembly).
 
 """
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -31,6 +33,15 @@ def _geohash(gdf, as_string, precision):
     type : pandas.Series
         Series containing geohash
     """
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", "GeoSeries.isna() previously returned True", UserWarning
+        )
+        if gdf.is_empty.any() | gdf.geometry.isna().any():
+            raise ValueError(
+                "Geohash cannot be computed on a GeoSeries with empty or "
+                "missing geometries.",
+            )
 
     # Calculate bounds
     bounds = gdf.bounds.to_numpy()
