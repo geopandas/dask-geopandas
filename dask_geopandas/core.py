@@ -503,6 +503,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         self._name = new._name
         self.dask = new.dask
 
+    @derived_from(dd.DataFrame)
     def set_index(self, *args, **kwargs):
         """Override to ensure we get GeoDataFrame with set geometry column"""
         ddf = super().set_index(*args, **kwargs)
