@@ -23,7 +23,7 @@ def clip(gdf, mask, keep_geom_type=False):
         )
 
     new_spatial_partitions = geopandas.clip(
-        gdf=gdf.spatial_partitions.to_frame("geometry"),
+        gdf=gdf.spatial_partitions,
         mask=mask,
         # keep_geom_type is always false for clipping the spatial partitions
         # otherwise we'd be falsely creating new partition(s)
