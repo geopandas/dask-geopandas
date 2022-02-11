@@ -235,6 +235,22 @@ def read_feather(
         glob character if a single string.
     columns: None or list(str)
         Columns to load. If None, loads all.
+    filters : list (of list) of tuples or pyarrow.dataset.Expression, default None
+        Row-wise filter to apply while reading the dataset. Can be specified
+        as a ``pyarrow.dataset.Expression`` object or using a list of tuples
+        notation, like ``[[('col1', '==', 0), ...], ...]``. The filter will
+        be applied both at the partition level, this is to prevent the loading
+        of some files, as at the file level to filter the actual rows.
+
+        For the list of tuples format, predicates can be expressed in disjunctive
+        normal form (DNF). This means that the innermost tuple describes a single
+        column predicate. These inner predicates are combined with an AND
+        conjunction into a larger predicate. The outer-most list then combines all
+        of the combined filters with an OR disjunction.
+
+        Predicates can also be expressed as a List[Tuple]. These are evaluated
+        as an AND conjunction. To express OR in predictates, one must use the
+        List[List[Tuple]] notation.
     index: str
         Column name to set as index.
     storage_options: None or dict

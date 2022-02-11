@@ -7,6 +7,7 @@ from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 
 
 pa = pytest.importorskip("pyarrow")
+ds = pytest.importorskip("pyarrow.dataset")
 
 
 pytestmark = pytest.mark.filterwarnings(
@@ -136,3 +137,22 @@ def test_missing_metadata(tmp_path):
 
     with pytest.raises(ValueError, match="Missing geo metadata"):
         dask_geopandas.read_feather(path)
+
+
+@pytest.mark.parametrize(
+    "filter", [[("continent", "=", "Africa")], ds.field("continent") == "Africa"]
+)
+def test_filters(tmp_path, filter):
+    # set up dataset
+    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+    basedir = tmp_path / "dataset"
+    ddf.to_feather(basedir)
+
+    # specifying filters argument
+    result = dask_geopandas.read_feather(basedir, filters=filter)
+    assert result.npartitions == 4
+
+    result_gpd = result.compute().reset_index(drop=True)
+    expected = df[df["continent"] == "Africa"].reset_index(drop=True)
+    assert_geodataframe_equal(result_gpd, expected)
