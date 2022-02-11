@@ -34,9 +34,10 @@ def _update_meta_to_geodataframe(meta, schema_metadata):
     else:
         # TODO we could allow the user to pass those explicitly if not
         # stored in the metadata
-        geometry_column_name = None
-        crs = None
-        geometry_columns = {}
+        raise ValueError(
+            "Missing geo metadata in the Parquet/Feather file. "
+            "Use dask.dataframe.read_parquet/read_feather() instead."
+        )
 
     # Update meta to be a GeoDataFrame
     meta = geopandas.GeoDataFrame(meta, geometry=geometry_column_name, crs=crs)
@@ -51,12 +52,10 @@ def _get_partition_bounds(schema_metadata):
     """
     Get the partition bounds, if available, for the dataset fragment.
     """
-
-    metadata_str = schema_metadata.get(b"geo", None)
-    if metadata_str is None:
+    if not (schema_metadata and b"geo" in schema_metadata):
         return None
 
-    metadata = json.loads(metadata_str.decode("utf-8"))
+    metadata = json.loads(schema_metadata[b"geo"].decode("utf-8"))
 
     # for now only check the primary column (TODO generalize this to follow
     # the logic of geopandas to fallback to other geometry columns)

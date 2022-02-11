@@ -115,3 +115,24 @@ def test_column_selection_push_down(tmp_path):
     s = ddf["pop_est"]
     assert type(s) is dd.Series
     assert s.max().compute() == df["pop_est"].max()
+
+
+def test_missing_metadata(tmp_path):
+    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    path = tmp_path / "test.feather"
+
+    # convert to DataFrame with wkb -> writing to feather will have only pandas metadata
+    df = df.to_wkb()
+    df.to_feather(path)
+
+    with pytest.raises(ValueError, match="Missing geo metadata"):
+        dask_geopandas.read_feather(path)
+
+    # remove metadata completely
+    from pyarrow import feather
+
+    table = feather.read_table(path)
+    feather.write_feather(table.replace_schema_metadata(), path)
+
+    with pytest.raises(ValueError, match="Missing geo metadata"):
+        dask_geopandas.read_feather(path)
