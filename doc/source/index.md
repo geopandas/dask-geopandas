@@ -4,7 +4,7 @@ Parallel GeoPandas with Dask
 
 ## Status
 
-**EXPERIMENTAL** This project is in an early state. The basic element-wise spatial methods are implemented, but also not yet much more than that.
+**EXPERIMENTAL** This project is in an early state.
 
 If you would like to see this project in a more stable state, then you might consider pitching in with developer time (contributions are very welcome!) or with financial support from you or your company.
 

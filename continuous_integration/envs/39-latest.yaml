@@ -19,6 +19,7 @@ dependencies:
   - flask # needed for moto server
   # optional dependencies
   - pyarrow
+  - pyogrio
   - pygeohash
   - pip
   - pip:
