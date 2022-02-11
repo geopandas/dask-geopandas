@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -24,6 +26,15 @@ def _hilbert_distance(gdf, total_bounds=None, level=16):
     Pandas Series containing distances along the Hilbert curve
 
     """
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", "GeoSeries.isna() previously returned True", UserWarning
+        )
+        if gdf.is_empty.any() | gdf.geometry.isna().any():
+            raise ValueError(
+                "Hilbert distance cannot be computed on a GeoSeries with empty or "
+                "missing geometries.",
+            )
     # Calculate bounds as numpy array
     bounds = gdf.bounds.to_numpy()
 

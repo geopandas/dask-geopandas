@@ -1,3 +1,5 @@
+import warnings
+
 import pandas as pd
 from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
 
@@ -22,6 +24,15 @@ def _morton_distance(gdf, total_bounds, level):
         Series containing distances from Morton curve
 
     """
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore", "GeoSeries.isna() previously returned True", UserWarning
+        )
+        if gdf.is_empty.any() | gdf.geometry.isna().any():
+            raise ValueError(
+                "Morton distance cannot be computed on a GeoSeries with empty or "
+                "missing geometries.",
+            )
     # Calculate bounds as numpy array
     bounds = gdf.bounds.to_numpy()
     # Calculate discrete coords based on total bounds and bounds
