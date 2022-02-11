@@ -363,6 +363,26 @@ def test_set_geometry_with_dask_geoseries():
     assert_geoseries_equal(dask_obj.geometry.compute(), expected.geometry)
 
 
+def test_rename_geometry(geodf_points):
+    df = geodf_points
+    dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)
+    renamed = dask_obj.rename_geometry("points")
+    assert renamed._meta.geometry.name == "points"
+
+    for part in renamed.partitions:
+        assert part.compute().geometry.name == "points"
+
+    result = renamed.compute()
+    assert_geodataframe_equal(result, df.rename_geometry("points"))
+
+
+def test_rename_geometry_error(geodf_points):
+    df = geodf_points
+    dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)
+    with pytest.raises(ValueError, match="Column named value1 already exists"):
+        dask_obj.rename_geometry("value1")
+
+
 def test_from_dask_dataframe_with_dask_geoseries():
     df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
     dask_obj = dd.from_pandas(df, npartitions=2)

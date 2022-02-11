@@ -38,6 +38,7 @@ Active geometry handling
    :toctree: api/
 
    GeoDataFrame.set_geometry
+   GeoDataFrame.rename_geometry
 
 Aggregating and exploding
 -------------------------

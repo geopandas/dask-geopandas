@@ -519,6 +519,11 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             meta = self._meta.set_geometry(col)
         return self.map_partitions(M.set_geometry, col, meta=meta)
 
+    @derived_from(geopandas.GeoDataFrame)
+    def rename_geometry(self, col):
+        meta = self._meta.rename_geometry(col)
+        return self.map_partitions(M.rename_geometry, col, meta=meta)
+
     def __getitem__(self, key):
         """
         If the result is a new dask_geopandas.GeoDataFrame/GeoSeries (automatically
