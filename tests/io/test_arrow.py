@@ -94,6 +94,26 @@ def test_roundtrip(tmp_path):
     assert_geoseries_equal(result.spatial_partitions, ddf.spatial_partitions.envelope)
 
 
+def test_roundtrip_s3(s3_resource, s3_storage_options):
+    fs, endpoint_url = s3_resource
+
+    # basic roundtrip to S3
+    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+
+    uri = "s3://geopandas-test/dataset.feather"
+    ddf.to_feather(uri, storage_options=s3_storage_options)
+
+    # reading back gives identical GeoDataFrame
+    result = dask_geopandas.read_feather(uri, storage_options=s3_storage_options)
+    assert result.npartitions == 4
+    assert_geodataframe_equal(result.compute().reset_index(drop=True), df)
+    # reading back correctly sets the CRS in meta
+    assert result.crs == df.crs
+    # reading back also populates the spatial partitioning property
+    assert result.spatial_partitions is not None
+
+
 def test_column_selection_push_down(tmp_path):
     # set up dataset
     df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))

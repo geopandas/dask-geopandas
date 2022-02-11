@@ -75,12 +75,11 @@ class ArrowDatasetEngine:
         from pyarrow.parquet import _filters_to_expression
 
         # dataset discovery
-        # TODO support filesystems
         if len(paths) == 1:
             # list of 1 directory path is not supported
             paths = paths[0]
         dataset = ds.dataset(
-            paths, partitioning="hive", filesystem=None, format=cls.file_format
+            paths, partitioning="hive", filesystem=fs, format=cls.file_format
         )
 
         # Get all (filtered) fragments
@@ -257,8 +256,10 @@ def read_feather(
         Field name(s) to use as the output frame index. By default will be
         inferred from the pandas metadata (if present in the files). Use False
         to read all fields as columns.
-    storage_options: None or dict
-        Further parameters to pass to the bytes backend.
+    storage_options : dict, default None
+        Key/value pairs to be passed on to the file-system backend, if any
+        (inferred from the path, such as "s3://...").
+        Please see ``fsspec`` for more details.
 
     Returns
     -------
