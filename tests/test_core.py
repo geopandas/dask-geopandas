@@ -427,6 +427,18 @@ def test_meta(geodf_points_crs):
     check_meta(meta_non_empty, "foo")
 
 
+def test_spatial_partitions_setter(geodf_points):
+    dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
+
+    # needs to be a GeoSeries
+    with pytest.raises(TypeError):
+        dask_obj.spatial_partitions = geodf_points
+
+    # wrong length
+    with pytest.raises(ValueError):
+        dask_obj.spatial_partitions = geodf_points.geometry
+
+
 def test_to_crs_geodf(geodf_points_crs):
     df = geodf_points_crs
     dask_obj = dask_geopandas.from_geopandas(df, npartitions=2)

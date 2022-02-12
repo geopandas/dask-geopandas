@@ -55,12 +55,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     def __init__(self, dsk, name, meta, divisions, spatial_partitions=None):
         super().__init__(dsk, name, meta, divisions)
-        if spatial_partitions is not None and not isinstance(
-            spatial_partitions, geopandas.GeoSeries
-        ):
-            spatial_partitions = geopandas.GeoSeries(spatial_partitions)
-        # TODO make this a property
-        self.spatial_partitions = spatial_partitions
+        self._spatial_partitions = spatial_partitions
 
     def to_dask_dataframe(self):
         """Create a dask.dataframe object from a dask_geopandas object"""
@@ -71,6 +66,28 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     def __dask_postpersist__(self):
         return type(self), (self._name, self._meta, self.divisions)
+
+    @property
+    def spatial_partitions(self):
+        """
+        The spatial extent of each of the partitions of the dask GeoDataFrame.
+        """
+        return self._spatial_partitions
+
+    @spatial_partitions.setter
+    def spatial_partitions(self, value):
+        if value is not None:
+            if not isinstance(value, geopandas.GeoSeries):
+                raise TypeError(
+                    "Expected a geopandas.GeoSeries for the spatial_partitions, "
+                    f"got {type(value)} instead."
+                )
+            if len(value) != self.npartitions:
+                raise ValueError(
+                    f"Expected spatial partitions of length {self.npartitions}, "
+                    f"got {len(value)} instead."
+                )
+        self._spatial_partitions = value
 
     @classmethod
     def _bind_property(cls, attr, preserve_spatial_partitions=False):
