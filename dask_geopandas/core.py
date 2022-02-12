@@ -465,6 +465,16 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def clip(self, mask, keep_geom_type=False):
         return dask_geopandas.clip(self, mask=mask, keep_geom_type=keep_geom_type)
 
+    @derived_from(geopandas.GeoDataFrame)
+    def to_wkt(self, **kwargs):
+        meta = self._meta.to_wkt(**kwargs)
+        return self.map_partitions(M.to_wkt, **kwargs, meta=meta)
+
+    @derived_from(geopandas.GeoDataFrame)
+    def to_wkb(self, hex=False, **kwargs):
+        meta = self._meta.to_wkb(hex=hex, **kwargs)
+        return self.map_partitions(M.to_wkb, hex=hex, **kwargs, meta=meta)
+
 
 class GeoSeries(_Frame, dd.core.Series):
     """Parallel GeoPandas GeoSeries
@@ -795,6 +805,7 @@ for name in [
     "geometry",
     "x",
     "y",
+    "z",
 ]:
     GeoSeries._bind_property(name)
 

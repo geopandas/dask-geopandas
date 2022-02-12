@@ -20,6 +20,8 @@ Serialization / IO / conversion
    :toctree: api/
 
    GeoDataFrame.to_parquet
+   GeoDataFrame.to_wkb
+   GeoDataFrame.to_wkt
 
 Projection handling
 -------------------

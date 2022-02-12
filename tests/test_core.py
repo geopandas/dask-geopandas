@@ -9,6 +9,7 @@ import dask.dataframe as dd
 from dask.dataframe.core import Scalar
 import dask_geopandas
 
+from pandas.testing import assert_frame_equal, assert_series_equal
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 from dask_geopandas.hilbert_distance import _hilbert_distance
 from dask_geopandas.morton_distance import _morton_distance
@@ -751,3 +752,56 @@ class TestSpatialShuffle:
             assert ddf.spatial_partitions is None
 
         assert_geodataframe_equal(ddf.compute(), expected)
+
+
+def test_to_wkt(geodf_points_crs):
+    df = geodf_points_crs
+    df["polygons"] = df.buffer(1)
+    ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+    expected = df.to_wkt()
+    result = ddf.to_wkt().compute()
+
+    assert_frame_equal(expected, result)
+
+
+def test_to_wkt_series(geoseries_points):
+    s = geoseries_points
+    dask_obj = dask_geopandas.from_geopandas(s, npartitions=4)
+    expected = s.to_wkt()
+    result = dask_obj.to_wkt().compute()
+
+    assert_series_equal(expected, result)
+
+
+@pytest.mark.parametrize("hex", [True, False])
+def test_to_wkb(geodf_points_crs, hex):
+    df = geodf_points_crs
+    df["polygons"] = df.buffer(1)
+    ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+    expected = df.to_wkb(hex=hex)
+    result = ddf.to_wkb(hex=hex).compute()
+
+    assert_frame_equal(expected, result)
+
+
+@pytest.mark.parametrize("hex", [True, False])
+def test_to_wkb_series(geoseries_points, hex):
+    s = geoseries_points
+    dask_obj = dask_geopandas.from_geopandas(s, npartitions=4)
+    expected = s.to_wkb(hex=hex)
+    result = dask_obj.to_wkb(hex=hex).compute()
+
+    assert_series_equal(expected, result)
+
+
+@pytest.mark.parametrize("coord", ["x", "y", "z"])
+def test_get_coord(coord):
+    p1 = Point(1, 2, 3)
+    p2 = Point(2, 3, 4)
+    p3 = Point(3, 4, 5)
+    p4 = Point(4, 1, 7)
+    s = geopandas.GeoSeries([p1, p2, p3, p4])
+    dask_obj = dask_geopandas.from_geopandas(s, npartitions=2)
+    expected = getattr(s, coord)
+    result = getattr(dask_obj, coord).compute()
+    assert_series_equal(expected, result)
