@@ -77,6 +77,15 @@ def test_specified_total_bounds(geoseries_polygons):
     assert_series_equal(result.compute(), expected.compute())
 
 
+def test_total_bounds_from_partitions(geoseries_polygons):
+    ddf = from_geopandas(geoseries_polygons, npartitions=2)
+    expected = ddf.morton_distance().compute()
+
+    ddf.calculate_spatial_partitions()
+    result = ddf.morton_distance().compute()
+    assert_series_equal(result, expected)
+
+
 def test_world():
     # world without Fiji
     morton_distance_dask(
