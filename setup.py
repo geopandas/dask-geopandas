@@ -5,8 +5,8 @@ import versioneer
 
 install_requires = [
     "geopandas>=0.10",
-    "dask>=2.18.0,!=2021.05.1",
-    "distributed>=2.18.0,!=2021.05.1",
+    "dask>=2021.06.0",
+    "distributed>=2021.06.0",
     "pygeos",
     "packaging",
 ]
