@@ -8,6 +8,7 @@ dependencies:
   - distributed
   - geopandas
   - fiona
+  - gdal=3.2.1
   - pygeos
   - pyproj=2.6
   - packaging
