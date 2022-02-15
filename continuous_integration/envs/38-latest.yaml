@@ -4,7 +4,7 @@ channels:
 dependencies:
   # required dependencies
   - python=3.8
-  - dask=2021.05.0
+  - dask=2021.11.0
   - distributed
   - geopandas
   - pygeos
