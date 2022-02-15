@@ -8,9 +8,11 @@ from .arrow import GeoDatasetEngine, _get_partition_bounds, _update_meta_to_geod
 
 try:
     # pyarrow is imported here, but is an optional dependency
-    from dask.dataframe.io.parquet.arrow import ArrowEngine
+    from dask.dataframe.io.parquet.arrow import (
+        ArrowDatasetEngine as DaskArrowDatasetEngine,
+    )
 except ImportError:
-    ArrowEngine = object
+    DaskArrowDatasetEngine = object
 
 
 def _get_partition_bounds_parquet(part, fs):
@@ -36,7 +38,7 @@ def _get_partition_bounds_parquet(part, fs):
     return _get_partition_bounds(pq_metadata.metadata)
 
 
-class GeoArrowEngine(GeoDatasetEngine, ArrowEngine):
+class GeoArrowEngine(GeoDatasetEngine, DaskArrowDatasetEngine):
     """
     Engine for reading geospatial Parquet datasets. Subclasses dask's
     ArrowEngine for Parquet, but overriding some methods to ensure we
