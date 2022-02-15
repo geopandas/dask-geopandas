@@ -24,6 +24,7 @@ __all__ = [
     "GeoSeries",
     "from_geopandas",
     "from_dask_dataframe",
+    "read_file",
     "read_feather",
     "read_parquet",
     "to_feather",
