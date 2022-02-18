@@ -1,3 +1,6 @@
+.. image:: https://img.shields.io/pypi/v/dask-geopandas.svg
+   :target: https://pypi.python.org/pypi/dask-geopanda/
+
 dask-geopandas
 ==============
 
