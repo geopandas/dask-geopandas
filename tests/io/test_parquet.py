@@ -156,3 +156,10 @@ def test_parquet_empty_partitions(tmp_path):
     assert_geodataframe_equal(result.compute(), df[df["pop_est"] > 1_000_000_000])
     # once one partition has no spatial extent, we don't restore the spatial partitions
     assert result.spatial_partitions is None
+
+
+def test_parquet_empty_dataset(tmp_path):
+    # ensure informative error message if there are no parts (otherwise
+    # will raise in not finding any geo metadata)
+    with pytest.raises(ValueError, match="No dataset parts discovered"):
+        dask_geopandas.read_parquet(tmp_path / "data.*.parquet")

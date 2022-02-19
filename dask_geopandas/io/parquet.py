@@ -81,6 +81,12 @@ class GeoArrowEngine(GeoDatasetEngine, DaskArrowDatasetEngine):
         """Overriding private method for dask >= 2021.10.0"""
         meta = super()._create_dd_meta(dataset_info)
         schema = dataset_info["schema"]
+        if not schema.names and not schema.metadata:
+            if len(list(dataset_info["ds"].get_fragments())) == 0:
+                raise ValueError(
+                    "No dataset parts discovered. Use dask.dataframe.read_parquet "
+                    "to read it as an empty DataFrame"
+                )
         meta = cls._update_meta(meta, schema)
         return meta
 
