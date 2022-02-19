@@ -1,4 +1,4 @@
-name: Publish dask-geopandas to PyPI / GitHub
+name: Build and publish dask-geopandas to PyPI / GitHub
 
 on:
   push:
@@ -27,9 +27,8 @@ jobs:
 
       - name: Build a binary wheel and a source tarball
         run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel
-          python setup.py sdist bdist_wheel
+          python -m pip install --upgrade pip build
+          python -m build
 
       - uses: actions/upload-artifact@v2
         with:
