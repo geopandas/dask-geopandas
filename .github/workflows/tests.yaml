@@ -29,7 +29,8 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         env:
-          - continuous_integration/envs/37-latest.yaml
+          - continuous_integration/envs/39-no-optional-deps.yaml
+          - continuous_integration/envs/37-minimal.yaml
           - continuous_integration/envs/38-latest.yaml
           - continuous_integration/envs/39-latest.yaml
 
