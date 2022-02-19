@@ -1,5 +1,5 @@
-dask-geopandas |pypi| |docs| |gitter|
-=====================================
+dask-geopandas |conda| |pypi| |docs| |gitter|
+=============================================
 
 Parallel GeoPandas with Dask
 
@@ -65,12 +65,16 @@ and will be computed in parallel:
 
 
 .. |pypi| image:: https://img.shields.io/pypi/v/dask-geopandas.svg
-   :target: https://pypi.python.org/pypi/dask-geopanda/
+   :target: https://pypi.python.org/pypi/dask-geopandas/
+
+.. |conda| image:: https://img.shields.io/conda/vn/conda-forge/dask-geopandas.svg
+   :target: https://anaconda.org/conda-forge/dask-geopandas
+   :alt: Conda Version
 
 .. |docs| image:: https://readthedocs.org/projects/dask-geopandas/badge/?version=latest
    :target: https://dask-geopandas.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
 
-.. |docs| image:: https://badges.gitter.im/geopandas/geopandas.svg
+.. |gitter| image:: https://badges.gitter.im/geopandas/geopandas.svg
    :target: https://gitter.im/geopandas/geopandas
    :alt: Gitter
