@@ -1,8 +1,12 @@
-.. image:: https://img.shields.io/pypi/v/dask-geopandas.svg
+.. |pypi| image:: https://img.shields.io/pypi/v/dask-geopandas.svg
    :target: https://pypi.python.org/pypi/dask-geopanda/
 
-dask-geopandas
-==============
+.. |docs| image:: https://readthedocs.org/projects/dask-geopandas/badge/?version=latest
+   :target: https://dask-geopandas.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+
+dask-geopandas |pypi| |docs|
+============================
 
 Parallel GeoPandas with Dask
 
