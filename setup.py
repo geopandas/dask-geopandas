@@ -39,7 +39,7 @@ setup(
         "Programming Language :: Python :: 3.10",
     ],
     keywords="dask geopandas spatial distributed cluster",
-    description="GeoPandas objects backed with Dask",
+    description="Parallel GeoPandas with Dask",
     long_description=(
         open("README.rst").read() if os.path.exists("README.rst") else ""
     ),
@@ -51,6 +51,7 @@ setup(
     },
     packages=find_packages(exclude=("tests", "tests.*")),
     package_data={"dask_geopandas": ["*.yaml"]},
+    python_requires=">=3.7",
     install_requires=install_requires,
     tests_require=["pytest"],
     zip_safe=False,
