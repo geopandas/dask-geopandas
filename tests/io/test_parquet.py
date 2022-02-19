@@ -1,5 +1,8 @@
+from packaging.version import Version
+
 import geopandas
 import dask_geopandas
+import dask
 import dask.dataframe as dd
 
 import pytest
@@ -158,6 +161,10 @@ def test_parquet_empty_partitions(tmp_path):
     assert result.spatial_partitions is None
 
 
+@pytest.mark.skipif(
+    not Version(dask.__version__) > Version("2022.02.0"),
+    reason="Only works with dask 2022.02.1 or up",
+)
 def test_parquet_partition_on(tmp_path):
     df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
