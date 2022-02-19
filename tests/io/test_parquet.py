@@ -156,3 +156,28 @@ def test_parquet_empty_partitions(tmp_path):
     assert_geodataframe_equal(result.compute(), df[df["pop_est"] > 1_000_000_000])
     # once one partition has no spatial extent, we don't restore the spatial partitions
     assert result.spatial_partitions is None
+
+
+def test_parquet_partition_on(tmp_path):
+    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+
+    # Writing a partitioned dataset based on one of the attribute columns
+    basedir = tmp_path / "naturalearth_lowres_by_continent.parquet"
+    ddf.to_parquet(basedir, partition_on="continent")
+
+    # Check for one of the partitions that the file is present and is correct
+    assert len(list(basedir.iterdir())) == 10  # 8 continents + 2 metadata files
+    assert (basedir / "continent=Africa").exists()
+    result_africa = geopandas.read_parquet(basedir / "continent=Africa")
+    expected = df[df["continent"] == "Africa"].drop(columns=["continent"])
+    result_africa.index.name = None
+    assert_geodataframe_equal(result_africa, expected)
+
+    # Check roundtrip
+    result = dask_geopandas.read_parquet(basedir)
+    assert result.npartitions >= 8
+    assert result.spatial_partitions is not None
+    expected = df.copy()
+    expected["continent"] = expected["continent"].astype("category")
+    assert_geodataframe_equal(result.compute(), expected, check_like=True)

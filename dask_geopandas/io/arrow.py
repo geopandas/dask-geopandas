@@ -185,15 +185,18 @@ class GeoDatasetEngine:
 
     @classmethod
     def _pandas_to_arrow_table(
-        cls, df: pd.DataFrame, preserve_index=False, schema=None
+        cls, df: pd.DataFrame, preserve_index=False, schema=None, **kwargs
     ) -> "pyarrow.Table":
         from geopandas.io.arrow import _geopandas_to_arrow
 
-        # TODO add support for schema
-        if schema is not None:
-            raise NotImplementedError("Passing 'schema' is not yet supported")
-
         table = _geopandas_to_arrow(df, index=preserve_index)
+
+        # TODO add support for schema
+        # (but let it already pass if the passed schema would not change the result)
+        if schema is not None:
+            if not table.schema.equals(schema):
+                raise NotImplementedError("Passing 'schema' is not yet supported")
+
         return table
 
 
