@@ -1,12 +1,5 @@
-.. |pypi| image:: https://img.shields.io/pypi/v/dask-geopandas.svg
-   :target: https://pypi.python.org/pypi/dask-geopanda/
-
-.. |docs| image:: https://readthedocs.org/projects/dask-geopandas/badge/?version=latest
-   :target: https://dask-geopandas.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation Status
-
-dask-geopandas |pypi| |docs|
-============================
+dask-geopandas |pypi| |docs| |gitter|
+=====================================
 
 Parallel GeoPandas with Dask
 
@@ -71,3 +64,13 @@ and will be computed in parallel:
    ddf.within(polygon)
 
 
+.. |pypi| image:: https://img.shields.io/pypi/v/dask-geopandas.svg
+   :target: https://pypi.python.org/pypi/dask-geopanda/
+
+.. |docs| image:: https://readthedocs.org/projects/dask-geopandas/badge/?version=latest
+   :target: https://dask-geopandas.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+
+.. |docs| image:: https://badges.gitter.im/geopandas/geopandas.svg
+   :target: https://gitter.im/geopandas/geopandas
+   :alt: Gitter
