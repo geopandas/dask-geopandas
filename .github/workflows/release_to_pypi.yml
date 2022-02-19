@@ -4,10 +4,16 @@ on:
   push:
     tags:
       - "v*"
+  pull_request:  # also build on PRs touching this file
+    paths:
+      - ".github/workflows/releaseto_pypi.yml"
+      - "MANIFEST.in"
+      - "pyproject.toml"
+      - "setup.py"
 
 jobs:
-  build-n-publish:
-    name: Build and publish dask-geopandas to PyPI
+  build:
+    name: Build dask-geopandas
     runs-on: ubuntu-latest
 
     steps:
@@ -24,6 +30,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install setuptools wheel
           python setup.py sdist bdist_wheel
+
+      - uses: actions/upload-artifact@v2
+        with:
+          path: ./dist/*
+          retention-days: 5
+
+  publish:
+    name: Publish dask-geopandas to PyPI
+    needs: [build]
+    runs-on: ubuntu-latest
+    # release on every tag
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/')
+
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: artifact
+          path: dist
 
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@master
