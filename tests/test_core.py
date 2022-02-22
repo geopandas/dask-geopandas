@@ -817,3 +817,19 @@ def test_get_coord(coord):
     expected = getattr(s, coord)
     result = getattr(dask_obj, coord).compute()
     assert_series_equal(expected, result)
+
+
+def test_to_dask_dataframe(geodf_points_crs):
+    df = geodf_points_crs
+    dask_gpd = dask_geopandas.from_geopandas(df, npartitions=2)
+    dask_df = dask_gpd.to_dask_dataframe()
+
+    assert isinstance(dask_df, dd.DataFrame) and not isinstance(
+        dask_df, dask_geopandas.GeoDataFrame
+    )
+    expected = pd.DataFrame(df)
+    result = dask_df.compute()
+    assert_frame_equal(result, expected)
+    assert isinstance(result, pd.DataFrame) and not isinstance(
+        result, geopandas.GeoDataFrame
+    )
