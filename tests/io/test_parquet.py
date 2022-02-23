@@ -162,6 +162,17 @@ def test_parquet_empty_partitions(tmp_path):
 
 
 @pytest.mark.skipif(
+    Version(dask.__version__) < Version("2021.10.0"),
+    reason="Only correct error message with dask 2021.10.0 or up",
+)
+def test_parquet_empty_dataset(tmp_path):
+    # ensure informative error message if there are no parts (otherwise
+    # will raise in not finding any geo metadata)
+    with pytest.raises(ValueError, match="No dataset parts discovered"):
+        dask_geopandas.read_parquet(tmp_path / "data.*.parquet")
+
+
+@pytest.mark.skipif(
     not Version(dask.__version__) > Version("2022.02.0"),
     reason="Only works with dask 2022.02.1 or up",
 )

@@ -1,0 +1,20 @@
+name: test
+channels:
+  - conda-forge
+dependencies:
+  # required dependencies
+  - python=3.9
+  - dask
+  - distributed
+  - geopandas
+  - pygeos
+  - pyproj
+  - packaging
+  # test dependencies
+  - pytest
+  - pytest-cov
+  - hilbertcurve
+  - pygeohash
+  - pip
+  - pip:
+      - pymorton
