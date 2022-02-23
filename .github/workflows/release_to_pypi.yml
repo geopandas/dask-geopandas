@@ -6,7 +6,7 @@ on:
       - "v*"
   pull_request:  # also build on PRs touching this file
     paths:
-      - ".github/workflows/releaseto_pypi.yml"
+      - ".github/workflows/release_to_pypi.yml"
       - "MANIFEST.in"
       - "pyproject.toml"
       - "setup.py"
