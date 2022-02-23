@@ -1,5 +1,8 @@
+from packaging.version import Version
+
 import geopandas
 import dask_geopandas
+import dask
 import dask.dataframe as dd
 
 import pytest
@@ -158,6 +161,10 @@ def test_parquet_empty_partitions(tmp_path):
     assert result.spatial_partitions is None
 
 
+@pytest.mark.skipif(
+    Version(dask.__version__) < Version("2021.10.0"),
+    reason="Only correct error message with dask 2021.10.0 or up",
+)
 def test_parquet_empty_dataset(tmp_path):
     # ensure informative error message if there are no parts (otherwise
     # will raise in not finding any geo metadata)

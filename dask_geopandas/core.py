@@ -59,7 +59,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     def to_dask_dataframe(self):
         """Create a dask.dataframe object from a dask_geopandas object"""
-        return self.map_partitions(M.to_pandas)
+        return self.map_partitions(pd.DataFrame)
 
     def __dask_postcompute__(self):
         return _finalize, ()
