@@ -49,7 +49,7 @@ setup(
         "Source": "https://github.com/geopandas/dask-geopandas/",
         "Issue Tracker": "https://github.com/geopandas/dask-geopandas/issues",
     },
-    packages=find_packages(exclude=("tests", "tests.*")),
+    packages=find_packages(),
     package_data={"dask_geopandas": ["*.yaml"]},
     python_requires=">=3.7",
     install_requires=install_requires,
