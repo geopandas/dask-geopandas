@@ -55,22 +55,39 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     def __init__(self, dsk, name, meta, divisions, spatial_partitions=None):
         super().__init__(dsk, name, meta, divisions)
-        if spatial_partitions is not None and not isinstance(
-            spatial_partitions, geopandas.GeoSeries
-        ):
-            spatial_partitions = geopandas.GeoSeries(spatial_partitions)
-        # TODO make this a property
-        self.spatial_partitions = spatial_partitions
+        self._spatial_partitions = spatial_partitions
 
     def to_dask_dataframe(self):
         """Create a dask.dataframe object from a dask_geopandas object"""
-        return self.map_partitions(M.to_pandas)
+        return self.map_partitions(pd.DataFrame)
 
     def __dask_postcompute__(self):
         return _finalize, ()
 
     def __dask_postpersist__(self):
         return type(self), (self._name, self._meta, self.divisions)
+
+    @property
+    def spatial_partitions(self):
+        """
+        The spatial extent of each of the partitions of the dask GeoDataFrame.
+        """
+        return self._spatial_partitions
+
+    @spatial_partitions.setter
+    def spatial_partitions(self, value):
+        if value is not None:
+            if not isinstance(value, geopandas.GeoSeries):
+                raise TypeError(
+                    "Expected a geopandas.GeoSeries for the spatial_partitions, "
+                    f"got {type(value)} instead."
+                )
+            if len(value) != self.npartitions:
+                raise ValueError(
+                    f"Expected spatial partitions of length {self.npartitions}, "
+                    f"got {len(value)} instead."
+                )
+        self._spatial_partitions = value
 
     @classmethod
     def _bind_property(cls, attr, preserve_spatial_partitions=False):
@@ -348,8 +365,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         total_bounds : 4-element array, optional
             The spatial extent in which the curve is constructed (used to
             rescale the geometry midpoints). By default, the total bounds
-            of the full dask GeoDataFrame will be computed. If known, you
-            can pass the total bounds to avoid this extra computation.
+            of the full dask GeoDataFrame will be computed (from the spatial
+            partitions, if available, otherwise computed from the full
+            dataframe). If known, you can pass the total bounds to avoid this
+            extra computation.
         level : int (1 - 16), default 16
             Determines the precision of the curve (points on the curve will
             have coordinates in the range [0, 2^level - 1]).
@@ -362,7 +381,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """
         # Compute total bounds of all partitions rather than each partition
         if total_bounds is None:
-            total_bounds = self.total_bounds
+            if self.spatial_partitions is not None:
+                total_bounds = self.spatial_partitions.total_bounds
+            else:
+                total_bounds = self.total_bounds
 
         # Calculate hilbert distances for each partition
         distances = self.map_partitions(
@@ -396,8 +418,10 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         total_bounds : 4-element array, optional
             The spatial extent in which the curve is constructed (used to
             rescale the geometry midpoints). By default, the total bounds
-            of the full dask GeoDataFrame will be computed. If known, you
-            can pass the total bounds to avoid this extra computation.
+            of the full dask GeoDataFrame will be computed (from the spatial
+            partitions, if available, otherwise computed from the full
+            dataframe). If known, you can pass the total bounds to avoid this
+            extra computation.
         level : int (1 - 16), default 16
             Determines the precision of the Morton curve.
 
@@ -405,11 +429,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         -------
         dask.Series
             Series containing distances along the Morton curve
-        """
 
+        """
         # Compute total bounds of all partitions rather than each partition
         if total_bounds is None:
-            total_bounds = self.total_bounds
+            if self.spatial_partitions is not None:
+                total_bounds = self.spatial_partitions.total_bounds
+            else:
+                total_bounds = self.total_bounds
 
         # Calculate Morton distances for each partition
         distances = self.map_partitions(
@@ -465,6 +492,16 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def clip(self, mask, keep_geom_type=False):
         return dask_geopandas.clip(self, mask=mask, keep_geom_type=keep_geom_type)
 
+    @derived_from(geopandas.GeoDataFrame)
+    def to_wkt(self, **kwargs):
+        meta = self._meta.to_wkt(**kwargs)
+        return self.map_partitions(M.to_wkt, **kwargs, meta=meta)
+
+    @derived_from(geopandas.GeoDataFrame)
+    def to_wkb(self, hex=False, **kwargs):
+        meta = self._meta.to_wkb(hex=hex, **kwargs)
+        return self.map_partitions(M.to_wkb, hex=hex, **kwargs, meta=meta)
+
 
 class GeoSeries(_Frame, dd.core.Series):
     """Parallel GeoPandas GeoSeries
@@ -503,6 +540,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         self._name = new._name
         self.dask = new.dask
 
+    @derived_from(dd.DataFrame)
     def set_index(self, *args, **kwargs):
         """Override to ensure we get GeoDataFrame with set geometry column"""
         ddf = super().set_index(*args, **kwargs)
@@ -518,6 +556,11 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         else:
             meta = self._meta.set_geometry(col)
         return self.map_partitions(M.set_geometry, col, meta=meta)
+
+    @derived_from(geopandas.GeoDataFrame)
+    def rename_geometry(self, col):
+        meta = self._meta.rename_geometry(col)
+        return self.map_partitions(M.rename_geometry, col, meta=meta)
 
     def __getitem__(self, key):
         """
@@ -542,6 +585,12 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         from .io.parquet import to_parquet
 
         return to_parquet(self, path, *args, **kwargs)
+
+    def to_feather(self, path, *args, **kwargs):
+        """See dask_geopadandas.to_feather docstring for more information"""
+        from .io.arrow import to_feather
+
+        return to_feather(self, path, *args, **kwargs)
 
     def dissolve(self, by=None, aggfunc="first", split_out=1, **kwargs):
         """Dissolve geometries within ``groupby`` into a single geometry.
@@ -641,14 +690,18 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
     ):
         """
         Shuffle the data into spatially consistent partitions.
+
         This realigns the dataset to be spatially sorted, i.e. geometries that are
         spatially near each other will be within the same partition. This is
         useful especially for overlay operations like a spatial join as it reduces the
         number of interactions between individual partitions.
+
         The spatial information is stored in the index and will replace the existing
         index.
+
         Note that ``spatial_shuffle`` uses ``set_index`` under the hood and comes with
         all its potential performance drawbacks.
+
         Parameters
         ----------
         by : string (default 'hilbert')
@@ -657,7 +710,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             details.
         level : int (default None)
             Level (precision) of the  Hilbert and Morton
-            curves used as a sorting method. Defaults to 15. Does not have an effect for
+            curves used as a sorting method. Defaults to 16. Does not have an effect for
             the ``'geohash'`` option.
         calculate_partitions : bool (default True)
             Calculate new spatial partitions after shuffling
@@ -671,9 +724,11 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             match the values returned by the sorting method.
         **kwargs
             Keyword arguments passed to ``set_index``.
+
         Returns
         -------
         dask_geopandas.GeoDataFrame
+
         Notes
         -----
         This method, similarly to ``calculate_spatial_partitions``, is computed
@@ -777,6 +832,7 @@ for name in [
     "geometry",
     "x",
     "y",
+    "z",
 ]:
     GeoSeries._bind_property(name)
 

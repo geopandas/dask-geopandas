@@ -11,6 +11,7 @@ from dask_geopandas.hilbert_distance import (
 from dask_geopandas import from_geopandas
 import geopandas
 from shapely.geometry import Point, LineString, Polygon
+from shapely.wkt import loads
 
 
 def test_hilbert_distance():
@@ -107,8 +108,34 @@ def test_specified_total_bounds(geoseries_polygons):
     assert_series_equal(result.compute(), expected.compute())
 
 
+def test_total_bounds_from_partitions(geoseries_polygons):
+    ddf = from_geopandas(geoseries_polygons, npartitions=2)
+    expected = ddf.hilbert_distance().compute()
+
+    ddf.calculate_spatial_partitions()
+    result = ddf.hilbert_distance().compute()
+    assert_series_equal(result, expected)
+
+
 def test_world():
     # world without Fiji
     hilbert_distance_dask(
         geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres")).iloc[1:]
     )
+
+
+@pytest.mark.parametrize(
+    "empty",
+    [
+        None,
+        loads("POLYGON EMPTY"),
+    ],
+)
+def test_empty(geoseries_polygons, empty):
+    s = geoseries_polygons
+    s.iloc[-1] = empty
+    dask_obj = from_geopandas(s, npartitions=2)
+    with pytest.raises(
+        ValueError, match="cannot be computed on a GeoSeries with empty"
+    ):
+        dask_obj.hilbert_distance().compute()

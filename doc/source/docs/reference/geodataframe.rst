@@ -19,7 +19,10 @@ Serialization / IO / conversion
 .. autosummary::
    :toctree: api/
 
+   GeoDataFrame.to_dask_dataframe
    GeoDataFrame.to_parquet
+   GeoDataFrame.to_wkb
+   GeoDataFrame.to_wkt
 
 Projection handling
 -------------------
@@ -38,6 +41,7 @@ Active geometry handling
    :toctree: api/
 
    GeoDataFrame.set_geometry
+   GeoDataFrame.rename_geometry
 
 Aggregating and exploding
 -------------------------

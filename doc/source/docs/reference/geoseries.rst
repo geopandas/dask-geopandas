@@ -28,6 +28,7 @@ General methods and attributes
    GeoSeries.interiors
    GeoSeries.x
    GeoSeries.y
+   GeoSeries.z
 
 Unary predicates
 ----------------
@@ -106,6 +107,15 @@ Aggregating and exploding
 
    GeoSeries.unary_union
    GeoSeries.explode
+
+Serialization / IO / conversion
+-------------------------------
+
+.. autosummary::
+   :toctree: api/
+
+   GeoSeries.to_wkb
+   GeoSeries.to_wkt
 
 Projection handling
 -------------------

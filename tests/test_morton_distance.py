@@ -6,6 +6,7 @@ from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
 from dask_geopandas import from_geopandas
 import geopandas
 from shapely.geometry import Point, LineString, Polygon
+from shapely.wkt import loads
 
 
 @pytest.fixture
@@ -76,8 +77,34 @@ def test_specified_total_bounds(geoseries_polygons):
     assert_series_equal(result.compute(), expected.compute())
 
 
+def test_total_bounds_from_partitions(geoseries_polygons):
+    ddf = from_geopandas(geoseries_polygons, npartitions=2)
+    expected = ddf.morton_distance().compute()
+
+    ddf.calculate_spatial_partitions()
+    result = ddf.morton_distance().compute()
+    assert_series_equal(result, expected)
+
+
 def test_world():
     # world without Fiji
     morton_distance_dask(
         geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres")).iloc[1:]
     )
+
+
+@pytest.mark.parametrize(
+    "empty",
+    [
+        None,
+        loads("POLYGON EMPTY"),
+    ],
+)
+def test_empty(geoseries_polygons, empty):
+    s = geoseries_polygons
+    s.iloc[-1] = empty
+    dask_obj = from_geopandas(s, npartitions=2)
+    with pytest.raises(
+        ValueError, match="cannot be computed on a GeoSeries with empty"
+    ):
+        dask_obj.morton_distance().compute()

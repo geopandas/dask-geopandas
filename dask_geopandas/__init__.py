@@ -11,6 +11,7 @@ from .core import (
 )
 from .io.file import read_file
 from .io.parquet import read_parquet, to_parquet
+from .io.arrow import read_feather, to_feather
 from .sjoin import sjoin
 
 
@@ -23,7 +24,10 @@ __all__ = [
     "GeoSeries",
     "from_geopandas",
     "from_dask_dataframe",
+    "read_file",
+    "read_feather",
     "read_parquet",
+    "to_feather",
     "to_parquet",
     "clip",
     "sjoin",

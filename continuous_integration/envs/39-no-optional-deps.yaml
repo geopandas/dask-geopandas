@@ -3,24 +3,18 @@ channels:
   - conda-forge
 dependencies:
   # required dependencies
-  - python=3.8
-  - dask=2021.11.0
+  - python=3.9
+  - dask
   - distributed
   - geopandas
   - pygeos
-  - pyproj=3.1
+  - pyproj
   - packaging
   # test dependencies
   - pytest
   - pytest-cov
   - hilbertcurve
-  # optional dependencies
-  - pyarrow
-  - pyogrio
   - pygeohash
   - pip
   - pip:
       - pymorton
-      # installing those with conda in this environments keep hanging, so installing with pip
-      - s3fs
-      - moto[s3,server]
