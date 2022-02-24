@@ -710,7 +710,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             details.
         level : int (default None)
             Level (precision) of the  Hilbert and Morton
-            curves used as a sorting method. Defaults to 15. Does not have an effect for
+            curves used as a sorting method. Defaults to 16. Does not have an effect for
             the ``'geohash'`` option.
         calculate_partitions : bool (default True)
             Calculate new spatial partitions after shuffling
