@@ -22,6 +22,8 @@ conda install dask-geopandas -c conda-forge
 pip install dask-geopandas
 ```
 
+For more details, see the [installation instructions](installation).
+
 ## Example
 
 As with `dask.dataframe` and `pandas`, the API of `dask_geopandas` mirrors the one of `geopandas`.
