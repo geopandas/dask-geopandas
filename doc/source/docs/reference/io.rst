@@ -26,3 +26,11 @@ Parquet
 
    read_parquet
    GeoDataFrame.to_parquet
+
+Feather
+-------
+.. autosummary::
+   :toctree: api/
+
+   read_feather
+   GeoDataFrame.to_feather

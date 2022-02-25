@@ -3,17 +3,12 @@ dask-geopandas |conda| |pypi| |docs| |gitter|
 
 Parallel GeoPandas with Dask
 
-Status
-------
+Dask-GeoPandas is a project merging the geospatial capabilities of GeoPandas
+and scalability of Dask. GeoPandas is an open source project designed to make working with geospatial data in Python easier. GeoPandas extends the datatypes used by pandas to allow spatial operations on geometric types.
+Dask provides advanced parallelism and distributed out-of-core computation with a dask.dataframe module designed to scale
+pandas. Since GeoPandas is an extension to the pandas DataFrame, the same way Dask scales pandas can also be applied to GeoPandas.
 
-**EXPERIMENTAL** This project is in an early state.
-
-If you would like to see this project in a more stable state, then you might
-consider pitching in with developer time (contributions are very welcome!)
-or with financial support from you or your company.
-
-This is a new project that builds off the exploration done in
-https://github.com/mrocklin/dask-geopandas
+This project is a bridge between Dask and GeoPandas and offers geospatial capabilities of GeoPandas backed by Dask.
 
 Documentation
 -------------
