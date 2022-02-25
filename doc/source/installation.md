@@ -16,7 +16,7 @@ conda install -c conda-forge dask-geopandas
 
 You can install Dask-GeoPandas with `pip` from PyPI but make sure that your environment contains
 properly installed GeoPandas (note that Dask-GeoPandas does not use `fiona` which therefore doesn't
-have to be installed).
+have to be installed). See the [GeoPandas installation instructions](https://geopandas.org/en/stable/getting_started/install.html#installing-with-pip) for details.
 
 ```sh
 pip install dask-geopandas
