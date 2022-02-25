@@ -11,8 +11,8 @@ The API Reference provides an overview of all public objects, functions and meth
 .. toctree::
   :maxdepth: 2
 
-  GeoSeries <docs/reference/geoseries>
-  GeoDataFrame <docs/reference/geodataframe>
-  Input/output <docs/reference/io>
-  Tools <docs/reference/tools>
+  GeoSeries <reference/geoseries>
+  GeoDataFrame <reference/geodataframe>
+  Input/output <reference/io>
+  Tools <reference/tools>
 
