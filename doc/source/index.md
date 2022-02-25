@@ -33,7 +33,7 @@ import dask_geopandas
 df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
 dask_df = dask_geopandas.from_geopandas(df, npartitions=4)
 
-ddf.geometry.area.compute()
+dask_df.geometry.area.compute()
 ```
 
 ## When should I use Dask-GeoPandas?
