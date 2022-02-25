@@ -1,9 +1,9 @@
 # Getting started
 
-A relationship between Dask-GeoPandas and GeoPandas is the same as a relationship
-between `dask.dataframe` and `pandas` and we recommend checking the
+The relationship between Dask-GeoPandas and GeoPandas is the same as the relationship
+between `dask.dataframe` and `pandas`.  We recommend checking the
 [Dask documentation](https://docs.dask.org/en/latest/dataframe.html) to better understand how
-is DataFrame scaled before diving into Dask-GeoPandas.
+DataFrames are scaled before diving into Dask-GeoPandas.
 
 ## Dask-GeoPandas basics
 
