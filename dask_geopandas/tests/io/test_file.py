@@ -63,9 +63,7 @@ def test_read_file_columns():
     assert result.npartitions == 4
     assert result.crs == df.crs
     assert len(result.columns) == 2
-    assert_geodataframe_equal(
-        result.compute(), df[["pop_est", "geometry"]]
-    )
+    assert_geodataframe_equal(result.compute(), df[["pop_est", "geometry"]])
     # only selecting non-geometry column
     result = dask_geopandas.read_file(path, npartitions=4, columns=["pop_est"])
     assert type(result) == dd.DataFrame
