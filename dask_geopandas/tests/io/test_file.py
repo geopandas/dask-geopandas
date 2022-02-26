@@ -4,6 +4,7 @@ import geopandas
 from shapely.geometry import Polygon
 import dask.dataframe as dd
 import dask_geopandas
+import pandas as pd
 
 import pytest
 from pandas.testing import assert_series_equal, assert_frame_equal
@@ -20,19 +21,34 @@ def test_read_file():
     assert isinstance(result, dask_geopandas.GeoDataFrame)
     assert result.npartitions == 4
     assert result.crs == df.crs
-    assert_geodataframe_equal(result.compute().reset_index(drop=True), df)
+    assert_geodataframe_equal(result.compute(), df)
 
     result = dask_geopandas.read_file(path, chunksize=100)
     assert isinstance(result, dask_geopandas.GeoDataFrame)
     assert result.npartitions == 2
     assert result.crs == df.crs
-    assert_geodataframe_equal(result.compute().reset_index(drop=True), df)
+    assert_geodataframe_equal(result.compute(), df)
 
     msg = "Exactly one of npartitions and chunksize must be specified"
     with pytest.raises(ValueError, match=msg):
         dask_geopandas.read_file(path)
     with pytest.raises(ValueError, match=msg):
         dask_geopandas.read_file(path, npartitions=4, chunksize=100)
+
+
+def test_read_file_divisions():
+    path = geopandas.datasets.get_path("naturalearth_lowres")
+    result = dask_geopandas.read_file(path, npartitions=4)
+    assert result.known_divisions
+    assert result.index.divisions == (0, 45, 90, 135, 176)
+    assert result.divisions == (0, 45, 90, 135, 176)
+
+
+def test_read_file_index():
+    path = geopandas.datasets.get_path("naturalearth_lowres")
+    df = geopandas.read_file(path)
+    result = dask_geopandas.read_file(path, npartitions=4)
+    assert (result.index.compute() == pd.RangeIndex(0, len(df))).all()
 
 
 def test_read_file_columns():
@@ -48,14 +64,14 @@ def test_read_file_columns():
     assert result.crs == df.crs
     assert len(result.columns) == 2
     assert_geodataframe_equal(
-        result.compute().reset_index(drop=True), df[["pop_est", "geometry"]]
+        result.compute(), df[["pop_est", "geometry"]]
     )
     # only selecting non-geometry column
     result = dask_geopandas.read_file(path, npartitions=4, columns=["pop_est"])
     assert type(result) == dd.DataFrame
     assert len(result.columns) == 1
     assert result.npartitions == 4
-    assert_frame_equal(result.compute().reset_index(drop=True), df[["pop_est"]])
+    assert_frame_equal(result.compute(), df[["pop_est"]])
 
     # column selection through getitem
     ddf = dask_geopandas.read_file(path, npartitions=4)
@@ -63,19 +79,17 @@ def test_read_file_columns():
     assert isinstance(result, dask_geopandas.GeoDataFrame)
     assert result.npartitions == 4
     assert result.crs == df.crs
-    assert_geodataframe_equal(
-        result.compute().reset_index(drop=True), df[["pop_est", "geometry"]]
-    )
+    assert_geodataframe_equal(result.compute(), df[["pop_est", "geometry"]])
 
     # only select non-geometry column
     result = ddf["pop_est"]
     assert isinstance(result, dd.Series)
-    assert_series_equal(result.compute().reset_index(drop=True), df["pop_est"])
+    assert_series_equal(result.compute(), df["pop_est"])
 
     # only select geometry column
     result = ddf["geometry"]
     assert isinstance(result, dask_geopandas.GeoSeries)
-    assert_geoseries_equal(result.compute().reset_index(drop=True), df["geometry"])
+    assert_geoseries_equal(result.compute(), df["geometry"])
 
 
 def test_read_file_layer(tmp_path):
@@ -102,8 +116,6 @@ def test_read_file_layer(tmp_path):
     df_polygons.to_file(path, layer="polygons")
 
     ddf_points = dask_geopandas.read_file(path, npartitions=2, layer="points")
-    assert_geodataframe_equal(ddf_points.compute().reset_index(drop=True), df_points)
+    assert_geodataframe_equal(ddf_points.compute(), df_points)
     ddf_polygons = dask_geopandas.read_file(path, npartitions=2, layer="polygons")
-    assert_geodataframe_equal(
-        ddf_polygons.compute().reset_index(drop=True), df_polygons
-    )
+    assert_geodataframe_equal(ddf_polygons.compute(), df_polygons)
