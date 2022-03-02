@@ -20,6 +20,7 @@ Serialization / IO / conversion
    :toctree: api/
 
    GeoDataFrame.to_dask_dataframe
+   GeoDataFrame.to_feather
    GeoDataFrame.to_parquet
    GeoDataFrame.to_wkb
    GeoDataFrame.to_wkt

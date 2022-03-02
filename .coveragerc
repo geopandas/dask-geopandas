@@ -1,6 +1,6 @@
 [run]
 omit =
-    tests/*.py
+    dask_geopandas/tests/*.py
     */_version.py
 source =
     dask_geopandas

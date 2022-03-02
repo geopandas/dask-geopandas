@@ -1,5 +1,12 @@
 import os
+import sys
+
 from setuptools import setup, find_packages
+
+# ensure the current directory is on sys.path so versioneer can be imported
+# when pip uses PEP 517/518 build rules.
+# https://github.com/python-versioneer/python-versioneer/issues/193
+sys.path.append(os.path.dirname(__file__))
 
 import versioneer
 
@@ -26,11 +33,13 @@ setup(
         "Topic :: Scientific/Engineering",
         "Topic :: System :: Distributed Computing",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
     keywords="dask geopandas spatial distributed cluster",
-    description="GeoPandas objects backed with Dask",
+    description="Parallel GeoPandas with Dask",
     long_description=(
         open("README.rst").read() if os.path.exists("README.rst") else ""
     ),
@@ -42,6 +51,7 @@ setup(
     },
     packages=find_packages(),
     package_data={"dask_geopandas": ["*.yaml"]},
+    python_requires=">=3.7",
     install_requires=install_requires,
     tests_require=["pytest"],
     zip_safe=False,
