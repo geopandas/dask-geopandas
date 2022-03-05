@@ -3,6 +3,7 @@ from math import ceil
 from dask.base import tokenize
 from dask.highlevelgraph import HighLevelGraph
 from dask.dataframe.core import new_dd_object
+from pandas import RangeIndex
 
 
 class FileFunctionWrapper:
@@ -40,6 +41,7 @@ class FileFunctionWrapper:
             skip_features=row_offset,
             max_features=batch_size,
         )
+        df.index = RangeIndex(row_offset, row_offset + batch_size)
         return df
 
 
@@ -114,11 +116,15 @@ def read_file(
     # Define parts
     parts = []
     row_offset = 0
+    divs = [row_offset]
 
     while row_offset < total_size:
         batch_size = min(chunksize, total_size - row_offset)
         parts.append((path, row_offset, batch_size))
         row_offset += batch_size
+        divs.append(row_offset)
+    # Set the last division value to be the largest index value in the last partition
+    divs[-1] = divs[-1] - 1
 
     # Create Blockwise layer
     label = "read-file-"
@@ -131,4 +137,4 @@ def read_file(
         label=label,
     )
     graph = HighLevelGraph({output_name: layer}, {output_name: set()})
-    return new_dd_object(graph, output_name, meta, [None] * (len(parts) + 1))
+    return new_dd_object(graph, output_name, meta, divs)
