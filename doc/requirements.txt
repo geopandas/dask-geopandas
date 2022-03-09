@@ -5,3 +5,4 @@ myst-nb
 myst-parser
 sphinx_copybutton
 sphinx
+matplotlib
