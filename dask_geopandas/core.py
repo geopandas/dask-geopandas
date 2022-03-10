@@ -895,19 +895,24 @@ class _CoordinateIndexer(object):
             ys = slice(ys, ys)
         if xs.step is not None or ys.step is not None:
             raise ValueError("Slice step not supported.")
-        xmin, ymin, xmax, ymax = obj.spatial_partitions.total_bounds
-        bbox = box(
-            xs.start if xs.start is not None else xmin,
-            ys.start if ys.start is not None else ymin,
-            xs.stop if xs.stop is not None else xmax,
-            ys.stop if ys.stop is not None else ymax,
-        )
+
         if self.obj.spatial_partitions is not None:
+            xmin, ymin, xmax, ymax = obj.spatial_partitions.total_bounds
+            bbox = box(
+                xs.start if xs.start is not None else xmin,
+                ys.start if ys.start is not None else ymin,
+                xs.stop if xs.stop is not None else xmax,
+                ys.stop if ys.stop is not None else ymax,
+            )
             partition_idx = np.nonzero(
                 np.asarray(self.obj.spatial_partitions.intersects(bbox))
             )[0]
         else:
-            raise NotImplementedError
+            raise NotImplementedError(
+                "Not yet implemented if the GeoDataFrame has no known spatial "
+                "partitions (you can call the 'calculate_spatial_partitions' method "
+                "to set it)"
+            )
 
         name = "cx-%s" % tokenize(key, self.obj)
 
