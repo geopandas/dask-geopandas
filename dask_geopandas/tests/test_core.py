@@ -468,6 +468,15 @@ def test_copy_spatial_partitions(geodf_points):
     )
 
 
+def test_persist_spatial_partitions(geodf_points):
+    dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
+    dask_obj.calculate_spatial_partitions()
+    dask_obj_persisted = dask_obj.persist()
+    pd.testing.assert_series_equal(
+        dask_obj.spatial_partitions, dask_obj_persisted.spatial_partitions
+    )
+
+
 def test_set_crs_sets_spatial_partition_crs(geodf_points):
     dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
 

@@ -65,7 +65,17 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         return _finalize, ()
 
     def __dask_postpersist__(self):
-        return type(self), (self._name, self._meta, self.divisions)
+        return self._rebuild, ()
+
+    def _rebuild(self, dsk, *, rename=None):
+        # this is a copy of the dask.dataframe version, only with the addition
+        # to pass self.spatial_partitions
+        name = self._name
+        if rename:
+            name = rename.get(name, name)
+        return type(self)(
+            dsk, name, self._meta, self.divisions, self.spatial_partitions
+        )
 
     @property
     def spatial_partitions(self):
