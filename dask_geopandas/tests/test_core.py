@@ -833,3 +833,19 @@ def test_to_dask_dataframe(geodf_points_crs):
     assert isinstance(result, pd.DataFrame) and not isinstance(
         result, geopandas.GeoDataFrame
     )
+
+
+def test_compute_empty_partitions():
+    # https://github.com/geopandas/dask-geopandas/issues/190 - ensure to skip
+    # empty partitions when concatting the computed results
+
+    @dask.delayed
+    def get_chunk(n):
+        return geopandas.GeoDataFrame({"col": [1] * n, "geometry": [Point(1, 1)] * n})
+
+    meta = geopandas.GeoDataFrame({"col": [1], "geometry": [Point(1, 1)]})
+
+    ddf = dd.concat([dd.from_delayed(get_chunk(n), meta=meta) for n in [0, 2]])
+
+    expected = geopandas.GeoDataFrame({"col": [1, 1], "geometry": [Point(1, 1)] * 2})
+    assert_geodataframe_equal(ddf.compute(), expected)

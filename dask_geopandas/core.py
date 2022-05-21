@@ -25,15 +25,6 @@ def _set_crs(df, crs, allow_override):
     return df.set_crs(crs, allow_override=allow_override)
 
 
-def _finalize(results):
-    if isinstance(results[0], (geopandas.GeoSeries, geopandas.GeoDataFrame)):
-        output = pd.concat(results)
-        output.crs = results[0].crs
-        return output
-    else:
-        return pd.concat(results)
-
-
 class _Frame(dd.core._Frame, OperatorMethodMixin):
     """Superclass for DataFrame and Series
 
@@ -60,9 +51,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     def to_dask_dataframe(self):
         """Create a dask.dataframe object from a dask_geopandas object"""
         return self.map_partitions(pd.DataFrame)
-
-    def __dask_postcompute__(self):
-        return _finalize, ()
 
     def __dask_postpersist__(self):
         return type(self), (self._name, self._meta, self.divisions)
