@@ -183,7 +183,7 @@ def test_index(tmp_path):
     # set up dataset
     df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
     # get meaningful index by shuffling (hilbert distance)
-    df = dask_geopandas.from_geopandas(df, npartitions=1).spatial_shuffle().compute()
+    df = dask_geopandas.from_geopandas(df, npartitions=2).spatial_shuffle().compute()
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
 
     # roundtrip preserves the index by default
