@@ -176,16 +176,20 @@ def test_parquet_empty_dataset(tmp_path):
     not Version(dask.__version__) > Version("2022.02.0"),
     reason="Only works with dask 2022.02.1 or up",
 )
-def test_parquet_partition_on(tmp_path):
+@pytest.mark.parametrize("write_metadata_file", [True, False])
+def test_parquet_partition_on(tmp_path, write_metadata_file):
     df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
 
     # Writing a partitioned dataset based on one of the attribute columns
     basedir = tmp_path / "naturalearth_lowres_by_continent.parquet"
-    ddf.to_parquet(basedir, partition_on="continent")
+    ddf.to_parquet(
+        basedir, partition_on="continent", write_metadata_file=write_metadata_file
+    )
 
     # Check for one of the partitions that the file is present and is correct
-    assert len(list(basedir.iterdir())) == 10  # 8 continents + 2 metadata files
+    n_files = 10 if write_metadata_file else 8  # 8 continents + 2 metadata files
+    assert len(list(basedir.iterdir())) == n_files
     assert (basedir / "continent=Africa").exists()
     result_africa = geopandas.read_parquet(basedir / "continent=Africa")
     expected = df[df["continent"] == "Africa"].drop(columns=["continent"])

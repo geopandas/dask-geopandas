@@ -124,7 +124,7 @@ def _quantize_points(coords):
     array_like of shape (n, 2)
     """
 
-    _q = np.array([(2.0 ** 32 / 180, 0), (0, 2.0 ** 32 / (180 * 2))], dtype="float64")
+    _q = np.array([(2.0**32 / 180, 0), (0, 2.0**32 / (180 * 2))], dtype="float64")
 
     quantized_coords = coords + np.array([90, 180])
     quantized_coords = np.dot(quantized_coords, _q)
