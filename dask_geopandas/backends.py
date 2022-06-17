@@ -14,6 +14,7 @@ import geopandas
 from geopandas.array import GeometryArray, GeometryDtype, from_shapely
 
 DASK_2021_06_0 = Version(dask.__version__) >= Version("2021.06.0")
+DASK_2022_06_0 = Version(dask.__version__) >= Version("2022.06.0")
 
 if DASK_2021_06_0:
     from dask.dataframe.dispatch import make_meta_dispatch
@@ -22,6 +23,8 @@ else:
     from dask.dataframe.core import make_meta as make_meta_dispatch
     from dask.dataframe.utils import _nonempty_index, meta_nonempty_dataframe
 
+if DASK_2022_06_0:
+    from dask.dataframe.dispatch import pyarrow_schema_dispatch
 
 from .core import GeoSeries, GeoDataFrame
 
@@ -70,3 +73,16 @@ def tokenize_geometryarray(x):
     # TODO if we can find an efficient hashing function (eg hashing integer
     # pointers on the C level?), we could replace this random uuid
     return uuid.uuid4().hex
+
+
+if DASK_2022_06_0:
+
+    @pyarrow_schema_dispatch.register((geopandas.GeoDataFrame,))
+    def get_pyarrow_schema_geopandas(obj):
+        import pyarrow as pa
+        import pandas as pd
+
+        df = pd.DataFrame(obj.copy())
+        for col in obj.columns[obj.dtypes == "geometry"]:
+            df[col] = obj[col].to_wkb()
+        return pa.Schema.from_pandas(df)
