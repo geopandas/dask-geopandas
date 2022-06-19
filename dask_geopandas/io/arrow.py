@@ -194,7 +194,7 @@ class GeoDatasetEngine:
         # TODO add support for schema
         # (but let it already pass if the passed schema would not change the result)
         if schema is not None:
-            if not table.schema.equals(schema):
+            if not table.schema.equals(schema) and len(df):
                 raise NotImplementedError("Passing 'schema' is not yet supported")
 
         return table
