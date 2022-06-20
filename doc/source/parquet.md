@@ -13,10 +13,10 @@ persisted in the parquet files.
 
 By default, reading these spatial partitions requires opening every file and checking its spatial extent. This can be a
 bit slow if the parquet dataset is made up of many individual partitions. To disable loading the spatial partitions,
-specify ``calculate_spatial_partitions=False`` when reading the file:
+specify ``gather_spatial_partitions=False`` when reading the file:
 
 
 ```py
-ddf = dask_geopandas.read_parquet("...", calculate_spatial_partitions=False)
+ddf = dask_geopandas.read_parquet("...", gather_spatial_partitions=False)
 ddf.spatial_partitions  # None
 ```
