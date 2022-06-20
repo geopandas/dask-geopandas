@@ -191,11 +191,13 @@ class GeoDatasetEngine:
 
         table = _geopandas_to_arrow(df, index=preserve_index)
 
-        # TODO add support for schema
-        # (but let it already pass if the passed schema would not change the result)
         if schema is not None:
-            if not table.schema.equals(schema) and len(df):
-                raise NotImplementedError("Passing 'schema' is not yet supported")
+            if not table.schema.equals(schema):
+                # table.schema.metadata contains the "geo" metadata, so
+                # ensure to preserve this in the cast operation
+                if table.schema.metadata and not schema.metadata:
+                    schema = schema.with_metadata(table.schema.metadata)
+                table = table.cast(schema)
 
         return table
 

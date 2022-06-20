@@ -162,6 +162,25 @@ def test_parquet_empty_partitions(tmp_path):
 
 
 @pytest.mark.skipif(
+    not Version(dask.__version__) >= Version("2022.06.0"),
+    reason="Only works with dask 2022.06.0 or up",
+)
+def test_parquet_partitions_with_all_missing_strings(tmp_path):
+    df = geopandas.GeoDataFrame(
+        {"col": ["a", "b", None, None]},
+        geometry=geopandas.points_from_xy([0, 1, 2, 3], [0, 1, 2, 3]),
+    )
+    # Creating filtered dask dataframe with at least one empty partition
+    ddf = dask_geopandas.from_geopandas(df, npartitions=2)
+
+    basedir = tmp_path / "dataset"
+    ddf.to_parquet(basedir)
+
+    result = dask_geopandas.read_parquet(basedir)
+    assert_geodataframe_equal(result.compute(), df)
+
+
+@pytest.mark.skipif(
     Version(dask.__version__) < Version("2021.10.0"),
     reason="Only correct error message with dask 2021.10.0 or up",
 )
