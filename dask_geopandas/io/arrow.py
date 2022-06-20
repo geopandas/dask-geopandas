@@ -193,6 +193,8 @@ class GeoDatasetEngine:
 
         if schema is not None:
             if not table.schema.equals(schema):
+                # table.schema.metadata contains the "geo" metadata, so
+                # ensure to preserve this in the cast operation
                 if table.schema.metadata and not schema.metadata:
                     schema = schema.with_metadata(table.schema.metadata)
                 table = table.cast(schema)
