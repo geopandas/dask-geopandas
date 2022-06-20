@@ -50,9 +50,9 @@ class GeoArrowEngine(GeoDatasetEngine, DaskArrowDatasetEngine):
     def read_metadata(cls, fs, paths, **kwargs):
         meta, stats, parts, index = super().read_metadata(fs, paths, **kwargs)
 
-        gather_spatial_partitions = kwargs.pop("gather_spatial_partitions", True)
+        calculate_spatial_partitions = kwargs.pop("calculate_spatial_partitions", True)
 
-        if gather_spatial_partitions:
+        if calculate_spatial_partitions:
             regions = geopandas.GeoSeries(
                 [_get_partition_bounds_parquet(part, fs) for part in parts],
                 crs=meta.crs,

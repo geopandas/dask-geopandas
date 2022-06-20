@@ -205,7 +205,7 @@ def test_parquet_partition_on(tmp_path, write_metadata_file):
     assert_geodataframe_equal(result.compute(), expected, check_like=True)
 
 
-def test_no_gather_spatial_partitions(tmp_path):
+def test_no_calculate_spatial_partitions(tmp_path):
     # basic roundtrip
     df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
@@ -213,6 +213,6 @@ def test_no_gather_spatial_partitions(tmp_path):
     basedir = tmp_path / "dataset"
     ddf.to_parquet(basedir)
 
-    result = dask_geopandas.read_parquet(basedir, gather_spatial_partitions=False)
+    result = dask_geopandas.read_parquet(basedir, calculate_spatial_partitions=False)
     assert result.spatial_partitions is None
     assert result.crs == df.crs
