@@ -161,6 +161,10 @@ def test_parquet_empty_partitions(tmp_path):
     assert result.spatial_partitions is None
 
 
+@pytest.mark.skipif(
+    not Version(dask.__version__) > Version("2022.06.0"),
+    reason="Only works with dask 2022.06.0 or up",
+)
 def test_parquet_partitions_with_all_missing_strings(tmp_path):
     df = geopandas.GeoDataFrame(
         {"col": ["a", "b", None, None]},
