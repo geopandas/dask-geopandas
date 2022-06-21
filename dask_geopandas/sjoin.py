@@ -66,7 +66,7 @@ def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
             left.spatial_partitions.to_frame("geometry"),
             right.spatial_partitions.to_frame("geometry"),
             how="inner",
-            op="intersects",
+            predicate="intersects",
         )
         parts_left = np.asarray(parts.index)
         parts_right = np.asarray(parts["index_right"].values)
