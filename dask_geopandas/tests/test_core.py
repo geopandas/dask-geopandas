@@ -390,6 +390,12 @@ def test_from_dask_dataframe_with_dask_geoseries():
     dask_obj = dask_geopandas.from_dask_dataframe(
         dask_obj, geometry=dask_geopandas.points_from_xy(dask_obj, "x", "y")
     )
+    # Check that the geometry isn't concatenated and embedded a second time in
+    # the high-level graph. cf. https://github.com/geopandas/dask-geopandas/issues/197
+    k = next(k for k in dask_obj.dask.dependencies if k.startswith("GeoDataFrame"))
+    deps = dask_obj.dask.dependencies[k]
+    assert len(deps) == 1
+
     expected = df.set_geometry(geopandas.points_from_xy(df["x"], df["y"]))
     assert_geoseries_equal(dask_obj.geometry.compute(), expected.geometry)
 
