@@ -55,6 +55,7 @@ hidden: true
 installation
 getting_started
 guide
+parquet
 api
 GitHub <https://github.com/geopandas/dask-geopandas>
 ```
