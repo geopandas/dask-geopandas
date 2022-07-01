@@ -57,5 +57,6 @@ getting_started
 guide
 parquet
 api
+changelog
 GitHub <https://github.com/geopandas/dask-geopandas>
 ```
