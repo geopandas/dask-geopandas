@@ -778,6 +778,15 @@ def from_dask_dataframe(df, geometry=None):
         the values will be set as 'geometry' column on the GeoDataFrame.
 
     """
+    # If the geometry column is already a partitioned `_Frame`, we can't refer to
+    # it via a keyword-argument due to https://github.com/dask/dask/issues/8308.
+    # Instead, we assign the geometry column using regular dataframe operations,
+    # then refer to that column by name in `map_partitions`.
+    if isinstance(geometry, dd.core.Series):
+        name = geometry.name if geometry.name is not None else "geometry"
+        return df.assign(**{name: geometry}).map_partitions(
+            geopandas.GeoDataFrame, geometry=name
+        )
     return df.map_partitions(geopandas.GeoDataFrame, geometry=geometry)
 
 
