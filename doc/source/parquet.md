@@ -8,7 +8,7 @@ for more on Apache Parquet.
 
 ## Partitioning
 
-As outlined in [guide/spatial-partitioning](guide/spatial-partitioning.md), dask-geopandas can spatially partition datasets. These partitions are
+As outlined in [Spatial partitioning in Dask-GeoPandas](guide/spatial-partitioning.md), dask-geopandas can spatially partition datasets. These partitions are
 persisted in the parquet files.
 
 By default, reading these spatial partitions requires opening every file and checking its spatial extent. This can be a
