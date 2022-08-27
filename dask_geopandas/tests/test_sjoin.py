@@ -42,7 +42,7 @@ def test_sjoin_dask_geopandas():
     result = dask_geopandas.sjoin(
         ddf_points, ddf_polygons, predicate="within", how="inner"
     )
-    assert result.spatial_partitions is not None
+    assert isinstance(result.spatial_partitions, geopandas.GeoSeries)
     assert_geodataframe_equal(expected, result.compute().sort_index())
 
     # check warning
