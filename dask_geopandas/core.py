@@ -46,7 +46,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     def __init__(self, dsk, name, meta, divisions, spatial_partitions=None):
         super().__init__(dsk, name, meta, divisions)
-        self._spatial_partitions = spatial_partitions
+        self.spatial_partitions = spatial_partitions
 
     def to_dask_dataframe(self):
         """Create a dask.dataframe object from a dask_geopandas object"""
