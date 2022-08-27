@@ -1,5 +1,3 @@
-import pytest
-
 import geopandas
 from geopandas.testing import assert_geodataframe_equal
 
