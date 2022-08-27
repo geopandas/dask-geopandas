@@ -44,9 +44,6 @@ def overlay(df1, df2, how="intersection", **kwargs):
     of the df1 and df2 GeoDataFrame.
     """
 
-    if how != "inner":
-        raise NotImplementedError("Only how='inner' is supported df2 now")
-
     if isinstance(df1, geopandas.GeoDataFrame):
         df1 = from_geopandas(df1, npartitions=1)
     if isinstance(df2, geopandas.GeoDataFrame):
@@ -97,7 +94,7 @@ def overlay(df1, df2, how="intersection", **kwargs):
     divisions = [None] * (len(dsk) + 1)
     graph = HighLevelGraph.from_collections(name, dsk, dependencies=[df1, df2])
     if using_spatial_partitions:
-        new_spatial_partitions = geopandas.GeoSeries(data=new_spatial_partitions)
+        new_spatial_partitions = geopandas.GeoSeries(data=new_spatial_partitions, crs=df1.crs)
     else:
         new_spatial_partitions = None
     return GeoDataFrame(graph, name, meta, divisions, new_spatial_partitions)
