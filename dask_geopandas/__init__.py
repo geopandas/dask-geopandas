@@ -32,5 +32,5 @@ __all__ = [
     "to_parquet",
     "clip",
     "sjoin",
-    "overlay"
+    "overlay",
 ]
