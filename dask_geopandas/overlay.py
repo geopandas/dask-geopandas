@@ -43,14 +43,7 @@ def overlay(df1, df2, how="intersection", **kwargs):
     all combinations (cartesian/cross product) of all input partition
     of the df1 and df2 GeoDataFrame.
     """
-    if "op" in kwargs:
-        predicate = kwargs.pop("op")
-        deprecation_message = (
-            "The `op` parameter is deprecated and will be removed"
-            " in a future release. Please use the `predicate` parameter"
-            " instead."
-        )
-        warnings.warn(deprecation_message, FutureWarning, stacklevel=2)
+
     if how != "inner":
         raise NotImplementedError("Only how='inner' is supported df2 now")
 
@@ -65,10 +58,11 @@ def overlay(df1, df2, how="intersection", **kwargs):
     if df1.spatial_partitions is not None and df2.spatial_partitions is not None:
         # Spatial partitions are known -> use them to trim down the list of
         # partitions that need to be joined
-        parts = geopandas.overlay(
+        parts = geopandas.sjoin(
             df1.spatial_partitions.to_frame("geometry"),
             df2.spatial_partitions.to_frame("geometry"),
-            how="intersects"
+            how="inner",
+            predicate="intersects",
         )
         parts_df1 = np.asarray(parts.index)
         parts_df2 = np.asarray(parts["index_df2"].values)
