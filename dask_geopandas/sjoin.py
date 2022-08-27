@@ -102,7 +102,8 @@ def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
     divisions = [None] * (len(dsk) + 1)
     graph = HighLevelGraph.from_collections(name, dsk, dependencies=[left, right])
     if using_spatial_partitions:
-        new_spatial_partitions = geopandas.GeoSeries(data=new_spatial_partitions)
+        new_spatial_partitions = geopandas.GeoSeries(data=new_spatial_partitions,
+                                                     crs=left.crs)
     else:
         new_spatial_partitions = None
 
