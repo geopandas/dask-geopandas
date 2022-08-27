@@ -65,7 +65,7 @@ def overlay(df1, df2, how="intersection", **kwargs):
             predicate="intersects",
         )
         parts_df1 = np.asarray(parts.index)
-        parts_df2 = np.asarray(parts["index_df2"].values)
+        parts_df2 = np.asarray(parts["index_right"].values)
         using_spatial_partitions = True
     else:
         # Unknown spatial partitions -> full cartesian (cross) product of all
@@ -96,6 +96,8 @@ def overlay(df1, df2, how="intersection", **kwargs):
 
     divisions = [None] * (len(dsk) + 1)
     graph = HighLevelGraph.from_collections(name, dsk, dependencies=[df1, df2])
-    if not using_spatial_partitions:
+    if using_spatial_partitions:
+        new_spatial_partitions = geopandas.GeoSeries(data=new_spatial_partitions)
+    else:
         new_spatial_partitions = None
     return GeoDataFrame(graph, name, meta, divisions, new_spatial_partitions)
