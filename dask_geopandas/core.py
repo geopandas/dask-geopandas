@@ -389,7 +389,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             _hilbert_distance,
             total_bounds=total_bounds,
             level=level,
-            meta=pd.Series([], name="hilbert_distance", dtype="uint32"),
+            meta=pd.Series([], name="hilbert_distance", dtype=np.int64),
         )
 
         return distances
