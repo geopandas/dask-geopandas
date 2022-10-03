@@ -67,7 +67,7 @@ def test_cx():
 
 def test_geopandas_handles_large_hilbert_distances():
     df = geopandas.GeoDataFrame(
-        {'geometry': [Point(-103152.516, -8942.156), Point(118914.500, 1010032.562)]}
+        {"geometry": [Point(-103152.516, -8942.156), Point(118914.500, 1010032.562)]}
     )
 
     # make sure we have values greater than 32bits
