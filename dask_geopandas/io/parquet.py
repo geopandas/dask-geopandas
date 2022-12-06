@@ -4,7 +4,12 @@ import geopandas
 
 import dask.dataframe as dd
 
-from .arrow import GeoDatasetEngine, _get_partition_bounds, _update_meta_to_geodataframe
+from .arrow import (
+    DASK_2022_12_0_PLUS,
+    GeoDatasetEngine,
+    _get_partition_bounds,
+    _update_meta_to_geodataframe,
+)
 
 try:
     # pyarrow is imported here, but is an optional dependency
@@ -79,19 +84,37 @@ class GeoArrowEngine(GeoDatasetEngine, DaskArrowDatasetEngine):
         meta = cls._update_meta(meta, schema)
         return meta, index_cols, categories, index, partition_info
 
-    @classmethod
-    def _create_dd_meta(cls, dataset_info):
-        """Overriding private method for dask >= 2021.10.0"""
-        meta = super()._create_dd_meta(dataset_info)
-        schema = dataset_info["schema"]
-        if not schema.names and not schema.metadata:
-            if len(list(dataset_info["ds"].get_fragments())) == 0:
-                raise ValueError(
-                    "No dataset parts discovered. Use dask.dataframe.read_parquet "
-                    "to read it as an empty DataFrame"
-                )
-        meta = cls._update_meta(meta, schema)
-        return meta
+    if DASK_2022_12_0_PLUS:
+
+        @classmethod
+        def _create_dd_meta(cls, dataset_info, use_nullable_dtypes=False):
+            """Overriding private method for dask >= 2021.10.0"""
+            meta = super()._create_dd_meta(dataset_info, use_nullable_dtypes)
+            schema = dataset_info["schema"]
+            if not schema.names and not schema.metadata:
+                if len(list(dataset_info["ds"].get_fragments())) == 0:
+                    raise ValueError(
+                        "No dataset parts discovered. Use dask.dataframe.read_parquet "
+                        "to read it as an empty DataFrame"
+                    )
+            meta = cls._update_meta(meta, schema)
+            return meta
+
+    else:
+
+        @classmethod
+        def _create_dd_meta(cls, dataset_info):
+            """Overriding private method for dask >= 2021.10.0"""
+            meta = super()._create_dd_meta(dataset_info)
+            schema = dataset_info["schema"]
+            if not schema.names and not schema.metadata:
+                if len(list(dataset_info["ds"].get_fragments())) == 0:
+                    raise ValueError(
+                        "No dataset parts discovered. Use dask.dataframe.read_parquet "
+                        "to read it as an empty DataFrame"
+                    )
+            meta = cls._update_meta(meta, schema)
+            return meta
 
 
 to_parquet = partial(dd.to_parquet, engine=GeoArrowEngine)
