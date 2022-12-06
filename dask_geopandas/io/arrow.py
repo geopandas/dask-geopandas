@@ -128,10 +128,7 @@ class ArrowDatasetEngine:
 
     @classmethod
     def _arrow_table_to_pandas(
-        cls,
-        arrow_table: "pyarrow.Table",
-        categories,
-        **kwargs,
+        cls, arrow_table: "pyarrow.Table", categories, **kwargs
     ) -> pd.DataFrame:
 
         _kwargs = kwargs.get("arrow_to_pandas", {})
