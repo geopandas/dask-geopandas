@@ -3,24 +3,22 @@ channels:
   - conda-forge
 dependencies:
   # required dependencies
-  - python=3.9
-  - dask
+  - python=3.8
+  - dask=2021.06.0
   - distributed
-  - geopandas
+  - geopandas=0.10
+  - fiona
+  - gdal=3.2.1
   - pygeos
-  - pyproj
+  - pyproj=2.6
   - packaging
   # test dependencies
   - pytest
   - pytest-cov
   - hilbertcurve
-  - s3fs
-  - moto
-  - flask # needed for moto server
+  - pygeohash
   # optional dependencies
   - pyarrow
-  - pyogrio
-  - pygeohash
   - pip
   - pip:
       - pymorton

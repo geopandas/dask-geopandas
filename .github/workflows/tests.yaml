@@ -13,9 +13,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
-      - uses: pre-commit/action@v2.0.0
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+      - uses: pre-commit/action@v3.0.0
 
   Test:
     needs: Linting
@@ -30,20 +30,20 @@ jobs:
         os: [ubuntu-latest]
         env:
           - continuous_integration/envs/39-no-optional-deps.yaml
-          - continuous_integration/envs/37-minimal.yaml
-          - continuous_integration/envs/38-latest.yaml
-          - continuous_integration/envs/39-latest.yaml
+          - continuous_integration/envs/38-minimal.yaml
+          - continuous_integration/envs/310-latest.yaml
+          - continuous_integration/envs/311-latest.yaml
 
         include:
-          - env: continuous_integration/envs/39-latest.yaml
+          - env: continuous_integration/envs/310-latest.yaml
             os: macos-latest
-          - env: continuous_integration/envs/39-latest.yaml
+          - env: continuous_integration/envs/310-latest.yaml
             os: windows-latest
-          - env: continuous_integration/envs/39-dev.yaml
+          - env: continuous_integration/envs/311-dev.yaml
             os: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Setup Conda
         uses: conda-incubator/setup-miniconda@v2
