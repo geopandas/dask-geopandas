@@ -641,6 +641,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         aggregated = self.groupby(by=by, **kwargs).agg(
             data_agg,
             split_out=split_out,
+            shuffle=False,
         )
         return aggregated.set_crs(self.crs)
 
