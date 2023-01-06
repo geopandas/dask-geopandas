@@ -4,11 +4,11 @@ channels:
 dependencies:
   # required dependencies
   - python=3.10
-  - dask=2022.05.2
+  - dask=2022.06.0
   - distributed
   - geopandas
   - pygeos
-  - pyproj=3.2
+  - pyproj=3.3
   - packaging
   # test dependencies
   - pytest
@@ -19,7 +19,7 @@ dependencies:
   - flask # needed for moto server
   # optional dependencies
   - pyarrow
-  - pyogrio
+  - pyogrio>=0.4
   - pygeohash
   - pip
   - pip:

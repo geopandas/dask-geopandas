@@ -62,6 +62,6 @@ jobs:
 
       - name: Test
         run: |
-          pytest -v -r s --color=yes --cov=dask_geopandas --cov-append --cov-report term-missing --cov-report xml .
+          pytest -v -r a --color=yes --cov=dask_geopandas --cov-append --cov-report term-missing --cov-report xml .
 
       - uses: codecov/codecov-action@v2
