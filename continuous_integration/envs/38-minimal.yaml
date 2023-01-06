@@ -4,23 +4,20 @@ channels:
 dependencies:
   # required dependencies
   - python=3.8
-  - dask=2021.11.0
+  - numpy=1.20
+  - dask=2021.06.0
   - distributed
-  - geopandas
+  - geopandas=0.10
   - pygeos
-  - pyproj=3.1
+  - pyproj=2.6
   - packaging
   # test dependencies
   - pytest
   - pytest-cov
   - hilbertcurve
+  - pygeohash
   # optional dependencies
   - pyarrow
-  - pyogrio
-  - pygeohash
   - pip
   - pip:
       - pymorton
-      # installing those with conda in this environments keep hanging, so installing with pip
-      - s3fs
-      - moto[s3,server]
