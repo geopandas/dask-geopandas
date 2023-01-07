@@ -1,6 +1,9 @@
+from packaging.version import Version
+
 import numpy as np
 import pandas as pd
 
+import dask
 import dask.dataframe as dd
 import dask.array as da
 from dask.dataframe.core import _emulate, map_partitions, elemwise, new_dd_object
@@ -18,6 +21,9 @@ from .morton_distance import _morton_distance
 from .geohash import _geohash
 
 import dask_geopandas
+
+
+DASK_2022_8_1 = Version(dask.__version__) >= Version("2022.8.1")
 
 
 def _set_crs(df, crs, allow_override):
@@ -638,9 +644,12 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
         else:
             data_agg = {col: aggfunc for col in self.columns.drop(drop)}
         data_agg[self.geometry.name] = merge_geometries
+        # dask 2022.8.1 added shuffle keyword, enabled by default if split_out > 1
+        # starting with dask 2022.9.1, but geopandas doesn't yet work with shuffle
+        # https://github.com/geopandas/dask-geopandas/pull/229
+        agg_kwargs = {"shuffle": False} if DASK_2022_8_1 else {}
         aggregated = self.groupby(by=by, **kwargs).agg(
-            data_agg,
-            split_out=split_out,
+            data_agg, split_out=split_out, **agg_kwargs
         )
         return aggregated.set_crs(self.crs)
 
