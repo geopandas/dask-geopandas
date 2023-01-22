@@ -220,6 +220,13 @@ class GeoDatasetEngine:
                 return super()._arrow_table_to_pandas(
                     arrow_table, categories=categories, **kwargs
                 )
+            # when there are no columns, we also fall back (the dataset might
+            # have no files, and so we don't want to raise a confusing error
+            # about no geometry column)
+            elif not arrow_table.schema.names:
+                return super()._arrow_table_to_pandas(
+                    arrow_table, categories=categories, **kwargs
+                )
             else:
                 raise
 
