@@ -1,7 +1,10 @@
 import copy
 import json
 import math
+from packaging.version import Version
 from typing import TYPE_CHECKING
+
+import dask
 
 from dask.base import compute_as_if_collection, tokenize
 from dask.dataframe.core import new_dd_object, Scalar
@@ -14,6 +17,8 @@ import geopandas
 import shapely.geometry
 
 from fsspec.core import get_fs_token_paths
+
+DASK_2022_12_0_PLUS = Version(dask.__version__) >= Version("2022.12.0")
 
 
 if TYPE_CHECKING:
@@ -125,8 +130,26 @@ class ArrowDatasetEngine:
     def _arrow_table_to_pandas(
         cls, arrow_table: "pyarrow.Table", categories, **kwargs
     ) -> pd.DataFrame:
+
         _kwargs = kwargs.get("arrow_to_pandas", {})
         _kwargs.update({"use_threads": False, "ignore_metadata": False})
+
+        if DASK_2022_12_0_PLUS and kwargs.get("use_nullable_dtypes", False):
+            from dask.dataframe.io.parquet.arrow import PYARROW_NULLABLE_DTYPE_MAPPING
+
+            if "types_mapper" in _kwargs:
+                # User-provided entries take priority over PYARROW_NULLABLE_DTYPE_MAPPING
+                types_mapper = _kwargs["types_mapper"]
+
+                def _types_mapper(pa_type):
+                    return types_mapper(pa_type) or PYARROW_NULLABLE_DTYPE_MAPPING.get(
+                        pa_type
+                    )
+
+                _kwargs["types_mapper"] = _types_mapper
+
+            else:
+                _kwargs["types_mapper"] = PYARROW_NULLABLE_DTYPE_MAPPING.get
 
         return arrow_table.to_pandas(categories=categories, **_kwargs)
 
@@ -168,6 +191,23 @@ class GeoDatasetEngine:
         _kwargs = kwargs.get("arrow_to_pandas", {})
         _kwargs.update({"use_threads": False, "ignore_metadata": False})
 
+        if DASK_2022_12_0_PLUS and kwargs.get("use_nullable_dtypes", False):
+            from dask.dataframe.io.parquet.arrow import PYARROW_NULLABLE_DTYPE_MAPPING
+
+            if "types_mapper" in _kwargs:
+                # User-provided entries take priority over PYARROW_NULLABLE_DTYPE_MAPPING
+                types_mapper = _kwargs["types_mapper"]
+
+                def _types_mapper(pa_type):
+                    return types_mapper(pa_type) or PYARROW_NULLABLE_DTYPE_MAPPING.get(
+                        pa_type
+                    )
+
+                _kwargs["types_mapper"] = _types_mapper
+
+            else:
+                _kwargs["types_mapper"] = PYARROW_NULLABLE_DTYPE_MAPPING.get
+
         # TODO support additional keywords
         try:
             return _arrow_to_geopandas(arrow_table)
@@ -177,6 +217,13 @@ class GeoDatasetEngine:
             # the column selection can be an automatic pushdown (eg `ddf['col']`)
             # TODO more robust detection of when to fall back?
             if "No geometry columns are included" in str(err):
+                return super()._arrow_table_to_pandas(
+                    arrow_table, categories=categories, **kwargs
+                )
+            # when there are no columns, we also fall back (the dataset might
+            # have no files, and so we don't want to raise a confusing error
+            # about no geometry column)
+            elif not arrow_table.schema.names:
                 return super()._arrow_table_to_pandas(
                     arrow_table, categories=categories, **kwargs
                 )
