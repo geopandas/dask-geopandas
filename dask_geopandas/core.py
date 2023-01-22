@@ -14,7 +14,6 @@ from dask.base import tokenize
 import geopandas
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
-import pygeos
 
 from .hilbert_distance import _hilbert_distance
 from .morton_distance import _morton_distance
@@ -140,14 +139,28 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """Calculate spatial partitions"""
         # TEMP method to calculate spatial partitions for testing, need to
         # add better methods (set_partitions / repartition)
-        parts = geopandas.GeoSeries(
-            self.map_partitions(
-                lambda part: pygeos.convex_hull(
-                    pygeos.geometrycollections(part.geometry.values.data)
-                )
-            ).compute(),
-            crs=self.crs,
-        )
+        if geopandas._compat.USE_SHAPELY_20:
+            import shapely
+
+            parts = geopandas.GeoSeries(
+                self.map_partitions(
+                    lambda part: shapely.convex_hull(
+                        shapely.geometrycollections(part.geometry.values.data)
+                    )
+                ).compute(),
+                crs=self.crs,
+            )
+        else:
+            import pygeos
+
+            parts = geopandas.GeoSeries(
+                self.map_partitions(
+                    lambda part: pygeos.convex_hull(
+                        pygeos.geometrycollections(part.geometry.values.data)
+                    )
+                ).compute(),
+                crs=self.crs,
+            )
         self.spatial_partitions = parts
 
     def _propagate_spatial_partitions(self, new_object):
