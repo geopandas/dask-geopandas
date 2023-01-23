@@ -1,6 +1,20 @@
 Changelog
 =========
 
+Version 0.3.0 (January 23, 2023)
+--------------------------------
+
+Enhancements:
+
+- Dask-GeoPandas is now compatible with Shapely 2.0 (and if this version is
+  installed, no longer requires PyGEOS)
+
+Bug fixes:
+
+- Compatibility with dask >= 2022.12 for ``read_parquet()`` (#230) and for
+  ``dissolve()`` (#229)
+- Fix the ``spatial_partitions`` of the result of ``sjoin()`` (#216)
+
 Version 0.2.0 (July 1, 2022)
 ----------------------------
 
