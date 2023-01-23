@@ -1,6 +1,7 @@
 # Installation
 
-This package depends on GeoPandas, PyGEOS, and Dask.
+This package depends on GeoPandas and Dask. In addition, it also requires
+either Shapely >= 2.0, or the PyGEOS package.
 
 GeoPandas is written in pure Python, but has several dependencies written in C (GEOS, GDAL, PROJ). Those base C libraries can sometimes be a challenge to install. Therefore, we advise you to closely follow the [recommendations](https://geopandas.org/en/stable/getting_started/install.html) to avoid installation problems.
 
