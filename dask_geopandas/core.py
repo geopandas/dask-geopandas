@@ -23,6 +23,7 @@ import dask_geopandas
 
 
 DASK_2022_8_1 = Version(dask.__version__) >= Version("2022.8.1")
+GEOPANDAS_0_12 = Version(geopandas.__version__) >= Version("0.12.0")
 
 
 def _set_crs(df, crs, allow_override):
@@ -139,7 +140,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """Calculate spatial partitions"""
         # TEMP method to calculate spatial partitions for testing, need to
         # add better methods (set_partitions / repartition)
-        if geopandas._compat.USE_SHAPELY_20:
+        if GEOPANDAS_0_12 and geopandas._compat.USE_SHAPELY_20:
             import shapely
 
             parts = geopandas.GeoSeries(
