@@ -12,6 +12,7 @@ from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
 from dask.base import tokenize
 
 import geopandas
+import shapely
 from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
 
@@ -24,6 +25,17 @@ import dask_geopandas
 
 DASK_2022_8_1 = Version(dask.__version__) >= Version("2022.8.1")
 GEOPANDAS_0_12 = Version(geopandas.__version__) >= Version("0.12.0")
+
+
+if Version(shapely.__version__) < Version("2.0"):
+    try:
+        import pygeos  # noqa
+    except ImportError:
+        raise ImportError(
+            "Running dask-geopandas requires either Shapely >= 2.0 or PyGEOS to be "
+            "installed. However, PyGEOS is not installed and Shapely is only at "
+            f"version {shapely.__version__}"
+        )
 
 
 def _set_crs(df, crs, allow_override):
@@ -152,7 +164,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
                 crs=self.crs,
             )
         else:
-            import pygeos
+            import pygeos  # noqa
 
             parts = geopandas.GeoSeries(
                 self.map_partitions(
