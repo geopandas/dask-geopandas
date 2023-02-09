@@ -1,6 +1,14 @@
 Changelog
 =========
 
+Version 0.3.1 (...)
+-------------------
+
+Bug fixes:
+
+- Ensure ``spatial_partitions`` are preserved when serialized deserialized
+  with pickle (#237).
+
 Version 0.3.0 (January 23, 2023)
 --------------------------------
 
