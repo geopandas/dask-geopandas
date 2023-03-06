@@ -1,3 +1,4 @@
+import pickle
 from packaging.version import Version
 import pytest
 import pandas as pd
@@ -443,6 +444,19 @@ def test_spatial_partitions_setter(geodf_points):
     # wrong length
     with pytest.raises(ValueError):
         dask_obj.spatial_partitions = geodf_points.geometry
+
+
+@pytest.mark.parametrize("calculate_spatial_partitions", [True, False])
+def test_spatial_partitions_pickle(geodf_points, calculate_spatial_partitions):
+    dask_obj = dask_geopandas.from_geopandas(geodf_points, npartitions=2)
+    if calculate_spatial_partitions:
+        dask_obj.calculate_spatial_partitions()
+
+    dask_obj2 = pickle.loads(pickle.dumps(dask_obj))
+    assert hasattr(dask_obj2, "spatial_partitions")
+
+    dask_series = pickle.loads(pickle.dumps(dask_obj.geometry))
+    assert hasattr(dask_series, "spatial_partitions")
 
 
 def test_to_crs_geodf(geodf_points_crs):

@@ -105,6 +105,17 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
                 )
         self._spatial_partitions = value
 
+    @property
+    def _args(self):
+        # Ensure we roundtrip through pickle correctly
+        # https://github.com/geopandas/dask-geopandas/issues/237
+        return super()._args + (self.spatial_partitions,)
+
+    def __setstate__(self, state):
+        *dask_state, spatial_partitions = state
+        super().__setstate__(dask_state)
+        self.spatial_partitions = spatial_partitions
+
     @classmethod
     def _bind_property(cls, attr, preserve_spatial_partitions=False):
         """Map property to partitions and bind to class"""
