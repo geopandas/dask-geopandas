@@ -6,6 +6,7 @@ import dask.dataframe as dd
 
 from .arrow import (
     DASK_2022_12_0_PLUS,
+    DASK_2023_03_2_PLUS,
     GeoDatasetEngine,
     _get_partition_bounds,
     _update_meta_to_geodataframe,
@@ -87,7 +88,7 @@ class GeoArrowEngine(GeoDatasetEngine, DaskArrowDatasetEngine):
     @classmethod
     def _create_dd_meta(cls, dataset_info, use_nullable_dtypes=False):
         """Overriding private method for dask >= 2021.10.0"""
-        if DASK_2022_12_0_PLUS:
+        if DASK_2022_12_0_PLUS and not DASK_2023_03_2_PLUS:
             meta = super()._create_dd_meta(dataset_info, use_nullable_dtypes)
         else:
             meta = super()._create_dd_meta(dataset_info)

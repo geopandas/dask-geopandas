@@ -19,6 +19,7 @@ import shapely.geometry
 from fsspec.core import get_fs_token_paths
 
 DASK_2022_12_0_PLUS = Version(dask.__version__) >= Version("2022.12.0")
+DASK_2023_03_2_PLUS = Version(dask.__version__) >= Version("2023.3.2")
 
 
 if TYPE_CHECKING:
