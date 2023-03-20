@@ -47,7 +47,7 @@ import dask_geopandas
 ddf = dd.read_csv('...')
 
 ddf = ddf.set_geometry(
-    dask_geopandas.points_from_xy(ddf, 'latitude', 'longitude')
+    dask_geopandas.points_from_xy(ddf, 'longitude', 'latitude')
 )
 ```
 
