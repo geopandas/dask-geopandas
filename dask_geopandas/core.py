@@ -382,7 +382,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             ignore_index=ignore_index,
             index_parts=index_parts,
             enforce_metadata=False,
-            )
+        )
 
     @property
     @derived_from(geopandas.geodataframe.GeoDataFrame)
