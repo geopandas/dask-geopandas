@@ -1,6 +1,9 @@
 geopandas>=0.10
 numpydoc==1.1.0
 sphinx-book-theme
+# sphinx-book-theme is incompatible with pydata-sphinx-theme>0.13.2
+# https://github.com/executablebooks/sphinx-book-theme/issues/711
+pydata-sphinx-theme==0.13.2
 myst-nb
 myst-parser
 sphinx_copybutton
