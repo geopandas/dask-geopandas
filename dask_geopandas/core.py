@@ -381,7 +381,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             column=column,
             ignore_index=ignore_index,
             index_parts=index_parts,
-            enforce_metadata=False
+            enforce_metadata=False,
             )
 
     @property
