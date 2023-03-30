@@ -374,16 +374,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             enforce_metadata=False,
         )
 
-    @derived_from(geopandas.geodataframe.GeoDataFrame)
-    def explode(self, column=None, ignore_index=False, index_parts=None):
-        return self.map_partitions(
-            self._partition_type.explode,
-            column=column,
-            ignore_index=ignore_index,
-            index_parts=index_parts,
-            enforce_metadata=False,
-        )
-
     @property
     @derived_from(geopandas.geodataframe.GeoDataFrame)
     def cx(self):
@@ -558,6 +548,15 @@ class GeoSeries(_Frame, dd.core.Series):
     """
 
     _partition_type = geopandas.GeoSeries
+    
+    @derived_from(geopandas.geodataframe.GeoSeries)
+    def explode(self, ignore_index=False, index_parts=None):
+        return self.map_partitions(
+            M.explode,
+            ignore_index=ignore_index,
+            index_parts=index_parts,
+            enforce_metadata=False,
+        )
 
 
 class GeoDataFrame(_Frame, dd.core.DataFrame):
@@ -813,7 +812,16 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
 
         return sorted_ddf
 
-
+    @derived_from(geopandas.geodataframe.GeoDataFrame)
+    def explode(self, column=None, ignore_index=False, index_parts=None):
+        return self.map_partitions(
+            M.explode,
+            column=column,
+            ignore_index=ignore_index,
+            index_parts=index_parts,
+            enforce_metadata=False,
+        )
+            
 from_geopandas = dd.from_pandas
 
 
