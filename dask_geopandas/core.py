@@ -548,7 +548,7 @@ class GeoSeries(_Frame, dd.core.Series):
     """
 
     _partition_type = geopandas.GeoSeries
-    
+
     @derived_from(geopandas.geodataframe.GeoSeries)
     def explode(self, ignore_index=False, index_parts=None):
         return self.map_partitions(
@@ -821,7 +821,8 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             index_parts=index_parts,
             enforce_metadata=False,
         )
-            
+
+
 from_geopandas = dd.from_pandas
 
 
