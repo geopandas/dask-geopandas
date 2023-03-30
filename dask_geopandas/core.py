@@ -375,8 +375,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         )
 
     @derived_from(geopandas.geodataframe.GeoDataFrame)
-    def explode(self):
-        return self.map_partitions(self._partition_type.explode, enforce_metadata=False)
+    def explode(self, column=None, ignore_index=False, index_parts=None):
+        return self.map_partitions(
+            self._partition_type.explode,
+            column=column,
+            ignore_index=ignore_index,
+            index_parts=index_parts,
+            enforce_metadata=False
+            )
 
     @property
     @derived_from(geopandas.geodataframe.GeoDataFrame)
