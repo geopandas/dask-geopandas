@@ -149,6 +149,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @classmethod
     def _bind_elemwise_operator_method(cls, name, op, original, *args, **kwargs):
         """bind operator method like GeoSeries.distance to this class"""
+
         # name must be explicitly passed for div method whose name is truediv
         def meth(self, other, *args, **kwargs):
             meta = _emulate(op, self, other)
@@ -486,7 +487,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         return distances
 
     def geohash(self, as_string=True, precision=12):
-
         """
         Calculate geohash based on the middle points of the geometry bounds
         for a given precision.
