@@ -319,11 +319,47 @@ def test_explode_geoseries():
     s = geopandas.GeoSeries(
         [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])]
     )
-    original = s.explode()
+    original = s.explode(index_parts=False)
     dask_s = dask_geopandas.from_geopandas(s, npartitions=2)
-    daskified = dask_s.explode()
+    daskified = dask_s.explode(index_parts=False)
     assert isinstance(daskified, dask_geopandas.GeoSeries)
     assert all(original == daskified.compute())
+
+
+def test_explode_geoseries_index_parts():
+    s = geopandas.GeoSeries(
+        [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])]
+    )
+    original = s.explode(index_parts=True)
+    dask_s = dask_geopandas.from_geopandas(s, npartitions=2)
+    daskified = dask_s.explode(index_parts=True)
+    assert isinstance(daskified, dask_geopandas.GeoSeries)
+    assert all(original == daskified.compute())
+
+
+def test_explode_geoseries_ignore_index():
+    s = geopandas.GeoSeries(
+        [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])],
+        # Change index from range index to test ignore index argument
+        index=[3, 4],
+    )
+
+    original = s.explode(ignore_index=True)
+    dask_s = dask_geopandas.from_geopandas(s, npartitions=2)
+    daskified = dask_s.explode(ignore_index=True)
+
+    original_expected = geopandas.GeoSeries(
+        [Point(0, 0), Point(1, 1), Point(2, 2), Point(3, 3), Point(4, 4)],
+        index=[0, 1, 2, 3, 4],
+    )
+
+    dask_expected = geopandas.GeoSeries(
+        [Point(0, 0), Point(1, 1), Point(2, 2), Point(3, 3), Point(4, 4)],
+        index=[0, 1, 0, 1, 2],
+    )
+    assert isinstance(daskified, dask_geopandas.GeoSeries)
+    assert all(daskified.compute() == dask_expected)
+    assert all(original == original_expected)
 
 
 def test_explode_geodf():
@@ -331,9 +367,85 @@ def test_explode_geodf():
         [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])]
     )
     df = geopandas.GeoDataFrame({"col": [1, 2], "geometry": s})
-    original = df.explode()
+    original = df.explode(index_parts=False)
     dask_s = dask_geopandas.from_geopandas(df, npartitions=2)
-    daskified = dask_s.explode()
+    daskified = dask_s.explode(index_parts=False)
+    assert isinstance(daskified, dask_geopandas.GeoDataFrame)
+    assert all(original == daskified.compute())
+
+
+def test_explode_geodf_index_parts():
+    s = geopandas.GeoSeries(
+        [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])]
+    )
+    df = geopandas.GeoDataFrame({"col": [1, 2], "geometry": s})
+    original = df.explode(index_parts=True)
+    dask_s = dask_geopandas.from_geopandas(df, npartitions=2)
+    daskified = dask_s.explode(index_parts=True)
+    assert isinstance(daskified, dask_geopandas.GeoDataFrame)
+    assert all(original == daskified.compute())
+
+
+def test_explode_geodf_ignore_index():
+    s = geopandas.GeoSeries(
+        [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])],
+        index=[3, 4],
+    )
+    df = geopandas.GeoDataFrame(
+        {
+            "col": [1, 2],
+            "geometry": s,
+        }
+    )
+
+    original = df.explode(ignore_index=True)
+    dask_s = dask_geopandas.from_geopandas(df, npartitions=2)
+    daskified = dask_s.explode(ignore_index=True)
+
+    original_expected = geopandas.GeoDataFrame(
+        {
+            "col": [1, 1, 2, 2, 2],
+            "geometry": [
+                Point(0, 0),
+                Point(1, 1),
+                Point(2, 2),
+                Point(3, 3),
+                Point(4, 4),
+            ],
+        },
+        index=[0, 1, 2, 3, 4],
+    )
+
+    dask_expected = geopandas.GeoDataFrame(
+        {
+            "col": [1, 1, 2, 2, 2],
+            "geometry": [
+                Point(0, 0),
+                Point(1, 1),
+                Point(2, 2),
+                Point(3, 3),
+                Point(4, 4),
+            ],
+        },
+        index=[0, 1, 0, 1, 2],
+    )
+
+    assert isinstance(daskified, dask_geopandas.GeoDataFrame)
+    assert all(daskified.compute() == dask_expected)
+    assert all(original == original_expected)
+
+
+def test_explode_geodf_column():
+    s = geopandas.GeoSeries(
+        [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])]
+    )
+    s2 = geopandas.GeoSeries(
+        [MultiPoint([(4, 4), (5, 5)]), MultiPoint([(4, 4), (6, 6), (8, 8)])]
+    )
+    df = geopandas.GeoDataFrame({"col": [1, 2], "geometry": s, "other_col": s2})
+    original = df.explode(index_parts=False, column="other_col")
+    dask_s = dask_geopandas.from_geopandas(df, npartitions=2)
+    daskified = dask_s.explode(index_parts=False, column="other_col")
     assert isinstance(daskified, dask_geopandas.GeoDataFrame)
     assert all(original == daskified.compute())
 
