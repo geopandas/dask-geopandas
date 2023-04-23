@@ -645,9 +645,7 @@ class TestDissolve:
             drop = ["name", "iso_a3"]
         else:
             drop = []
-        assert_geodataframe_equal(
-            gpd_sum, dd_sum.drop(columns=drop), check_like=True
-        )
+        assert_geodataframe_equal(gpd_sum, dd_sum.drop(columns=drop), check_like=True)
 
     @pytest.mark.skipif(
         Version(dask.__version__) == Version("2022.01.1"),
