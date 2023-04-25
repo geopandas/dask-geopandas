@@ -19,7 +19,7 @@ import shapely.geometry
 from fsspec.core import get_fs_token_paths
 
 DASK_2022_12_0_PLUS = Version(dask.__version__) >= Version("2022.12.0")
-DASK_2023_03_2_DEV = Version(dask.__version__) > Version("2023.3.1")
+DASK_2023_04_0 = Version(dask.__version__) >= Version("2023.4.0")
 
 
 if TYPE_CHECKING:
@@ -71,7 +71,7 @@ def _get_partition_bounds(schema_metadata):
 
 
 def _extract_nullable_dtypes(**kwargs):
-    if DASK_2023_03_2_DEV:
+    if DASK_2023_04_0:
         use_nullable_dtypes = kwargs.get("dtype_backend", None) == "numpy_nullable"
     elif DASK_2022_12_0_PLUS:
         use_nullable_dtypes = kwargs.get("use_nullable_dtypes", False)
