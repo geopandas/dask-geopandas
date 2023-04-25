@@ -19,6 +19,7 @@ import shapely.geometry
 from fsspec.core import get_fs_token_paths
 
 DASK_2022_12_0_PLUS = Version(dask.__version__) >= Version("2022.12.0")
+DASK_2023_04_0 = Version(dask.__version__) >= Version("2023.4.0")
 
 
 if TYPE_CHECKING:
@@ -67,6 +68,16 @@ def _get_partition_bounds(schema_metadata):
     if bbox is None or all(math.isnan(val) for val in bbox):
         return None
     return shapely.geometry.box(*bbox)
+
+
+def _extract_nullable_dtypes(**kwargs):
+    if DASK_2023_04_0:
+        use_nullable_dtypes = kwargs.get("dtype_backend", None) == "numpy_nullable"
+    elif DASK_2022_12_0_PLUS:
+        use_nullable_dtypes = kwargs.get("use_nullable_dtypes", False)
+    else:
+        use_nullable_dtypes = False
+    return use_nullable_dtypes
 
 
 class ArrowDatasetEngine:
@@ -133,8 +144,9 @@ class ArrowDatasetEngine:
 
         _kwargs = kwargs.get("arrow_to_pandas", {})
         _kwargs.update({"use_threads": False, "ignore_metadata": False})
+        use_nullable_dtypes = _extract_nullable_dtypes(**kwargs)
 
-        if DASK_2022_12_0_PLUS and kwargs.get("use_nullable_dtypes", False):
+        if use_nullable_dtypes:
             from dask.dataframe.io.parquet.arrow import PYARROW_NULLABLE_DTYPE_MAPPING
 
             if "types_mapper" in _kwargs:
@@ -190,8 +202,9 @@ class GeoDatasetEngine:
 
         _kwargs = kwargs.get("arrow_to_pandas", {})
         _kwargs.update({"use_threads": False, "ignore_metadata": False})
+        use_nullable_dtypes = _extract_nullable_dtypes(**kwargs)
 
-        if DASK_2022_12_0_PLUS and kwargs.get("use_nullable_dtypes", False):
+        if use_nullable_dtypes:
             from dask.dataframe.io.parquet.arrow import PYARROW_NULLABLE_DTYPE_MAPPING
 
             if "types_mapper" in _kwargs:
