@@ -25,6 +25,7 @@ import dask_geopandas
 
 DASK_2022_8_1 = Version(dask.__version__) >= Version("2022.8.1")
 GEOPANDAS_0_12 = Version(geopandas.__version__) >= Version("0.12.0")
+PANDAS_2_0_0 = Version(pd.__version__) >= Version("2.0.0")
 
 
 if Version(shapely.__version__) < Version("2.0"):

@@ -15,6 +15,7 @@ from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 from dask_geopandas.hilbert_distance import _hilbert_distance
 from dask_geopandas.morton_distance import _morton_distance
 from dask_geopandas.geohash import _geohash
+from dask_geopandas.core import PANDAS_2_0_0
 
 
 @pytest.fixture
@@ -752,9 +753,11 @@ class TestDissolve:
         gpd_sum = self.world.dissolve("continent", aggfunc="sum")
         dd_sum = self.ddf.dissolve("continent", aggfunc="sum").compute()
         # drop due to https://github.com/geopandas/geopandas/issues/1999
-        assert_geodataframe_equal(
-            gpd_sum, dd_sum.drop(columns=["name", "iso_a3"]), check_like=True
-        )
+        if not PANDAS_2_0_0:
+            drop = ["name", "iso_a3"]
+        else:
+            drop = []
+        assert_geodataframe_equal(gpd_sum, dd_sum.drop(columns=drop), check_like=True)
 
     @pytest.mark.skipif(
         Version(dask.__version__) == Version("2022.01.1"),
