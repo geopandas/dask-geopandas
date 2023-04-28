@@ -1,11 +1,13 @@
 Changelog
 =========
 
-Version 0.3.1 (...)
--------------------
+Version 0.3.1 (April 28, 2023)
+------------------------------
 
 Bug fixes:
 
+- Compatibility with dask >= 2023.4 and changes regarding ``use_nullable_dtypes``
+  keyword (#242).
 - Ensure ``spatial_partitions`` are preserved when serialized deserialized
   with pickle (#237).
 
