@@ -19,7 +19,6 @@ GEOPANDAS_GE_10 = (Version(geopandas.__version__) >= Version("0.14.0+70")) and (
 if GEOPANDAS_GE_10:
     package_dir = os.path.abspath(geopandas.__path__[0])
     test_data_dir = os.path.join(package_dir, "tests", "data")
-    _NYBB = "zip://" + os.path.join(test_data_dir, "nybb_16a.zip")
     _NATURALEARTH_CITIES = os.path.join(
         test_data_dir, "naturalearth_cities", "naturalearth_cities.shp"
     )
@@ -29,7 +28,6 @@ if GEOPANDAS_GE_10:
 else:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        _NYBB = geopandas.datasets.get_path("nybb")
         _NATURALEARTH_CITIES = geopandas.datasets.get_path("naturalearth_cities")
         _NATURALEARTH_LOWRES = geopandas.datasets.get_path("naturalearth_lowres")
 
@@ -43,8 +41,3 @@ def naturalearth_lowres() -> str:
 @pytest.fixture(scope="session")
 def naturalearth_cities() -> str:
     return _NATURALEARTH_CITIES
-
-
-@pytest.fixture(scope="session")
-def nybb_filename() -> str:
-    return _NYBB
