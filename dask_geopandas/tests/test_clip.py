@@ -5,13 +5,11 @@ import dask_geopandas
 from .test_core import geodf_points  # noqa: F401
 
 
-def test_clip():
-    cities = geopandas.read_file(geopandas.datasets.get_path("naturalearth_cities"))
+def test_clip(naturalearth_lowres, naturalearth_cities):
+    cities = geopandas.read_file(naturalearth_cities)
     dask_obj = dask_geopandas.from_geopandas(cities, npartitions=4)
     dask_obj.calculate_spatial_partitions()
-    mask = geopandas.read_file(
-        geopandas.datasets.get_path("naturalearth_lowres")
-    ).query("continent == 'Africa'")
+    mask = geopandas.read_file(naturalearth_lowres).query("continent == 'Africa'")
     expected = geopandas.clip(cities, mask)
     clipped = dask_geopandas.clip(dask_obj, mask)
 

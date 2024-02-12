@@ -6,13 +6,11 @@ from geopandas.testing import assert_geodataframe_equal
 import dask_geopandas
 
 
-def test_sjoin_dask_geopandas():
-    df_points = geopandas.read_file(geopandas.datasets.get_path("naturalearth_cities"))
+def test_sjoin_dask_geopandas(naturalearth_lowres, naturalearth_cities):
+    df_points = geopandas.read_file(naturalearth_cities)
     ddf_points = dask_geopandas.from_geopandas(df_points, npartitions=4)
 
-    df_polygons = geopandas.read_file(
-        geopandas.datasets.get_path("naturalearth_lowres")
-    )
+    df_polygons = geopandas.read_file(naturalearth_lowres)
     ddf_polygons = dask_geopandas.from_geopandas(df_polygons, npartitions=4)
 
     expected = geopandas.sjoin(df_points, df_polygons, predicate="within", how="inner")
