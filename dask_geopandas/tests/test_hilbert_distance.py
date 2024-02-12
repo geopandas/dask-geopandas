@@ -59,7 +59,7 @@ def geoseries_polygons():
 
 
 def hilbert_distance_dask(geoseries, level=16):
-    pytest.importorksip("hilbertcurve")
+    pytest.importorskip("hilbertcurve")
     from hilbertcurve.hilbertcurve import HilbertCurve
 
     bounds = geoseries.bounds.to_numpy()
