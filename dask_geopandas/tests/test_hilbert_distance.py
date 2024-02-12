@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 
 from pandas.testing import assert_index_equal, assert_series_equal
-from hilbertcurve.hilbertcurve import HilbertCurve
 from dask_geopandas.hilbert_distance import (
     _hilbert_distance,
     _continuous_to_discrete_coords,
@@ -60,6 +59,8 @@ def geoseries_polygons():
 
 
 def hilbert_distance_dask(geoseries, level=16):
+    pytest.importorksip("hilbertcurve")
+    from hilbertcurve.hilbertcurve import HilbertCurve
 
     bounds = geoseries.bounds.to_numpy()
     total_bounds = geoseries.total_bounds
