@@ -41,3 +41,8 @@ def naturalearth_lowres() -> str:
 @pytest.fixture(scope="session")
 def naturalearth_cities() -> str:
     return _NATURALEARTH_CITIES
+
+
+import dask
+
+dask.config.set({"dataframe.convert-string": False})
