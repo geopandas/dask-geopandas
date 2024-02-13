@@ -13,8 +13,3 @@ dependencies:
   # test dependencies
   - pytest
   - pytest-cov
-  - hilbertcurve
-  - pygeohash
-  - pip
-  - pip:
-      - pymorton
