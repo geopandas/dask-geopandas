@@ -5,12 +5,18 @@ import warnings
 import pytest
 
 import geopandas
+import dask
 
 
 # TODO update version once geopandas has a proper tag for 1.0
 GEOPANDAS_GE_10 = (Version(geopandas.__version__) >= Version("0.14.0+70")) and (
     Version(geopandas.__version__) < Version("0.14.1")
 )
+
+
+# TODO Disable usage of pyarrow strings until the expected results in the tests
+# are updated to use those as well
+dask.config.set({"dataframe.convert-string": False})
 
 
 # Datasets used in our tests
@@ -41,8 +47,3 @@ def naturalearth_lowres() -> str:
 @pytest.fixture(scope="session")
 def naturalearth_cities() -> str:
     return _NATURALEARTH_CITIES
-
-
-import dask
-
-dask.config.set({"dataframe.convert-string": False})
