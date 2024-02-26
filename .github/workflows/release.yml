@@ -2,6 +2,8 @@ name: Build and publish dask-geopandas to PyPI / GitHub
 
 on:
   push:
+    branches:
+      - main  # just build the sdist & wheel, skip release
     tags:
       - "v*"
   pull_request:  # also build on PRs touching this file
