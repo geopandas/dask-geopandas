@@ -4,3 +4,47 @@ requires = [
     "wheel"
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "dask-geopandas"
+dynamic = ["version"]
+authors = [
+    { name = "Julia Signell", email = "jsignell@gmail.com" }
+]
+maintainers = [
+    { name = "GeoPandas contributors" }
+]
+license = { text = "BSD 3-Clause" }
+description = "Parallel GeoPandas with Dask"
+readme = "README.rst"
+keywords = ["dask", "geopandas", "spatial", "distributed", "cluster"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: System :: Distributed Computing",
+]
+requires-python = ">=3.7"
+dependencies = [
+    "geopandas>=0.10",
+    "dask>=2021.06.0",
+    "distributed>=2021.06.0",
+    "packaging",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+]
+
+[project.urls]
+Home = "https://geopandas.org"
+Documentation = "https://dask-geopandas.readthedocs.io/"
+Repository = "https://github.com/geopandas/dask-geopandas"
+"Issue Tracker" = "https://github.com/geopandas/dask-geopandas/issues"
