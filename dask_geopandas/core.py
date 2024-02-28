@@ -170,7 +170,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             parts = geopandas.GeoSeries(
                 self.map_partitions(
                     lambda part: shapely.convex_hull(
-                        shapely.geometrycollections(part.geometry)
+                        shapely.geometrycollections(np.asarray(part.geometry))
                     )
                 ).compute(),
                 crs=self.crs,
@@ -181,7 +181,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             parts = geopandas.GeoSeries(
                 self.map_partitions(
                     lambda part: pygeos.convex_hull(
-                        pygeos.geometrycollections(part.geometry)
+                        pygeos.geometrycollections(np.asarray(part.geometry))
                     )
                 ).compute(),
                 crs=self.crs,
