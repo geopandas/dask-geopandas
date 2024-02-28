@@ -7,8 +7,6 @@ dependencies:
   - dask
   - distributed
   - geopandas
-  - shapely >= 2
-  - pygeos
   - pyproj
   - packaging
   # test dependencies

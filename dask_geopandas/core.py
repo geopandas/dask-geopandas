@@ -29,14 +29,11 @@ PANDAS_2_0_0 = Version(pd.__version__) >= Version("2.0.0")
 
 
 if Version(shapely.__version__) < Version("2.0"):
-    try:
-        import pygeos  # noqa
-    except ImportError:
-        raise ImportError(
-            "Running dask-geopandas requires either Shapely >= 2.0 or PyGEOS to be "
-            "installed. However, PyGEOS is not installed and Shapely is only at "
-            f"version {shapely.__version__}"
-        )
+    raise ImportError(
+        "Running dask-geopandas requires Shapely >= 2.0 to be "
+        "installed. However, Shapely is only at "
+        f"version {shapely.__version__}"
+    )
 
 
 def _set_crs(df, crs, allow_override):
@@ -164,28 +161,14 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """Calculate spatial partitions"""
         # TEMP method to calculate spatial partitions for testing, need to
         # add better methods (set_partitions / repartition)
-        if GEOPANDAS_0_12 and geopandas._compat.USE_SHAPELY_20:
-            import shapely
-
-            parts = geopandas.GeoSeries(
-                self.map_partitions(
-                    lambda part: shapely.convex_hull(
-                        shapely.geometrycollections(part.geometry.values.data)
-                    )
-                ).compute(),
-                crs=self.crs,
-            )
-        else:
-            import pygeos  # noqa
-
-            parts = geopandas.GeoSeries(
-                self.map_partitions(
-                    lambda part: pygeos.convex_hull(
-                        pygeos.geometrycollections(part.geometry.values.data)
-                    )
-                ).compute(),
-                crs=self.crs,
-            )
+        parts = geopandas.GeoSeries(
+            self.map_partitions(
+                lambda part: shapely.convex_hull(
+                    shapely.geometrycollections(part.geometry.values.data)
+                )
+            ).compute(),
+            crs=self.crs,
+        )
         self.spatial_partitions = parts
 
     def _propagate_spatial_partitions(self, new_object):

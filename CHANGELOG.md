@@ -1,6 +1,12 @@
 Changelog
 =========
 
+
+Version 0.4.0 (??)
+------------------
+
+- Removed support for PyGEOS, now requiring Shapely >= 2
+
 Version 0.3.1 (April 28, 2023)
 ------------------------------
 

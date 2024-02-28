@@ -7,7 +7,6 @@ dependencies:
   - dask
   - distributed
   - geopandas
-  - pygeos
   - pyproj=3.3
   - packaging
   # test dependencies

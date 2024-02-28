@@ -7,10 +7,10 @@ dependencies:
   - numpy=1.20
   - dask=2021.06.0
   - distributed=2021.06.0
-  - geopandas=0.10
+  - geopandas=0.12
   - pandas=1.5.3
-  - pygeos
-  - pyproj=2.6
+  - shapely=2.0
+  - pyproj=3.0
   - packaging
   # test dependencies
   - pytest

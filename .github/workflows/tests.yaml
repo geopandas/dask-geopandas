@@ -59,24 +59,9 @@ jobs:
           python -c "import geopandas; geopandas.show_versions();"
           conda info
           conda list
-          if ( conda list | tr -s ' ' | grep 'shapely 2.0' )
-          then
-            echo "Setting HAS_SHAPELY_2=1"
-            echo "HAS_SHAPELY_2=1" >> $GITHUB_ENV
-          else
-            echo "Setting HAS_SHAPELY_2=0"
-            echo "HAS_SHAPELY_2=0" >> $GITHUB_ENV
-          fi
 
       - name: Test
         run: |
           pytest -v -r a --color=yes --cov=dask_geopandas --cov-append --cov-report term-missing --cov-report xml .
-
-      - name: Test without PyGEOS (with Shapely 2.0)
-        if: env.HAS_SHAPELY_2 == 1
-        env:
-          USE_PYGEOS: 0
-        run: |
-          pytest -v -r s --color=yes --cov=dask_geopandas --cov-append --cov-report term-missing --cov-report xml .
 
       - uses: codecov/codecov-action@v2
