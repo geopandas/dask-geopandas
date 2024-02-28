@@ -14,8 +14,8 @@ from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 pytest.importorskip("pyogrio")
 
 
-def test_read_file():
-    path = geopandas.datasets.get_path("naturalearth_lowres")
+def test_read_file(naturalearth_lowres):
+    path = naturalearth_lowres
     df = geopandas.read_file(path)
     result = dask_geopandas.read_file(path, npartitions=4)
     assert isinstance(result, dask_geopandas.GeoDataFrame)
@@ -36,23 +36,23 @@ def test_read_file():
         dask_geopandas.read_file(path, npartitions=4, chunksize=100)
 
 
-def test_read_file_divisions():
-    path = geopandas.datasets.get_path("naturalearth_lowres")
+def test_read_file_divisions(naturalearth_lowres):
+    path = naturalearth_lowres
     result = dask_geopandas.read_file(path, npartitions=4)
     assert result.known_divisions
     assert result.index.divisions == (0, 45, 90, 135, 176)
     assert result.divisions == (0, 45, 90, 135, 176)
 
 
-def test_read_file_index():
-    path = geopandas.datasets.get_path("naturalearth_lowres")
+def test_read_file_index(naturalearth_lowres):
+    path = naturalearth_lowres
     df = geopandas.read_file(path)
     result = dask_geopandas.read_file(path, npartitions=4)
     assert (result.index.compute() == pd.RangeIndex(0, len(df))).all()
 
 
-def test_read_file_columns():
-    path = geopandas.datasets.get_path("naturalearth_lowres")
+def test_read_file_columns(naturalearth_lowres):
+    path = naturalearth_lowres
     df = geopandas.read_file(path)
 
     # explicit column selection
