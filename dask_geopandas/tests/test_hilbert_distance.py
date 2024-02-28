@@ -118,11 +118,9 @@ def test_total_bounds_from_partitions(geoseries_polygons):
     assert_series_equal(result, expected)
 
 
-def test_world():
+def test_world(naturalearth_lowres):
     # world without Fiji
-    hilbert_distance_dask(
-        geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres")).iloc[1:]
-    )
+    hilbert_distance_dask(geopandas.read_file(naturalearth_lowres).iloc[1:])
 
 
 @pytest.mark.parametrize(

@@ -595,14 +595,12 @@ def test_copy_none_spatial_partitions(geoseries_points):
     assert ddf_copy.spatial_partitions is None
 
 
-def test_sjoin():
+def test_sjoin(naturalearth_cities, naturalearth_lowres):
     # test only the method, functionality tested in test_sjoin.py
-    df_points = geopandas.read_file(geopandas.datasets.get_path("naturalearth_cities"))
+    df_points = geopandas.read_file(naturalearth_cities)
     ddf_points = dask_geopandas.from_geopandas(df_points, npartitions=4)
 
-    df_polygons = geopandas.read_file(
-        geopandas.datasets.get_path("naturalearth_lowres")
-    )
+    df_polygons = geopandas.read_file(naturalearth_lowres)
     expected = df_points.sjoin(df_polygons, predicate="within", how="inner")
     expected = expected.sort_index()
 
@@ -626,10 +624,9 @@ def test_clip(geodf_points):
 
 
 class TestDissolve:
-    def setup_method(self):
-        self.world = geopandas.read_file(
-            geopandas.datasets.get_path("naturalearth_lowres")
-        )
+    @pytest.fixture(scope="function", autouse=True)
+    def setup_metho(self, naturalearth_lowres):
+        self.world = geopandas.read_file(naturalearth_lowres)
         self.ddf = dask_geopandas.from_geopandas(self.world, npartitions=4)
 
     def test_default(self):
@@ -690,10 +687,9 @@ class TestDissolve:
 
 
 class TestSpatialShuffle:
-    def setup_method(self):
-        self.world = geopandas.read_file(
-            geopandas.datasets.get_path("naturalearth_lowres")
-        )
+    @pytest.fixture(scope="function", autouse=True)
+    def setup(self, naturalearth_lowres):
+        self.world = geopandas.read_file(naturalearth_lowres)
         self.ddf = dask_geopandas.from_geopandas(self.world, npartitions=4)
 
     def test_default(self):

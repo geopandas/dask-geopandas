@@ -18,9 +18,9 @@ pytestmark = pytest.mark.filterwarnings(
 )
 
 
-def test_parquet_roundtrip(tmp_path):
+def test_parquet_roundtrip(tmp_path, naturalearth_lowres):
     # basic roundtrip
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = geopandas.read_file(naturalearth_lowres)
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
 
     basedir = tmp_path / "dataset"
@@ -51,9 +51,9 @@ def test_parquet_roundtrip(tmp_path):
     assert_geodataframe_equal(result_part0, df.iloc[:45])
 
 
-def test_roundtrip_geometry_column_name(tmp_path):
+def test_roundtrip_geometry_column_name(tmp_path, naturalearth_lowres):
     # basic roundtrip with different geometry column name
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = geopandas.read_file(naturalearth_lowres)
     df = df.rename_geometry("geom")
 
     # geopandas -> dask-geopandas roundtrip
@@ -80,9 +80,9 @@ def test_roundtrip_geometry_column_name(tmp_path):
     assert_geodataframe_equal(result.compute(), df)
 
 
-def test_roundtrip_multiple_geometry_columns(tmp_path):
+def test_roundtrip_multiple_geometry_columns(tmp_path, naturalearth_lowres):
     # basic roundtrip with different geometry column name
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = geopandas.read_file(naturalearth_lowres)
     df["geometry2"] = df.geometry.representative_point().to_crs("EPSG:3857")
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
 
@@ -102,9 +102,9 @@ def test_roundtrip_multiple_geometry_columns(tmp_path):
     assert result["geometry2"].crs == "EPSG:3857"
 
 
-def test_column_selection_push_down(tmp_path):
+def test_column_selection_push_down(tmp_path, naturalearth_lowres):
     # set up dataset
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = geopandas.read_file(naturalearth_lowres)
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
     basedir = tmp_path / "dataset"
     ddf.to_parquet(basedir)
@@ -123,11 +123,11 @@ def test_column_selection_push_down(tmp_path):
     assert s.max().compute() == df["pop_est"].max()
 
 
-def test_parquet_roundtrip_s3(s3_resource, s3_storage_options):
+def test_parquet_roundtrip_s3(s3_resource, s3_storage_options, naturalearth_lowres):
     fs, endpoint_url = s3_resource
 
     # basic roundtrip
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = geopandas.read_file(naturalearth_lowres)
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
 
     uri = "s3://geopandas-test/dataset.parquet"
@@ -143,8 +143,8 @@ def test_parquet_roundtrip_s3(s3_resource, s3_storage_options):
     assert result.spatial_partitions is not None
 
 
-def test_parquet_empty_partitions(tmp_path):
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+def test_parquet_empty_partitions(tmp_path, naturalearth_lowres):
+    df = geopandas.read_file(naturalearth_lowres)
     # Creating filtered dask dataframe with at least one empty partition
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
     ddf_filtered = ddf[ddf["pop_est"] > 1_000_000_000]
@@ -196,8 +196,8 @@ def test_parquet_empty_dataset(tmp_path):
     reason="Only works with dask 2022.02.1 or up",
 )
 @pytest.mark.parametrize("write_metadata_file", [True, False])
-def test_parquet_partition_on(tmp_path, write_metadata_file):
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+def test_parquet_partition_on(tmp_path, naturalearth_lowres, write_metadata_file):
+    df = geopandas.read_file(naturalearth_lowres)
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
 
     # Writing a partitioned dataset based on one of the attribute columns
@@ -224,9 +224,9 @@ def test_parquet_partition_on(tmp_path, write_metadata_file):
     assert_geodataframe_equal(result.compute(), expected, check_like=True)
 
 
-def test_no_gather_spatial_partitions(tmp_path):
+def test_no_gather_spatial_partitions(tmp_path, naturalearth_lowres):
     # basic roundtrip
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = geopandas.read_file(naturalearth_lowres)
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
 
     basedir = tmp_path / "dataset"

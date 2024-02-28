@@ -2,6 +2,8 @@ name: Build and publish dask-geopandas to PyPI / GitHub
 
 on:
   push:
+    branches:
+      - main  # just build the sdist & wheel, skip release
     tags:
       - "v*"
   pull_request:  # also build on PRs touching this file
@@ -18,10 +20,10 @@ jobs:
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
@@ -30,7 +32,7 @@ jobs:
           python -m pip install --upgrade pip build
           python -m build
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v4
         with:
           path: ./dist/*
           retention-days: 5
@@ -43,7 +45,7 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/')
 
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v4
         with:
           name: artifact
           path: dist
