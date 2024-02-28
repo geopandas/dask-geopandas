@@ -181,7 +181,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             parts = geopandas.GeoSeries(
                 self.map_partitions(
                     lambda part: pygeos.convex_hull(
-                        pygeos.geometrycollections(np.asarray(part.geometry))
+                        pygeos.geometrycollections(part.geometry.values.data)
                     )
                 ).compute(),
                 crs=self.crs,
