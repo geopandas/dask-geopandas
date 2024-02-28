@@ -164,13 +164,13 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """Calculate spatial partitions"""
         # TEMP method to calculate spatial partitions for testing, need to
         # add better methods (set_partitions / repartition)
-        if GEOPANDAS_0_12 and geopandas._compat.USE_SHAPELY_20:
+        if GEOPANDAS_0_12 and getattr(geopandas._compat, "USE_SHAPELY_20", True):
             import shapely
 
             parts = geopandas.GeoSeries(
                 self.map_partitions(
                     lambda part: shapely.convex_hull(
-                        shapely.geometrycollections(part.geometry.values.data)
+                        shapely.geometrycollections(np.asarray(part.geometry))
                     )
                 ).compute(),
                 crs=self.crs,
