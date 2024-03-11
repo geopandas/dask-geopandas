@@ -3,22 +3,24 @@ channels:
   - conda-forge
 dependencies:
   # required dependencies
-  - python=3.8
-  - numpy=1.20
-  - dask=2021.06.0
-  - distributed=2021.06.0
-  - geopandas=0.12
-  - pandas=1.5.3
-  - shapely=2.0
-  - pyproj=3.0
+  - python=3.12
+  - dask
+  - distributed
+  - geopandas
+  - shapely >= 2
+  - pyproj
   - packaging
   # test dependencies
   - pytest
   - pytest-cov
   - hilbertcurve
-  - pygeohash
+  - s3fs
+  - moto<5  # <5 pin because of https://github.com/dask/dask/issues/10869
+  - flask # needed for moto server
   # optional dependencies
   - pyarrow
+  - pyogrio
+  - pygeohash
   - pip
   - pip:
       - pymorton
