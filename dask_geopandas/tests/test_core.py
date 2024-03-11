@@ -644,20 +644,12 @@ class TestDissolve:
             drop = []
         assert_geodataframe_equal(gpd_sum, dd_sum.drop(columns=drop), check_like=True)
 
-    @pytest.mark.skipif(
-        Version(dask.__version__) == Version("2022.01.1"),
-        reason="Regression in dask 2022.01.1 https://github.com/dask/dask/issues/8611",
-    )
     def test_split_out(self):
         gpd_default = self.world.dissolve("continent")
         dd_split = self.ddf.dissolve("continent", split_out=4)
         assert dd_split.npartitions == 4
         assert_geodataframe_equal(gpd_default, dd_split.compute(), check_like=True)
 
-    @pytest.mark.skipif(
-        Version(dask.__version__) == Version("2022.01.1"),
-        reason="Regression in dask 2022.01.1 https://github.com/dask/dask/issues/8611",
-    )
     @pytest.mark.xfail
     def test_split_out_name(self):
         gpd_default = self.world.rename_geometry("geom").dissolve("continent")
@@ -758,10 +750,6 @@ class TestSpatialShuffle:
 
         assert_geodataframe_equal(ddf.compute(), expected)
 
-    @pytest.mark.skipif(
-        Version(dask.__version__) <= Version("2021.03.0"),
-        reason="older Dask has a bug in sorting",
-    )
     @pytest.mark.parametrize(
         "calculate_partitions,npartitions",
         [

@@ -1,32 +1,19 @@
 import uuid
-from packaging.version import Version
-
-import dask
 
 from dask.dataframe.core import get_parallel_type
 from dask.dataframe.utils import meta_nonempty
 from dask.dataframe.extensions import make_array_nonempty, make_scalar
 from dask.base import normalize_token
+from dask.dataframe.dispatch import make_meta_dispatch, pyarrow_schema_dispatch
+from dask.dataframe.backends import _nonempty_index, meta_nonempty_dataframe
 
 import shapely.geometry
 from shapely.geometry.base import BaseGeometry
 import geopandas
 from geopandas.array import GeometryArray, GeometryDtype, from_shapely
 
-DASK_2021_06_0 = Version(dask.__version__) >= Version("2021.06.0")
-DASK_2022_06_0 = Version(dask.__version__) >= Version("2022.06.0")
-
-if DASK_2021_06_0:
-    from dask.dataframe.dispatch import make_meta_dispatch
-    from dask.dataframe.backends import _nonempty_index, meta_nonempty_dataframe
-else:
-    from dask.dataframe.core import make_meta as make_meta_dispatch
-    from dask.dataframe.utils import _nonempty_index, meta_nonempty_dataframe
-
-if DASK_2022_06_0:
-    from dask.dataframe.dispatch import pyarrow_schema_dispatch
-
 from .core import GeoSeries, GeoDataFrame
+
 
 get_parallel_type.register(geopandas.GeoDataFrame, lambda _: GeoDataFrame)
 get_parallel_type.register(geopandas.GeoSeries, lambda _: GeoSeries)
@@ -75,14 +62,12 @@ def tokenize_geometryarray(x):
     return uuid.uuid4().hex
 
 
-if DASK_2022_06_0:
+@pyarrow_schema_dispatch.register((geopandas.GeoDataFrame,))
+def get_pyarrow_schema_geopandas(obj):
+    import pyarrow as pa
+    import pandas as pd
 
-    @pyarrow_schema_dispatch.register((geopandas.GeoDataFrame,))
-    def get_pyarrow_schema_geopandas(obj):
-        import pyarrow as pa
-        import pandas as pd
-
-        df = pd.DataFrame(obj.copy())
-        for col in obj.columns[obj.dtypes == "geometry"]:
-            df[col] = obj[col].to_wkb()
-        return pa.Schema.from_pandas(df)
+    df = pd.DataFrame(obj.copy())
+    for col in obj.columns[obj.dtypes == "geometry"]:
+        df[col] = obj[col].to_wkb()
+    return pa.Schema.from_pandas(df)
