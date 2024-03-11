@@ -28,3 +28,4 @@ dependencies:
       - git+https://github.com/geopandas/geopandas.git@main
       - git+https://github.com/shapely/shapely.git@main
       - git+https://github.com/dask/dask.git@main
+      - git+https://github.com/dask-contrib/dask-expr.git@main
