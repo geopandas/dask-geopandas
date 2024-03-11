@@ -77,15 +77,6 @@ class GeoArrowEngine(GeoDatasetEngine, DaskArrowDatasetEngine):
         return _update_meta_to_geodataframe(meta, schema.metadata)
 
     @classmethod
-    def _generate_dd_meta(cls, schema, index, categories, partition_info):
-        """Overriding private method for dask < 2021.10.0"""
-        meta, index_cols, categories, index, partition_info = super()._generate_dd_meta(
-            schema, index, categories, partition_info
-        )
-        meta = cls._update_meta(meta, schema)
-        return meta, index_cols, categories, index, partition_info
-
-    @classmethod
     def _create_dd_meta(cls, dataset_info, use_nullable_dtypes=False):
         """Overriding private method for dask >= 2021.10.0"""
         if DASK_2022_12_0_PLUS and not DASK_2023_04_0:

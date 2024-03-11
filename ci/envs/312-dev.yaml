@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   # required dependencies
-  - python=3.11
+  - python=3.12
   - distributed
   - pandas
   - shapely
@@ -26,5 +26,5 @@ dependencies:
   - pip:
       - pymorton
       - git+https://github.com/geopandas/geopandas.git@main
-      - git+https://github.com/pygeos/pygeos.git@master
+      - git+https://github.com/shapely/shapely.git@main
       - git+https://github.com/dask/dask.git@main

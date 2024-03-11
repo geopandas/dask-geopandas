@@ -1,8 +1,5 @@
-from packaging.version import Version
-
 import geopandas
 import dask_geopandas
-import dask
 import dask.dataframe as dd
 
 import pytest
@@ -161,10 +158,6 @@ def test_parquet_empty_partitions(tmp_path, naturalearth_lowres):
     assert result.spatial_partitions is None
 
 
-@pytest.mark.skipif(
-    not Version(dask.__version__) >= Version("2022.06.0"),
-    reason="Only works with dask 2022.06.0 or up",
-)
 def test_parquet_partitions_with_all_missing_strings(tmp_path):
     df = geopandas.GeoDataFrame(
         {"col": ["a", "b", None, None]},
@@ -180,10 +173,6 @@ def test_parquet_partitions_with_all_missing_strings(tmp_path):
     assert_geodataframe_equal(result.compute(), df)
 
 
-@pytest.mark.skipif(
-    Version(dask.__version__) < Version("2021.10.0"),
-    reason="Only correct error message with dask 2021.10.0 or up",
-)
 def test_parquet_empty_dataset(tmp_path):
     # ensure informative error message if there are no parts (otherwise
     # will raise in not finding any geo metadata)
@@ -191,10 +180,6 @@ def test_parquet_empty_dataset(tmp_path):
         dask_geopandas.read_parquet(tmp_path / "data.*.parquet")
 
 
-@pytest.mark.skipif(
-    not Version(dask.__version__) > Version("2022.02.0"),
-    reason="Only works with dask 2022.02.1 or up",
-)
 @pytest.mark.parametrize("write_metadata_file", [True, False])
 def test_parquet_partition_on(tmp_path, naturalearth_lowres, write_metadata_file):
     df = geopandas.read_file(naturalearth_lowres)

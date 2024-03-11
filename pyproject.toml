@@ -30,11 +30,11 @@ classifiers = [
     "Topic :: Scientific/Engineering :: GIS",
     "Topic :: System :: Distributed Computing",
 ]
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 dependencies = [
-    "geopandas>=0.10",
-    "dask>=2021.06.0",
-    "distributed>=2021.06.0",
+    "geopandas>=0.12",
+    "dask>=2022.06.0",
+    "distributed>=2022.06.0",
     "packaging",
 ]
 
