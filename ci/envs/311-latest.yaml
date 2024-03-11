@@ -7,9 +7,8 @@ dependencies:
   - dask
   - distributed
   - geopandas
-  - shapely >= 2
   - pygeos
-  - pyproj
+  - pyproj=3.3
   - packaging
   # test dependencies
   - pytest
@@ -20,7 +19,7 @@ dependencies:
   - flask # needed for moto server
   # optional dependencies
   - pyarrow
-  - pyogrio
+  - pyogrio>=0.4
   - pygeohash
   - pip
   - pip:

@@ -3,13 +3,13 @@ channels:
   - conda-forge
 dependencies:
   # required dependencies
-  - python=3.11
+  - python=3.12
+  - dask
   - distributed
-  - pandas
-  - shapely
-  - fiona
+  - geopandas
+  - shapely >= 2
+  - pygeos
   - pyproj
-  - fsspec
   - packaging
   # test dependencies
   - pytest
@@ -25,6 +25,3 @@ dependencies:
   - pip
   - pip:
       - pymorton
-      - git+https://github.com/geopandas/geopandas.git@main
-      - git+https://github.com/pygeos/pygeos.git@master
-      - git+https://github.com/dask/dask.git@main
