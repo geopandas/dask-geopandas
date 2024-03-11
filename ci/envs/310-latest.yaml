@@ -7,7 +7,7 @@ dependencies:
   - dask
   - distributed
   - geopandas
-  - pyproj=3.3
+  - pyproj
   - packaging
   # test dependencies
   - pytest
