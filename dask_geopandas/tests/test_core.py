@@ -7,8 +7,12 @@ import geopandas
 from shapely.geometry import Polygon, Point, LineString, MultiPoint
 import dask
 import dask.dataframe as dd
-from dask.dataframe.core import Scalar
 import dask_geopandas
+
+if dask_geopandas.backends.QUERY_PLANNING_ON:
+    from dask_expr._collection import Scalar
+else:
+    from dask.dataframe.core import Scalar
 
 from pandas.testing import assert_frame_equal, assert_series_equal
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
@@ -386,6 +390,11 @@ def test_rename_geometry_error(geodf_points):
         dask_obj.rename_geometry("value1")
 
 
+# TODO to_dask_dataframe is now defined on the dask-expr collection, converting
+# to an old-style dd.core.DataFrame (so doing something different as we did here)
+@pytest.mark.xfail(
+    dask_geopandas.backends.QUERY_PLANNING_ON, reason="Need to update test for expr"
+)
 def test_from_dask_dataframe_with_dask_geoseries():
     df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
     dask_obj = dd.from_pandas(df, npartitions=2)
@@ -644,6 +653,11 @@ class TestDissolve:
             drop = []
         assert_geodataframe_equal(gpd_sum, dd_sum.drop(columns=drop), check_like=True)
 
+    # TODO dissolve with split out is not yet working with expressions
+    @pytest.mark.xfail(
+        dask_geopandas.backends.QUERY_PLANNING_ON,
+        reason="Need to fix dissolve with split_out",
+    )
     def test_split_out(self):
         gpd_default = self.world.dissolve("continent")
         dd_split = self.ddf.dissolve("continent", split_out=4)
@@ -835,6 +849,9 @@ def test_get_coord(coord):
     assert_series_equal(expected, result)
 
 
+@pytest.mark.xfail(
+    dask_geopandas.backends.QUERY_PLANNING_ON, reason="Need to update test for expr"
+)
 def test_to_dask_dataframe(geodf_points_crs):
     df = geodf_points_crs
     dask_gpd = dask_geopandas.from_geopandas(df, npartitions=2)

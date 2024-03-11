@@ -1,4 +1,19 @@
 import uuid
+from packaging.version import Version
+
+from dask import config
+
+
+# Check if dask-dataframe is using dask-expr (default of None means True as well)
+QUERY_PLANNING_ON = config.get("dataframe.query-planning", False)
+if QUERY_PLANNING_ON is None:
+    import pandas as pd
+
+    if Version(pd.__version__).major < 2:
+        QUERY_PLANNING_ON = False
+    else:
+        QUERY_PLANNING_ON = True
+
 
 from dask.dataframe.core import get_parallel_type
 from dask.dataframe.utils import meta_nonempty

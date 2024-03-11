@@ -5,11 +5,17 @@ from dask.highlevelgraph import HighLevelGraph
 from dask.utils import derived_from
 from dask.base import tokenize
 
-from .core import GeoDataFrame, GeoSeries
+from . import backends
 
 
 @derived_from(geopandas.tools)
 def clip(gdf, mask, keep_geom_type=False):
+
+    if backends.QUERY_PLANNING_ON:
+        from .expr import GeoDataFrame, GeoSeries
+    else:
+        from .core import GeoDataFrame, GeoSeries
+
     if isinstance(mask, (GeoDataFrame, GeoSeries)):
         raise NotImplementedError("Mask cannot be a Dask GeoDataFrame or GeoSeries.")
 
@@ -38,10 +44,17 @@ def clip(gdf, mask, keep_geom_type=False):
     }
     divisions = [None] * (len(dsk) + 1)
     graph = HighLevelGraph.from_collections(name, dsk, dependencies=[gdf])
-    if isinstance(gdf, GeoDataFrame):
-        result = GeoDataFrame(graph, name, gdf._meta, tuple(divisions))
-    elif isinstance(gdf, GeoSeries):
-        result = GeoSeries(graph, name, gdf._meta, tuple(divisions))
-    result.spatial_partitions = new_spatial_partitions
+    if backends.QUERY_PLANNING_ON:
+        from dask_expr import from_graph
 
+        result = from_graph(graph, gdf._meta, tuple(divisions), dsk.keys(), "clip")
+    else:
+        from .core import GeoDataFrame, GeoSeries
+
+        if isinstance(gdf, GeoDataFrame):
+            result = GeoDataFrame(graph, name, gdf._meta, tuple(divisions))
+        elif isinstance(gdf, GeoSeries):
+            result = GeoSeries(graph, name, gdf._meta, tuple(divisions))
+
+    result.spatial_partitions = new_spatial_partitions
     return result

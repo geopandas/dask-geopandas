@@ -1,4 +1,5 @@
 from packaging.version import Version
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -6,14 +7,22 @@ import pandas as pd
 import dask
 import dask.dataframe as dd
 import dask.array as da
-from dask.dataframe.core import _emulate, map_partitions, elemwise, new_dd_object
+from dask.dataframe import map_partitions
 from dask.highlevelgraph import HighLevelGraph
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
 from dask.base import tokenize
 
+import dask_expr as dx
+from dask_expr import (
+    elemwise,
+    from_graph,
+    get_collection_type,
+)
+from dask_expr._collection import new_collection
+from dask_expr._expr import _emulate, ApplyConcatApply
+
 import geopandas
 import shapely
-from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
 
 from .hilbert_distance import _hilbert_distance
@@ -36,12 +45,54 @@ if Version(shapely.__version__) < Version("2.0"):
     )
 
 
+class UnaryUnion(ApplyConcatApply):
+    @classmethod
+    def chunk(cls, df, **kwargs):
+        return df.unary_union
+
+    @classmethod
+    def aggregate(cls, inputs, **kwargs):
+        s = geopandas.GeoSeries(inputs)
+        return s.unary_union
+
+
+class TotalBounds(ApplyConcatApply):
+    @classmethod
+    def chunk(cls, df, **kwargs):
+        return df.total_bounds
+
+    @classmethod
+    def aggregate(cls, inputs, **kwargs):
+        concatted = np.stack(inputs)
+        if len(concatted) == 0:
+            # numpy 'min' cannot handle empty arrays
+            # TODO with numpy >= 1.15, the 'initial' argument can be used
+            return np.array([np.nan, np.nan, np.nan, np.nan])
+        with warnings.catch_warnings():
+            # if all rows are empty geometry / none, nan is expected
+            warnings.filterwarnings(
+                "ignore", r"All-NaN slice encountered", RuntimeWarning
+            )
+            return np.array(
+                (
+                    np.nanmin(concatted[:, 0]),  # minx
+                    np.nanmin(concatted[:, 1]),  # miny
+                    np.nanmax(concatted[:, 2]),  # maxx
+                    np.nanmax(concatted[:, 3]),  # maxy
+                )
+            )
+
+    @property
+    def _meta(self):
+        return self.frame._meta.total_bounds
+
+
 def _set_crs(df, crs, allow_override):
     """Return a new object with crs set to ``crs``"""
     return df.set_crs(crs, allow_override=allow_override)
 
 
-class _Frame(dd.core._Frame, OperatorMethodMixin):
+class _Frame(dx.FrameBase, OperatorMethodMixin):
     """Superclass for DataFrame and Series
 
     Parameters
@@ -60,26 +111,28 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
 
     _partition_type = geopandas.base.GeoPandasBase
 
-    def __init__(self, dsk, name, meta, divisions, spatial_partitions=None):
-        super().__init__(dsk, name, meta, divisions)
+    def __init__(self, expr, spatial_partitions=None):
+        super().__init__(expr)
         self.spatial_partitions = spatial_partitions
 
-    def to_dask_dataframe(self):
-        """Create a dask.dataframe object from a dask_geopandas object"""
-        return self.map_partitions(pd.DataFrame)
+    # def to_dask_dataframe(self):
+    #     """Create a dask.dataframe object from a dask_geopandas object"""
+    #     return self.map_partitions(pd.DataFrame)
 
     def __dask_postpersist__(self):
-        return self._rebuild, ()
+        func, args = super().__dask_postpersist__()
 
-    def _rebuild(self, dsk, *, rename=None):
-        # this is a copy of the dask.dataframe version, only with the addition
-        # to pass self.spatial_partitions
-        name = self._name
-        if rename:
-            name = rename.get(name, name)
-        return type(self)(
-            dsk, name, self._meta, self.divisions, self.spatial_partitions
-        )
+        return self._rebuild, (func, args)
+
+    def _rebuild(self, graph, func, args):
+        collection = func(graph, *args)
+        collection.spatial_partitions = self.spatial_partitions
+        return collection
+
+    def optimize(self, fuse: bool = True):
+        result = new_collection(self.expr.optimize(fuse=fuse))
+        result = self._propagate_spatial_partitions(result)
+        return result
 
     @property
     def spatial_partitions(self):
@@ -199,9 +252,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         """Sets the value of the crs"""
         # When using setter, Geopandas always overrides the CRS
         new = self.set_crs(value, allow_override=True)
-        self._meta = new._meta
-        self._name = new._name
-        self.dask = new.dask
+        self._expr = new.expr
 
     @derived_from(geopandas.GeoSeries)
     def set_crs(self, value, allow_override=False):
@@ -233,27 +284,13 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @property
     @derived_from(geopandas.base.GeoPandasBase)
     def total_bounds(self):
-        def agg(concatted):
-            return np.array(
-                (
-                    np.nanmin(concatted[0::4]),  # minx
-                    np.nanmin(concatted[1::4]),  # miny
-                    np.nanmax(concatted[2::4]),  # maxx
-                    np.nanmax(concatted[3::4]),  # maxy
-                )
-            )
-
-        total_bounds = self.reduction(
-            lambda x: getattr(x, "total_bounds"),
-            token="total_bounds",
-            meta=self._meta.total_bounds,
-            aggregate=agg,
-        )
+        total_bounds = TotalBounds(self.expr)
+        graph = total_bounds.lower_completely().__dask_graph__()
         return da.Array(
-            total_bounds.dask,
-            total_bounds.name,
+            graph,
+            list(graph.keys())[0][0],
             chunks=((4,),),
-            dtype=total_bounds.dtype,
+            dtype=np.dtype("float64"),
         )
 
     @property
@@ -264,15 +301,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @property
     @derived_from(geopandas.base.GeoPandasBase)
     def unary_union(self):
-        attr = "unary_union"
-        meta = BaseGeometry()
-
-        return self.reduction(
-            lambda x: getattr(x, attr),
-            token=attr,
-            aggregate=lambda x: getattr(geopandas.GeoSeries(x), attr),
-            meta=meta,
-        )
+        return new_collection(UnaryUnion(self.expr))
 
     @derived_from(geopandas.base.GeoPandasBase)
     def representative_point(self):
@@ -283,7 +312,9 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @derived_from(geopandas.base.GeoPandasBase)
     def geom_equals_exact(self, other, tolerance):
         comparison = self._partition_type.geom_equals_exact
-        return elemwise(comparison, self, other, tolerance)
+        return elemwise(
+            comparison, self, other, meta=pd.Series(dtype=bool), tolerance=tolerance
+        )
 
     @derived_from(geopandas.base.GeoPandasBase)
     def buffer(self, distance, resolution=16, **kwargs):
@@ -528,7 +559,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         return self.map_partitions(M.to_wkb, hex=hex, **kwargs, meta=meta)
 
 
-class GeoSeries(_Frame, dd.core.Series):
+class GeoSeries(_Frame, dd.Series):
     """Parallel GeoPandas GeoSeries
 
     Do not use this class directly. Instead use functions like
@@ -538,7 +569,7 @@ class GeoSeries(_Frame, dd.core.Series):
     _partition_type = geopandas.GeoSeries
 
 
-class GeoDataFrame(_Frame, dd.core.DataFrame):
+class GeoDataFrame(_Frame, dd.DataFrame):
     """Parallel GeoPandas GeoDataFrame
 
     Do not use this class directly. Instead use functions like
@@ -561,9 +592,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
     def geometry(self, col):
         """Sets the geometry column"""
         new = self.set_geometry(col)
-        self._meta = new._meta
-        self._name = new._name
-        self.dask = new.dask
+        self._expr = new.expr
 
     @derived_from(dd.DataFrame)
     def set_index(self, *args, **kwargs):
@@ -654,6 +683,7 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             drop = [by, self.geometry.name]
 
         def union(block):
+            block = geopandas.GeoSeries(block)
             merged_geom = block.unary_union
             return merged_geom
 
@@ -907,7 +937,7 @@ for name in [
     )
 
 
-dd.core.DataFrame.set_geometry = GeoDataFrame.set_geometry
+dd.DataFrame.set_geometry = GeoDataFrame.set_geometry
 
 
 # Coodinate indexer (.cx)
@@ -968,4 +998,8 @@ class _CoordinateIndexer(object):
             divisions = [None, None]
 
         graph = HighLevelGraph.from_collections(name, dsk, dependencies=[self.obj])
-        return new_dd_object(graph, name, meta=self.obj._meta, divisions=divisions)
+        return from_graph(graph, self.obj._meta, divisions, dsk.keys(), "cx")
+
+
+get_collection_type.register(geopandas.GeoDataFrame, lambda _: GeoDataFrame)
+get_collection_type.register(geopandas.GeoSeries, lambda _: GeoSeries)
