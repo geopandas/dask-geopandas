@@ -43,7 +43,9 @@ def _hilbert_distance(gdf, total_bounds=None, level=16):
     # Compute distance along hilbert curve
     distances = _encode(level, x, y)
 
-    return pd.Series(distances, index=gdf.index, name="hilbert_distance")
+    return pd.Series(
+        distances, index=gdf.index, name="hilbert_distance", dtype=np.int64
+    )
 
 
 def _continuous_to_discrete_coords(bounds, level, total_bounds):
