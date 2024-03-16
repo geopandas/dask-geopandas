@@ -5,6 +5,8 @@ from dask.highlevelgraph import HighLevelGraph
 from dask.dataframe.core import new_dd_object
 from pandas import RangeIndex
 
+from .. import backends
+
 
 class FileFunctionWrapper:
     """
@@ -137,4 +139,17 @@ def read_file(
         label=label,
     )
     graph = HighLevelGraph({output_name: layer}, {output_name: set()})
-    return new_dd_object(graph, output_name, meta, divs)
+
+    if backends.QUERY_PLANNING_ON:
+        from dask_expr import from_graph
+
+        result = from_graph(
+            graph,
+            meta,
+            divs,
+            [(output_name, i) for i in range(len(divs) - 1)],
+            "read_file",
+        )
+        return result
+    else:
+        return new_dd_object(graph, output_name, meta, divs)
