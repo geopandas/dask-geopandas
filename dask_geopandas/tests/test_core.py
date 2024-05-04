@@ -390,25 +390,42 @@ def test_rename_geometry_error(geodf_points):
         dask_obj.rename_geometry("value1")
 
 
-# TODO to_dask_dataframe is now defined on the dask-expr collection, converting
-# to an old-style dd.core.DataFrame (so doing something different as we did here)
-@pytest.mark.xfail(
-    dask_geopandas.backends.QUERY_PLANNING_ON, reason="Need to update test for expr"
-)
 def test_from_dask_dataframe_with_dask_geoseries():
     df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
     dask_obj = dd.from_pandas(df, npartitions=2)
     dask_obj = dask_geopandas.from_dask_dataframe(
         dask_obj, geometry=dask_geopandas.points_from_xy(dask_obj, "x", "y")
     )
-    # Check that the geometry isn't concatenated and embedded a second time in
-    # the high-level graph. cf. https://github.com/geopandas/dask-geopandas/issues/197
-    k = next(k for k in dask_obj.dask.dependencies if k.startswith("GeoDataFrame"))
-    deps = dask_obj.dask.dependencies[k]
-    assert len(deps) == 1
+
+    if dask_geopandas.backends.QUERY_PLANNING_ON:
+        deps = dask_obj.expr.dependencies()
+        assert len(deps) == 1
+        dep = deps[0]
+        other = list(dask_obj.dask.values())[0][3]["geometry"].dependencies()[0]
+        assert dep is other
+
+    else:
+        # Check that the geometry isn't concatenated and embedded a second time in
+        # the high-level graph. cf. https://github.com/geopandas/dask-geopandas/issues/197
+        k = next(k for k in dask_obj.dask.dependencies if k.startswith("GeoDataFrame"))
+        deps = dask_obj.dask.dependencies[k]
+        assert len(deps) == 1
 
     expected = df.set_geometry(geopandas.points_from_xy(df["x"], df["y"]))
+    dask_obj.geometry.compute()
     assert_geoseries_equal(dask_obj.geometry.compute(), expected.geometry)
+
+
+def test_set_geometry_to_dask_series():
+    df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
+
+    dask_obj = dd.from_pandas(df, npartitions=2)
+    dask_obj = dask_geopandas.from_dask_dataframe(
+        dask_obj, geometry=dask_geopandas.points_from_xy(dask_obj, "x", "y")
+    )
+    expected = geopandas.GeoDataFrame(df, geometry=geopandas.points_from_xy(df.x, df.y))
+    result = dask_obj.geometry.compute()
+    assert_geoseries_equal(result, expected.geometry)
 
 
 def test_from_dask_dataframe_with_column_name():
