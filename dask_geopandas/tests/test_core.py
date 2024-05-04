@@ -1,3 +1,4 @@
+import warnings
 import pickle
 from packaging.version import Version
 import pytest
@@ -9,10 +10,13 @@ import dask
 import dask.dataframe as dd
 import dask_geopandas
 
+
 if dask_geopandas.backends.QUERY_PLANNING_ON:
     from dask_expr._collection import Scalar
+    from dask_expr import DataFrame
 else:
     from dask.dataframe.core import Scalar
+    from dask.dataframe import DataFrame
 
 from pandas.testing import assert_frame_equal, assert_series_equal
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
@@ -398,12 +402,15 @@ def test_from_dask_dataframe_with_dask_geoseries():
     )
 
     if dask_geopandas.backends.QUERY_PLANNING_ON:
-        deps = dask_obj.expr.dependencies()
-        assert len(deps) == 1
-        dep = deps[0]
-        other = list(dask_obj.dask.values())[0][3]["geometry"].dependencies()[0]
-        assert dep is other
+        d0 = dask_obj.expr.dependencies()
+        assert len(d0) == 1  # Assign(frame=df)
 
+        d1 = d0[0].dependencies()
+        assert len(d1) == 2  # [df, MapPartitions]
+
+        # the fact that `geometry` isn't in this map_partitions
+        # should be sufficient to ensure it isn't in the graph twice
+        assert len(d1[1].dependencies()) == 1  # [df]
     else:
         # Check that the geometry isn't concatenated and embedded a second time in
         # the high-level graph. cf. https://github.com/geopandas/dask-geopandas/issues/197
@@ -866,15 +873,17 @@ def test_get_coord(coord):
     assert_series_equal(expected, result)
 
 
-@pytest.mark.xfail(
-    dask_geopandas.backends.QUERY_PLANNING_ON, reason="Need to update test for expr"
-)
 def test_to_dask_dataframe(geodf_points_crs):
     df = geodf_points_crs
     dask_gpd = dask_geopandas.from_geopandas(df, npartitions=2)
-    dask_df = dask_gpd.to_dask_dataframe()
 
-    assert isinstance(dask_df, dd.DataFrame) and not isinstance(
+    with warnings.catch_warnings():
+        # dask-expr has a warning about to_legacy_dataframe.
+        # We just want to pass that warning through to the user
+        warnings.simplefilter("ignore")
+        dask_df = dask_gpd.to_dask_dataframe()
+
+    assert isinstance(dask_df, DataFrame) and not isinstance(
         dask_df, dask_geopandas.GeoDataFrame
     )
     expected = pd.DataFrame(df)
