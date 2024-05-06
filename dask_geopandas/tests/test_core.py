@@ -320,24 +320,14 @@ def test_meth_with_args_and_kwargs(geoseries_lines, meth, options):
     assert all(original == daskified.compute())
 
 
-def test_explode_geoseries():
+@pytest.mark.parametrize("index_parts", [True, False])
+def test_explode_geoseries(index_parts):
     s = geopandas.GeoSeries(
         [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])]
     )
-    original = s.explode(index_parts=False)
+    original = s.explode(index_parts=index_parts)
     dask_s = dask_geopandas.from_geopandas(s, npartitions=2)
-    daskified = dask_s.explode(index_parts=False)
-    assert isinstance(daskified, dask_geopandas.GeoSeries)
-    assert all(original == daskified.compute())
-
-
-def test_explode_geoseries_index_parts():
-    s = geopandas.GeoSeries(
-        [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])]
-    )
-    original = s.explode(index_parts=True)
-    dask_s = dask_geopandas.from_geopandas(s, npartitions=2)
-    daskified = dask_s.explode(index_parts=True)
+    daskified = dask_s.explode(index_parts=index_parts)
     assert isinstance(daskified, dask_geopandas.GeoSeries)
     assert all(original == daskified.compute())
 
@@ -367,26 +357,15 @@ def test_explode_geoseries_ignore_index():
     assert all(original == original_expected)
 
 
-def test_explode_geodf():
+@pytest.mark.parametrize("index_parts", [True, False])
+def test_explode_geodf(index_parts):
     s = geopandas.GeoSeries(
         [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])]
     )
     df = geopandas.GeoDataFrame({"col": [1, 2], "geometry": s})
-    original = df.explode(index_parts=False)
+    original = df.explode(index_parts=index_parts)
     dask_s = dask_geopandas.from_geopandas(df, npartitions=2)
-    daskified = dask_s.explode(index_parts=False)
-    assert isinstance(daskified, dask_geopandas.GeoDataFrame)
-    assert all(original == daskified.compute())
-
-
-def test_explode_geodf_index_parts():
-    s = geopandas.GeoSeries(
-        [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])]
-    )
-    df = geopandas.GeoDataFrame({"col": [1, 2], "geometry": s})
-    original = df.explode(index_parts=True)
-    dask_s = dask_geopandas.from_geopandas(df, npartitions=2)
-    daskified = dask_s.explode(index_parts=True)
+    daskified = dask_s.explode(index_parts=index_parts)
     assert isinstance(daskified, dask_geopandas.GeoDataFrame)
     assert all(original == daskified.compute())
 
