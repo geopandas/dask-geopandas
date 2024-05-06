@@ -568,6 +568,15 @@ class GeoSeries(_Frame, dd.Series):
 
     _partition_type = geopandas.GeoSeries
 
+    @derived_from(geopandas.GeoSeries)
+    def explode(self, ignore_index=False, index_parts=None):
+        return self.map_partitions(
+            M.explode,
+            ignore_index=ignore_index,
+            index_parts=index_parts,
+            enforce_metadata=False,
+        )
+
 
 class GeoDataFrame(_Frame, dd.DataFrame):
     """Parallel GeoPandas GeoDataFrame
@@ -820,6 +829,16 @@ class GeoDataFrame(_Frame, dd.DataFrame):
             sorted_ddf.calculate_spatial_partitions()
 
         return sorted_ddf
+
+    @derived_from(geopandas.GeoDataFrame)
+    def explode(self, column=None, ignore_index=False, index_parts=None):
+        return self.map_partitions(
+            M.explode,
+            column=column,
+            ignore_index=ignore_index,
+            index_parts=index_parts,
+            enforce_metadata=False,
+        )
 
 
 from_geopandas = dx.from_pandas
