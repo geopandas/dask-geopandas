@@ -115,7 +115,7 @@ class _Frame(dx.FrameBase, OperatorMethodMixin):
         super().__init__(expr)
         self.spatial_partitions = spatial_partitions
 
-    def to_legacy_dataframe(self, optimize: bool = True, **optimize_kwargs):
+    def to_dask_dataframe(self):
         """Create a dask.dataframe object from a dask_geopandas object"""
         return self.map_partitions(pd.DataFrame)
 
