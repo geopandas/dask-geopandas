@@ -332,6 +332,10 @@ def test_explode_geoseries(index_parts):
     assert_geoseries_equal(expected, daskified.compute())
 
 
+@pytest.mark.skipif(
+    Version(dask.__version__) <= Version("2022.06.0"),
+    reason="index not preserved in older dask versions",
+)
 def test_explode_geoseries_ignore_index():
     s = geopandas.GeoSeries(
         [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])],
@@ -370,6 +374,10 @@ def test_explode_geodf(index_parts):
     assert_geodataframe_equal(original, daskified.compute())
 
 
+@pytest.mark.skipif(
+    Version(dask.__version__) <= Version("2022.06.0"),
+    reason="index not preserved in older dask versions",
+)
 def test_explode_geodf_ignore_index():
     s = geopandas.GeoSeries(
         [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])],
