@@ -18,6 +18,8 @@ import shapely.geometry
 
 from fsspec.core import get_fs_token_paths
 
+from .. import backends
+
 DASK_2022_12_0_PLUS = Version(dask.__version__) >= Version("2022.12.0")
 DASK_2023_04_0 = Version(dask.__version__) >= Version("2023.4.0")
 
@@ -388,7 +390,20 @@ def read_feather(
         label=label,
     )
     graph = HighLevelGraph({output_name: layer}, {output_name: set()})
-    result = new_dd_object(graph, output_name, meta, [None] * (len(parts) + 1))
+
+    if backends.QUERY_PLANNING_ON:
+        from dask_expr import from_graph
+
+        result = from_graph(
+            graph,
+            meta,
+            [None] * (len(parts) + 1),
+            [(output_name, i) for i in range(len(parts))],
+            "read_feather",
+        )
+    else:
+        result = new_dd_object(graph, output_name, meta, [None] * (len(parts) + 1))
+
     result.spatial_partitions = spatial_partitions
     return result
 

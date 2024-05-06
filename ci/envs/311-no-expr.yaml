@@ -3,13 +3,12 @@ channels:
   - conda-forge
 dependencies:
   # required dependencies
-  - python=3.12
-  - distributed
-  - pandas
-  - geos  # for shapely main
-  - fiona
-  - pyproj
-  - fsspec
+  - python=3.11
+  # pin to last release before dask-expr was turned on by default
+  - dask=2024.2
+  - distributed=2024.2
+  - geopandas
+  - pyproj=3.4
   - packaging
   # test dependencies
   - pytest
@@ -20,12 +19,8 @@ dependencies:
   - flask # needed for moto server
   # optional dependencies
   - pyarrow
-  - pyogrio
+  - pyogrio>=0.4
   - pygeohash
   - pip
   - pip:
       - pymorton
-      - git+https://github.com/shapely/shapely.git@main
-      - git+https://github.com/geopandas/geopandas.git@main
-      - git+https://github.com/dask/dask.git@main
-      - git+https://github.com/dask-contrib/dask-expr.git@main
