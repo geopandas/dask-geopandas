@@ -6,3 +6,5 @@ myst-parser
 sphinx_copybutton
 sphinx
 matplotlib
+# temporarily add this until that is included with dask itself
+dask-expr

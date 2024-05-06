@@ -6,7 +6,12 @@ import geopandas
 from dask.base import tokenize
 from dask.highlevelgraph import HighLevelGraph
 
-from .core import from_geopandas, GeoDataFrame
+from . import backends
+
+if backends.QUERY_PLANNING_ON:
+    from .expr import from_geopandas
+else:
+    from .core import from_geopandas
 
 
 def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
@@ -108,4 +113,13 @@ def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
     else:
         new_spatial_partitions = None
 
-    return GeoDataFrame(graph, name, meta, divisions, new_spatial_partitions)
+    if backends.QUERY_PLANNING_ON:
+        from dask_expr import from_graph
+
+        result = from_graph(graph, meta, divisions, dsk.keys(), "sjoin")
+        result.spatial_partitions = new_spatial_partitions
+        return result
+    else:
+        from .core import GeoDataFrame
+
+        return GeoDataFrame(graph, name, meta, divisions, new_spatial_partitions)
