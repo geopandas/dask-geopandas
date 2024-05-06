@@ -1,6 +1,9 @@
+import json
+
 import geopandas
 import dask_geopandas
 import dask.dataframe as dd
+import shapely
 
 import pytest
 from geopandas.testing import assert_geodataframe_equal
@@ -220,3 +223,26 @@ def test_no_gather_spatial_partitions(tmp_path, naturalearth_lowres):
     result = dask_geopandas.read_parquet(basedir, gather_spatial_partitions=False)
     assert result.spatial_partitions is None
     assert result.crs == df.crs
+
+
+def test_read_parquet_default_crs(tmp_path):
+    pyproj = pytest.importorskip("pyproj")
+    from geopandas.io.arrow import _geopandas_to_arrow
+    import pyarrow.parquet as pq
+
+    gdf = geopandas.GeoDataFrame(geometry=[shapely.box(0, 0, 10, 10)])
+    gdf["other_geom"] = gdf["geometry"].centroid
+    table = _geopandas_to_arrow(gdf)
+    # update the geo metadata to strip 'crs' entry
+    metadata = table.schema.metadata
+    geo_metadata = json.loads(metadata[b"geo"].decode("utf-8"))
+    del geo_metadata["columns"]["geometry"]["crs"]
+    del geo_metadata["columns"]["other_geom"]["crs"]
+    metadata.update({b"geo": json.dumps(geo_metadata).encode("utf-8")})
+    table = table.replace_schema_metadata(metadata)
+    filename = str(tmp_path / "test.parquet")
+    pq.write_table(table, filename)
+
+    result = dask_geopandas.read_parquet(filename)
+    assert result.crs.equals(pyproj.CRS("OGC:CRS84"))
+    assert result["other_geom"].crs.equals(pyproj.CRS("OGC:CRS84"))
