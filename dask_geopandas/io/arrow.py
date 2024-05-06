@@ -33,7 +33,7 @@ def _update_meta_to_geodataframe(meta, schema_metadata):
     if schema_metadata and b"geo" in schema_metadata:
         geo_meta = json.loads(schema_metadata[b"geo"])
         geometry_column_name = geo_meta["primary_column"]
-        crs = geo_meta["columns"][geometry_column_name]["crs"]
+        crs = geo_meta["columns"][geometry_column_name].get("crs", "OGC:CRS84")
         geometry_columns = geo_meta["columns"]
     else:
         # TODO we could allow the user to pass those explicitly if not
@@ -47,7 +47,7 @@ def _update_meta_to_geodataframe(meta, schema_metadata):
     meta = geopandas.GeoDataFrame(meta, geometry=geometry_column_name, crs=crs)
     for col, item in geometry_columns.items():
         if not col == meta._geometry_column_name:
-            meta[col] = geopandas.GeoSeries(meta[col], crs=item["crs"])
+            meta[col] = geopandas.GeoSeries(meta[col], crs=item.get("crs", "OGC:CRS84"))
 
     return meta
 
