@@ -34,6 +34,7 @@ import dask_geopandas
 
 DASK_2022_8_1 = Version(dask.__version__) >= Version("2022.8.1")
 GEOPANDAS_0_12 = Version(geopandas.__version__) >= Version("0.12.0")
+GEOPANDAS_1_0 = Version(geopandas.__version__) >= Version("1.0.0a0")
 PANDAS_2_0_0 = Version(pd.__version__) >= Version("2.0.0")
 
 
@@ -54,6 +55,17 @@ class UnaryUnion(ApplyConcatApply):
     def aggregate(cls, inputs, **kwargs):
         s = geopandas.GeoSeries(inputs)
         return s.unary_union
+
+
+class UnionAll(ApplyConcatApply):
+    @classmethod
+    def chunk(cls, df, **kwargs):
+        return df.union_all()
+
+    @classmethod
+    def aggregate(cls, inputs, **kwargs):
+        s = geopandas.GeoSeries(inputs)
+        return s.union_all()
 
 
 class TotalBounds(ApplyConcatApply):
@@ -302,7 +314,23 @@ class _Frame(dx.FrameBase, OperatorMethodMixin):
     @property
     @derived_from(geopandas.base.GeoPandasBase)
     def unary_union(self):
-        return new_collection(UnaryUnion(self.expr))
+        warnings.warn(
+            "The 'unary_union' attribute is deprecated, "
+            "use the 'union_all()' method instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        if GEOPANDAS_1_0:
+            return new_collection(UnionAll(self.expr))
+        else:
+            return new_collection(UnaryUnion(self.expr))
+
+    @derived_from(geopandas.base.GeoPandasBase)
+    def union_all(self):
+        if GEOPANDAS_1_0:
+            return new_collection(UnionAll(self.expr))
+        else:
+            return new_collection(UnaryUnion(self.expr))
 
     @derived_from(geopandas.base.GeoPandasBase)
     def representative_point(self):
@@ -693,7 +721,10 @@ class GeoDataFrame(_Frame, dd.DataFrame):
 
         def union(block):
             block = geopandas.GeoSeries(block)
-            merged_geom = block.unary_union
+            if GEOPANDAS_1_0:
+                merged_geom = block.union_all()
+            else:
+                merged_geom = block.unary_union
             return merged_geom
 
         merge_geometries = dd.Aggregation(
