@@ -115,9 +115,9 @@ class _Frame(dx.FrameBase, OperatorMethodMixin):
         super().__init__(expr)
         self.spatial_partitions = spatial_partitions
 
-    # def to_dask_dataframe(self):
-    #     """Create a dask.dataframe object from a dask_geopandas object"""
-    #     return self.map_partitions(pd.DataFrame)
+    def to_legacy_dataframe(self, optimize: bool = True, **optimize_kwargs):
+        """Create a dask.dataframe object from a dask_geopandas object"""
+        return self.map_partitions(pd.DataFrame)
 
     def __dask_postpersist__(self):
         func, args = super().__dask_postpersist__()
@@ -200,6 +200,7 @@ class _Frame(dx.FrameBase, OperatorMethodMixin):
     @classmethod
     def _bind_elemwise_operator_method(cls, name, op, original, *args, **kwargs):
         """bind operator method like GeoSeries.distance to this class"""
+
         # name must be explicitly passed for div method whose name is truediv
         def meth(self, other, *args, **kwargs):
             meta = _emulate(op, self, other)
@@ -505,7 +506,6 @@ class _Frame(dx.FrameBase, OperatorMethodMixin):
         return distances
 
     def geohash(self, as_string=True, precision=12):
-
         """
         Calculate geohash based on the middle points of the geometry bounds
         for a given precision.
@@ -822,7 +822,7 @@ class GeoDataFrame(_Frame, dd.DataFrame):
         return sorted_ddf
 
 
-from_geopandas = dd.from_pandas
+from_geopandas = dx.from_pandas
 
 
 def from_dask_dataframe(df, geometry=None):
@@ -842,7 +842,7 @@ def from_dask_dataframe(df, geometry=None):
     # it via a keyword-argument due to https://github.com/dask/dask/issues/8308.
     # Instead, we assign the geometry column using regular dataframe operations,
     # then refer to that column by name in `map_partitions`.
-    if isinstance(geometry, dd.core.Series):
+    if isinstance(geometry, dx.Series):
         name = geometry.name if geometry.name is not None else "geometry"
         return df.assign(**{name: geometry}).map_partitions(
             geopandas.GeoDataFrame, geometry=name

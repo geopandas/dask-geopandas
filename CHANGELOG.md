@@ -4,6 +4,8 @@ Changelog
 Version 0.4.0 (March ??, 2024)
 ------------------------------
 
+- Removed support for PyGEOS, now requiring Shapely >= 2
+
 Updated minimum supported versions of dependencies, now requiring Python 3.9,
 GeoPandas 0.12, numpy 1.23 and dask/distributed 2022.06.0.
 

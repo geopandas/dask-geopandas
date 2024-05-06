@@ -9,8 +9,8 @@ dependencies:
   - distributed=2022.06.0
   - geopandas=0.12
   - pandas=1.5.3
-  - pygeos
-  - pyproj=3.0
+  - shapely=2.0
+  - pyproj=3.4
   - packaging
   # test dependencies
   - pytest

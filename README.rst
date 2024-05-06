@@ -18,7 +18,7 @@ See the documentation on https://dask-geopandas.readthedocs.io/en/latest/
 Installation
 ------------
 
-This package depends on GeoPandas, Dask and PyGEOS.
+This package depends on Shapely, GeoPandas and Dask.
 
 One way to install all required dependencies is to use the ``conda`` package manager to
 create a new environment:
