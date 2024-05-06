@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 
 from pandas.testing import assert_index_equal, assert_series_equal
-from hilbertcurve.hilbertcurve import HilbertCurve
 from dask_geopandas.hilbert_distance import (
     _hilbert_distance,
     _continuous_to_discrete_coords,
@@ -60,6 +59,8 @@ def geoseries_polygons():
 
 
 def hilbert_distance_dask(geoseries, level=16):
+    pytest.importorskip("hilbertcurve")
+    from hilbertcurve.hilbertcurve import HilbertCurve
 
     bounds = geoseries.bounds.to_numpy()
     total_bounds = geoseries.total_bounds
@@ -117,11 +118,9 @@ def test_total_bounds_from_partitions(geoseries_polygons):
     assert_series_equal(result, expected)
 
 
-def test_world():
+def test_world(naturalearth_lowres):
     # world without Fiji
-    hilbert_distance_dask(
-        geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres")).iloc[1:]
-    )
+    hilbert_distance_dask(geopandas.read_file(naturalearth_lowres).iloc[1:])
 
 
 @pytest.mark.parametrize(

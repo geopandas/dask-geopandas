@@ -4,6 +4,7 @@ import geopandas
 
 import dask.dataframe as dd
 
+from .. import backends
 from .arrow import (
     DASK_2022_12_0_PLUS,
     DASK_2023_04_0,
@@ -77,15 +78,6 @@ class GeoArrowEngine(GeoDatasetEngine, DaskArrowDatasetEngine):
         return _update_meta_to_geodataframe(meta, schema.metadata)
 
     @classmethod
-    def _generate_dd_meta(cls, schema, index, categories, partition_info):
-        """Overriding private method for dask < 2021.10.0"""
-        meta, index_cols, categories, index, partition_info = super()._generate_dd_meta(
-            schema, index, categories, partition_info
-        )
-        meta = cls._update_meta(meta, schema)
-        return meta, index_cols, categories, index, partition_info
-
-    @classmethod
     def _create_dd_meta(cls, dataset_info, use_nullable_dtypes=False):
         """Overriding private method for dask >= 2021.10.0"""
         if DASK_2022_12_0_PLUS and not DASK_2023_04_0:
@@ -109,9 +101,23 @@ to_parquet.__doc__ = dd.to_parquet.__doc__
 
 
 def read_parquet(*args, **kwargs):
-    result = dd.read_parquet(*args, engine=GeoArrowEngine, **kwargs)
+    from dask.dataframe.io import read_parquet
+
+    result = read_parquet(*args, engine=GeoArrowEngine, **kwargs)
     # check if spatial partitioning information was stored
     spatial_partitions = result._meta.attrs.get("spatial_partitions", None)
+
+    if backends.QUERY_PLANNING_ON:
+        from dask_expr import from_graph
+
+        result = from_graph(
+            result.dask,
+            result._meta,
+            result.divisions,
+            result.__dask_keys__(),
+            "read_parquet",
+        )
+
     result.spatial_partitions = spatial_partitions
     return result
 

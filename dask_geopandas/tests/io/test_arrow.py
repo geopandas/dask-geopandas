@@ -16,8 +16,8 @@ pytestmark = pytest.mark.filterwarnings(
 )
 
 
-def test_read(tmp_path):
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+def test_read(tmp_path, naturalearth_lowres):
+    df = geopandas.read_file(naturalearth_lowres)
 
     # writing a partitioned dataset with geopandas (to not rely on roundtrip)
     basedir = tmp_path / "dataset"
@@ -35,8 +35,8 @@ def test_read(tmp_path):
     assert_geodataframe_equal(result_gpd, df)
 
 
-def test_write(tmp_path):
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+def test_write(tmp_path, naturalearth_lowres):
+    df = geopandas.read_file(naturalearth_lowres)
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
 
     basedir = tmp_path / "dataset"
@@ -60,8 +60,8 @@ def test_write(tmp_path):
 
 
 @pytest.mark.xfail  # https://github.com/dask/dask/issues/8022
-def test_write_delayed(tmp_path):
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+def test_write_delayed(tmp_path, naturalearth_lowres):
+    df = geopandas.read_file(naturalearth_lowres)
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
 
     basedir = tmp_path / "dataset"
@@ -74,9 +74,9 @@ def test_write_delayed(tmp_path):
     assert_geodataframe_equal(result_gpd, df)
 
 
-def test_roundtrip(tmp_path):
+def test_roundtrip(tmp_path, naturalearth_lowres):
     # basic roundtrip
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = geopandas.read_file(naturalearth_lowres)
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
 
     basedir = tmp_path / "dataset"
@@ -94,11 +94,11 @@ def test_roundtrip(tmp_path):
     assert_geoseries_equal(result.spatial_partitions, ddf.spatial_partitions.envelope)
 
 
-def test_roundtrip_s3(s3_resource, s3_storage_options):
+def test_roundtrip_s3(s3_resource, s3_storage_options, naturalearth_lowres):
     fs, endpoint_url = s3_resource
 
     # basic roundtrip to S3
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = geopandas.read_file(naturalearth_lowres)
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
 
     uri = "s3://geopandas-test/dataset.feather"
@@ -114,9 +114,9 @@ def test_roundtrip_s3(s3_resource, s3_storage_options):
     assert result.spatial_partitions is not None
 
 
-def test_column_selection_push_down(tmp_path):
+def test_column_selection_push_down(tmp_path, naturalearth_lowres):
     # set up dataset
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = geopandas.read_file(naturalearth_lowres)
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
     basedir = tmp_path / "dataset"
     # TODO awaiting a `to_feather` implementation
@@ -139,8 +139,8 @@ def test_column_selection_push_down(tmp_path):
     assert s.max().compute() == df["pop_est"].max()
 
 
-def test_missing_metadata(tmp_path):
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+def test_missing_metadata(tmp_path, naturalearth_lowres):
+    df = geopandas.read_file(naturalearth_lowres)
     path = tmp_path / "test.feather"
 
     # convert to DataFrame with wkb -> writing to feather will have only pandas metadata
@@ -163,9 +163,9 @@ def test_missing_metadata(tmp_path):
 @pytest.mark.parametrize(
     "filter", [[("continent", "=", "Africa")], ds.field("continent") == "Africa"]
 )
-def test_filters(tmp_path, filter):
+def test_filters(tmp_path, naturalearth_lowres, filter):
     # set up dataset
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = geopandas.read_file(naturalearth_lowres)
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
     basedir = tmp_path / "dataset"
     ddf.to_feather(basedir)
@@ -179,9 +179,9 @@ def test_filters(tmp_path, filter):
     assert_geodataframe_equal(result_gpd, expected)
 
 
-def test_index(tmp_path):
+def test_index(tmp_path, naturalearth_lowres):
     # set up dataset
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = geopandas.read_file(naturalearth_lowres)
     # get meaningful index by shuffling (hilbert distance)
     df = dask_geopandas.from_geopandas(df, npartitions=2).spatial_shuffle().compute()
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)

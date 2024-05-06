@@ -6,9 +6,9 @@ from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 import dask_geopandas
 
 
-def test_propagate_on_geometry_access():
+def test_propagate_on_geometry_access(naturalearth_lowres):
     # ensure the spatial_partitioning information is preserved in GeoSeries
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = geopandas.read_file(naturalearth_lowres)
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
     ddf.calculate_spatial_partitions()
     spatial_partitions = ddf.spatial_partitions.copy()
@@ -32,8 +32,8 @@ def test_propagate_on_geometry_access():
 @pytest.mark.parametrize(
     "attr", ["boundary", "centroid", "convex_hull", "envelope", "exterior"]
 )
-def test_propagate_geoseries_properties(attr):
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+def test_propagate_geoseries_properties(naturalearth_lowres, attr):
+    df = geopandas.read_file(naturalearth_lowres)
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
     ddf.calculate_spatial_partitions()
     spatial_partitions = ddf.spatial_partitions.copy()
@@ -44,9 +44,9 @@ def test_propagate_geoseries_properties(attr):
     assert_geoseries_equal(result.compute(), getattr(df, attr))
 
 
-def test_cx():
+def test_cx(naturalearth_lowres):
     # test cx using spatial partitions
-    df = geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres"))
+    df = geopandas.read_file(naturalearth_lowres)
     ddf = dask_geopandas.from_geopandas(df, npartitions=4)
     ddf.calculate_spatial_partitions()
 

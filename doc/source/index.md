@@ -11,8 +11,8 @@ This project is a bridge between Dask and GeoPandas and offers geospatial capabi
 
 ## Install
 
-Dask-GeoPandas depends on Dask and GeoPandas. In addition, it also requires either
-Shapely >= 2.0, or the PyGEOS package. We recommend installing via `conda` or `mamba`
+Dask-GeoPandas depends on Dask and GeoPandas. In addition, it also requires
+Shapely >= 2.0. We recommend installing via `conda` or `mamba`
 from the `conda-forge` channel but you can also install it from PyPI.
 
 ```sh

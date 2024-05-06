@@ -3,7 +3,6 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pandas as pd
 from pandas.testing import assert_index_equal
-from pygeohash import encode
 from dask_geopandas.geohash import _calculate_mid_points
 from dask_geopandas import from_geopandas
 import geopandas
@@ -37,13 +36,14 @@ def geoseries_polygons():
 
 
 def geohash_dask(geoseries):
+    pygeohash = pytest.importorskip("pygeohash")
 
     p = 12
     as_string = True
     bounds = geoseries.bounds.to_numpy()
     x_mids, y_mids = _calculate_mid_points(bounds)
 
-    geohash_vec = np.vectorize(encode)
+    geohash_vec = np.vectorize(pygeohash.encode)
     # Encode mid points of geometries using geohash
     expected = geohash_vec(y_mids, x_mids, p)
 
@@ -76,11 +76,9 @@ def test_geohash_range(geoseries_points):
         ddf.geohash(precision=12, as_string=False)
 
 
-def test_world():
+def test_world(naturalearth_lowres):
     # world without Fiji
-    geohash_dask(
-        geopandas.read_file(geopandas.datasets.get_path("naturalearth_lowres")).iloc[1:]
-    )
+    geohash_dask(geopandas.read_file(naturalearth_lowres).iloc[1:])
 
 
 @pytest.mark.parametrize(

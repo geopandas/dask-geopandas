@@ -7,8 +7,12 @@ import geopandas
 from shapely.geometry import Polygon, Point, LineString, MultiPoint
 import dask
 import dask.dataframe as dd
-from dask.dataframe.core import Scalar
 import dask_geopandas
+
+if dask_geopandas.backends.QUERY_PLANNING_ON:
+    from dask_expr._collection import Scalar
+else:
+    from dask.dataframe.core import Scalar
 
 from pandas.testing import assert_frame_equal, assert_series_equal
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
@@ -504,14 +508,38 @@ def test_from_dask_dataframe_with_dask_geoseries():
     dask_obj = dask_geopandas.from_dask_dataframe(
         dask_obj, geometry=dask_geopandas.points_from_xy(dask_obj, "x", "y")
     )
-    # Check that the geometry isn't concatenated and embedded a second time in
-    # the high-level graph. cf. https://github.com/geopandas/dask-geopandas/issues/197
-    k = next(k for k in dask_obj.dask.dependencies if k.startswith("GeoDataFrame"))
-    deps = dask_obj.dask.dependencies[k]
-    assert len(deps) == 1
+
+    if dask_geopandas.backends.QUERY_PLANNING_ON:
+        d0 = dask_obj.expr.dependencies()
+        assert len(d0) == 1  # Assign(frame=df)
+
+        d1 = d0[0].dependencies()
+        assert len(d1) == 2  # [df, MapPartitions]
+
+        # the fact that `geometry` isn't in this map_partitions
+        # should be sufficient to ensure it isn't in the graph twice
+        assert len(d1[1].dependencies()) == 1  # [df]
+    else:
+        # Check that the geometry isn't concatenated and embedded a second time in
+        # the high-level graph. cf. https://github.com/geopandas/dask-geopandas/issues/197
+        k = next(k for k in dask_obj.dask.dependencies if k.startswith("GeoDataFrame"))
+        deps = dask_obj.dask.dependencies[k]
+        assert len(deps) == 1
 
     expected = df.set_geometry(geopandas.points_from_xy(df["x"], df["y"]))
     assert_geoseries_equal(dask_obj.geometry.compute(), expected.geometry)
+
+
+def test_set_geometry_to_dask_series():
+    df = pd.DataFrame({"x": [0, 1, 2, 3], "y": [1, 2, 3, 4]})
+
+    dask_obj = dd.from_pandas(df, npartitions=2)
+    dask_obj = dask_geopandas.from_dask_dataframe(
+        dask_obj, geometry=dask_geopandas.points_from_xy(dask_obj, "x", "y")
+    )
+    expected = geopandas.GeoDataFrame(df, geometry=geopandas.points_from_xy(df.x, df.y))
+    result = dask_obj.geometry.compute()
+    assert_geoseries_equal(result, expected.geometry)
 
 
 def test_from_dask_dataframe_with_column_name():
@@ -707,14 +735,12 @@ def test_copy_none_spatial_partitions(geoseries_points):
     assert ddf_copy.spatial_partitions is None
 
 
-def test_sjoin():
+def test_sjoin(naturalearth_cities, naturalearth_lowres):
     # test only the method, functionality tested in test_sjoin.py
-    df_points = geopandas.read_file(geopandas.datasets.get_path("naturalearth_cities"))
+    df_points = geopandas.read_file(naturalearth_cities)
     ddf_points = dask_geopandas.from_geopandas(df_points, npartitions=4)
 
-    df_polygons = geopandas.read_file(
-        geopandas.datasets.get_path("naturalearth_lowres")
-    )
+    df_polygons = geopandas.read_file(naturalearth_lowres)
     expected = df_points.sjoin(df_polygons, predicate="within", how="inner")
     expected = expected.sort_index()
 
@@ -738,10 +764,9 @@ def test_clip(geodf_points):
 
 
 class TestDissolve:
-    def setup_method(self):
-        self.world = geopandas.read_file(
-            geopandas.datasets.get_path("naturalearth_lowres")
-        )
+    @pytest.fixture(scope="function", autouse=True)
+    def setup_metho(self, naturalearth_lowres):
+        self.world = geopandas.read_file(naturalearth_lowres)
         self.ddf = dask_geopandas.from_geopandas(self.world, npartitions=4)
 
     def test_default(self):
@@ -759,9 +784,10 @@ class TestDissolve:
             drop = []
         assert_geodataframe_equal(gpd_sum, dd_sum.drop(columns=drop), check_like=True)
 
-    @pytest.mark.skipif(
-        Version(dask.__version__) == Version("2022.01.1"),
-        reason="Regression in dask 2022.01.1 https://github.com/dask/dask/issues/8611",
+    # TODO dissolve with split out is not yet working with expressions
+    @pytest.mark.xfail(
+        dask_geopandas.backends.QUERY_PLANNING_ON,
+        reason="Need to fix dissolve with split_out",
     )
     def test_split_out(self):
         gpd_default = self.world.dissolve("continent")
@@ -769,10 +795,6 @@ class TestDissolve:
         assert dd_split.npartitions == 4
         assert_geodataframe_equal(gpd_default, dd_split.compute(), check_like=True)
 
-    @pytest.mark.skipif(
-        Version(dask.__version__) == Version("2022.01.1"),
-        reason="Regression in dask 2022.01.1 https://github.com/dask/dask/issues/8611",
-    )
     @pytest.mark.xfail
     def test_split_out_name(self):
         gpd_default = self.world.rename_geometry("geom").dissolve("continent")
@@ -802,10 +824,9 @@ class TestDissolve:
 
 
 class TestSpatialShuffle:
-    def setup_method(self):
-        self.world = geopandas.read_file(
-            geopandas.datasets.get_path("naturalearth_lowres")
-        )
+    @pytest.fixture(scope="function", autouse=True)
+    def setup(self, naturalearth_lowres):
+        self.world = geopandas.read_file(naturalearth_lowres)
         self.ddf = dask_geopandas.from_geopandas(self.world, npartitions=4)
 
     def test_default(self):
@@ -874,10 +895,6 @@ class TestSpatialShuffle:
 
         assert_geodataframe_equal(ddf.compute(), expected)
 
-    @pytest.mark.skipif(
-        Version(dask.__version__) <= Version("2021.03.0"),
-        reason="older Dask has a bug in sorting",
-    )
     @pytest.mark.parametrize(
         "calculate_partitions,npartitions",
         [
