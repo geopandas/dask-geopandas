@@ -290,7 +290,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             meta=meta,
         )
 
-    @derived_from(geopandas.base.GeoPandasBase)
     def union_all(self):
         if not GEOPANDAS_1_0:
             return self._unary_union()

@@ -325,7 +325,6 @@ class _Frame(dx.FrameBase, OperatorMethodMixin):
         else:
             return new_collection(UnaryUnion(self.expr))
 
-    @derived_from(geopandas.base.GeoPandasBase)
     def union_all(self):
         if GEOPANDAS_1_0:
             return new_collection(UnionAll(self.expr))
