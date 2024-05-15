@@ -1,3 +1,5 @@
+import warnings
+
 from packaging.version import Version
 
 import numpy as np
@@ -25,6 +27,7 @@ import dask_geopandas
 
 DASK_2022_8_1 = Version(dask.__version__) >= Version("2022.8.1")
 GEOPANDAS_0_12 = Version(geopandas.__version__) >= Version("0.12.0")
+GEOPANDAS_1_0 = Version(geopandas.__version__) >= Version("1.0.0a0")
 PANDAS_2_0_0 = Version(pd.__version__) >= Version("2.0.0")
 
 
@@ -265,6 +268,18 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @property
     @derived_from(geopandas.base.GeoPandasBase)
     def unary_union(self):
+        warnings.warn(
+            "The 'unary_union' attribute is deprecated, "
+            "use the 'union_all()' method instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        if GEOPANDAS_1_0:
+            return self.union_all()
+        else:
+            return self._unary_union()
+
+    def _unary_union(self):
         attr = "unary_union"
         meta = BaseGeometry()
 
@@ -272,6 +287,20 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             lambda x: getattr(x, attr),
             token=attr,
             aggregate=lambda x: getattr(geopandas.GeoSeries(x), attr),
+            meta=meta,
+        )
+
+    def union_all(self):
+        if not GEOPANDAS_1_0:
+            return self._unary_union()
+
+        attr = "union_all"
+        meta = BaseGeometry()
+
+        return self.reduction(
+            lambda x: x.union_all(),
+            token=attr,
+            aggregate=lambda x: geopandas.GeoSeries(x).union_all(),
             meta=meta,
         )
 
@@ -659,7 +688,10 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             drop = [by, self.geometry.name]
 
         def union(block):
-            merged_geom = block.unary_union
+            if GEOPANDAS_1_0:
+                merged_geom = block.union_all()
+            else:
+                merged_geom = block.unary_union
             return merged_geom
 
         merge_geometries = dd.Aggregation(

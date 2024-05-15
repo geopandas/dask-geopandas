@@ -19,7 +19,7 @@ from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 from dask_geopandas.hilbert_distance import _hilbert_distance
 from dask_geopandas.morton_distance import _morton_distance
 from dask_geopandas.geohash import _geohash
-from dask_geopandas.core import PANDAS_2_0_0
+from dask_geopandas.core import PANDAS_2_0_0, GEOPANDAS_1_0
 
 
 @pytest.fixture
@@ -107,10 +107,26 @@ def test_geoseries_properties(geoseries_polygons, attr):
 
 
 def test_geoseries_unary_union(geoseries_points):
-    original = getattr(geoseries_points, "unary_union")
+    if GEOPANDAS_1_0:
+        original = geoseries_points.union_all()
+    else:
+        original = geoseries_points.unary_union
 
     dask_obj = dask_geopandas.from_geopandas(geoseries_points, npartitions=2)
-    daskified = dask_obj.unary_union
+    with pytest.warns(FutureWarning):
+        daskified = dask_obj.unary_union
+    assert isinstance(daskified, Scalar)
+    assert original.equals(daskified.compute())
+
+
+def test_geoseries_union_all(geoseries_points):
+    if GEOPANDAS_1_0:
+        original = geoseries_points.union_all()
+    else:
+        original = geoseries_points.unary_union
+
+    dask_obj = dask_geopandas.from_geopandas(geoseries_points, npartitions=2)
+    daskified = dask_obj.union_all()
     assert isinstance(daskified, Scalar)
     assert original.equals(daskified.compute())
 
