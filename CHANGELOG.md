@@ -1,9 +1,10 @@
 Changelog
 =========
 
-Version 0.4.0 (March ??, 2024)
-------------------------------
+Version 0.4.0 (May 16, 2024)
+----------------------------
 
+- Added preliminary support for dask's new query planning (dask >= 2024.3.0)
 - Removed support for PyGEOS, now requiring Shapely >= 2
 
 Updated minimum supported versions of dependencies, now requiring Python 3.9,
