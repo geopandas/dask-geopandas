@@ -177,6 +177,32 @@ def test_points_from_xy_with_crs():
     assert_geoseries_equal(actual.compute(), expected)
 
 
+def test_from_wkt():
+    wkt = [
+        "POLYGON ((-64.8 32.3, -65.5 18.3, -80.3 25.2, -64.8 32.3))",
+        "POLYGON ((-81.079102 35.496456, -81.166992 31.914868, -75.541992 31.914868, -75.629883 35.675147, -81.079102 35.496456))",  # noqa E501
+    ]
+    expected = geopandas.GeoSeries.from_wkt(wkt, crs="EPSG:4326")
+    df = pd.DataFrame({"wkt": wkt})
+    ddf = dd.from_pandas(df, npartitions=2)
+    actual = dask_geopandas.from_wkt(ddf["wkt"], crs="EPSG:4326")
+    assert isinstance(actual, dask_geopandas.GeoSeries)
+    assert_geoseries_equal(actual.compute(), expected)
+
+
+def test_from_wkb():
+    wkb = [
+        "0103000000010000000400000033333333333350c0666666666626404000000000006050c0cdcccccccc4c324033333333331354c0333333333333394033333333333350c06666666666264040",  # noqa E501
+        "0103000000010000000500000016c3d501104554c095f3c5de8bbf414064ac36ffaf4a54c02c280cca34ea3f4064ac36ffafe252c02c280cca34ea3f409c53c90050e852c00b7f86376bd6414016c3d501104554c095f3c5de8bbf4140",  # noqa E501
+    ]
+    expected = geopandas.GeoSeries.from_wkb(wkb, crs="EPSG:4326")
+    df = pd.DataFrame({"wkb": wkb})
+    ddf = dd.from_pandas(df, npartitions=2)
+    actual = dask_geopandas.from_wkb(ddf["wkb"], crs="EPSG:4326")
+    assert isinstance(actual, dask_geopandas.GeoSeries)
+    assert_geoseries_equal(actual.compute(), expected)
+
+
 def test_geodataframe_crs(geodf_points_crs):
     df = geodf_points_crs
     original = df.crs

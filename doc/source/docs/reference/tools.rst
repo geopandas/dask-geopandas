@@ -9,3 +9,5 @@ Tools
    sjoin
    clip
    points_from_xy
+   from_wkt
+   from_wkb

@@ -884,6 +884,56 @@ def points_from_xy(df, x="x", y="y", z="z", crs=None):
     )
 
 
+def from_wkt(wkt, crs=None):
+    """
+    Convert dask.dataframe.Series of WKT objects to a GeoSeries.
+
+    Parameters
+    ----------
+    wkt: dask Series
+        A dask Series containing WKT objects.
+    crs: value, optional
+            Coordinate Reference System of the geometry objects. Can be anything
+            accepted by
+            :meth:`pyproj.CRS.from_user_input() <pyproj.crs.CRS.from_user_input>`,
+            such as an authority string (eg "EPSG:4326") or a WKT string.
+
+    Returns
+    -------
+    GeoSeries
+    """
+
+    def func(data):
+        return geopandas.GeoSeries.from_wkt(data, index=data.index, crs=crs)
+
+    return wkt.map_partitions(func, meta=geopandas.GeoSeries(), token="from_wkt")
+
+
+def from_wkb(wkb, crs=None):
+    """
+    Convert dask.dataframe.Series of WKB objects to a GeoSeries.
+
+    Parameters
+    ----------
+    wkb: dask Series
+        A dask Series containing WKB objects.
+    crs: value, optional
+            Coordinate Reference System of the geometry objects. Can be anything
+            accepted by
+            :meth:`pyproj.CRS.from_user_input() <pyproj.crs.CRS.from_user_input>`,
+            such as an authority string (eg "EPSG:4326") or a WKT string.
+
+    Returns
+    -------
+    GeoSeries
+    """
+
+    def func(data):
+        return geopandas.GeoSeries.from_wkb(data, index=data.index, crs=crs)
+
+    return wkb.map_partitions(func, meta=geopandas.GeoSeries(), token="from_wkb")
+
+
 for name in [
     "area",
     "geom_type",
