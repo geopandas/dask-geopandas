@@ -5,7 +5,6 @@ import pandas as pd
 
 
 def _hilbert_distance(gdf, total_bounds=None, level=16):
-
     """
     Calculate the distance along a Hilbert curve.
 
