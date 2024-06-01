@@ -19,7 +19,12 @@ from dask.dataframe.core import get_parallel_type
 from dask.dataframe.utils import meta_nonempty
 from dask.dataframe.extensions import make_array_nonempty, make_scalar
 from dask.base import normalize_token
-from dask.dataframe.dispatch import make_meta_dispatch, pyarrow_schema_dispatch
+from dask.dataframe.dispatch import (
+    make_meta_dispatch,
+    pyarrow_schema_dispatch,
+    to_pyarrow_table_dispatch,
+    from_pyarrow_table_dispatch,
+)
 from dask.dataframe.backends import _nonempty_index, meta_nonempty_dataframe
 
 import shapely.geometry
@@ -86,3 +91,21 @@ def get_pyarrow_schema_geopandas(obj):
     for col in obj.columns[obj.dtypes == "geometry"]:
         df[col] = obj[col].to_wkb()
     return pa.Schema.from_pandas(df)
+
+
+@to_pyarrow_table_dispatch.register((geopandas.GeoDataFrame,))
+def get_pyarrow_table_from_geopandas(obj, **kwargs):
+    # `kwargs` must be supported by `pyarrow.Table.to_pandas`
+    import pyarrow as pa
+
+    return pa.table(obj.to_arrow())
+    # return pa.Table.from_pandas(obj, **kwargs)
+
+
+@from_pyarrow_table_dispatch.register((pd.DataFrame,))
+def get_geopandas_geodataframe_from_pyarrow(meta, table, **kwargs):
+    # `kwargs` must be supported by `pyarrow.Table.to_pandas`
+    try:
+        return geopandas.GeoDataFrame.from_arrow(table)
+    except:
+        return table.to_pandas(**kwargs)
