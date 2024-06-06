@@ -1,9 +1,12 @@
+import numpy as np
 import pytest
 
 import geopandas
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
+from shapely.geometry import Point
 
 import dask_geopandas
+from dask_geopandas.hilbert_distance import _hilbert_distance
 
 
 def test_propagate_on_geometry_access(naturalearth_lowres):
@@ -60,3 +63,16 @@ def test_cx(naturalearth_lowres):
     assert len(subset) == 0
     expected = df.cx[-200:-190, 300:400]
     assert_geodataframe_equal(subset.compute(), expected)
+
+
+def test_geopandas_handles_large_hilbert_distances():
+    df = geopandas.GeoDataFrame(
+        {"geometry": [Point(-103152.516, -8942.156), Point(118914.500, 1010032.562)]}
+    )
+
+    # make sure we have values greater than 32bits
+    dist = _hilbert_distance(df)
+    assert ((dist > np.iinfo(np.int32).max) | (dist < np.iinfo(np.int32).min)).any()
+
+    ddf = dask_geopandas.from_geopandas(df, npartitions=1)
+    ddf.spatial_shuffle()
