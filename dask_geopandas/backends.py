@@ -15,6 +15,7 @@ if QUERY_PLANNING_ON is None:
         QUERY_PLANNING_ON = True
 
 
+import dask
 from dask.dataframe.core import get_parallel_type
 from dask.dataframe.utils import meta_nonempty
 from dask.dataframe.extensions import make_array_nonempty, make_scalar
@@ -22,8 +23,6 @@ from dask.base import normalize_token
 from dask.dataframe.dispatch import (
     make_meta_dispatch,
     pyarrow_schema_dispatch,
-    to_pyarrow_table_dispatch,
-    from_pyarrow_table_dispatch,
 )
 from dask.dataframe.backends import _nonempty_index, meta_nonempty_dataframe
 
@@ -93,29 +92,34 @@ def get_pyarrow_schema_geopandas(obj):
     return pa.Schema.from_pandas(df)
 
 
-@to_pyarrow_table_dispatch.register((geopandas.GeoDataFrame,))
-def get_pyarrow_table_from_geopandas(obj, **kwargs):
-    # `kwargs` must be supported by `pyarrow.Table.from_pandas`
-    import pyarrow as pa
+if Version(dask.__version__) >= Version("2023.6.1"):
+    from dask.dataframe.dispatch import (
+        to_pyarrow_table_dispatch,
+        from_pyarrow_table_dispatch,
+    )
 
-    if Version(geopandas.__version__).major < 1:
-        return pa.Table.from_pandas(obj.to_wkb(), **kwargs)
-    else:
-        # TODO handle kwargs?
-        return pa.table(obj.to_arrow())
+    @to_pyarrow_table_dispatch.register((geopandas.GeoDataFrame,))
+    def get_pyarrow_table_from_geopandas(obj, **kwargs):
+        # `kwargs` must be supported by `pyarrow.Table.from_pandas`
+        import pyarrow as pa
 
+        if Version(geopandas.__version__).major < 1:
+            return pa.Table.from_pandas(obj.to_wkb(), **kwargs)
+        else:
+            # TODO handle kwargs?
+            return pa.table(obj.to_arrow())
 
-@from_pyarrow_table_dispatch.register((geopandas.GeoDataFrame,))
-def get_geopandas_geodataframe_from_pyarrow(meta, table, **kwargs):
-    # `kwargs` must be supported by `pyarrow.Table.to_pandas`
-    if Version(geopandas.__version__).major < 1:
-        df = table.to_pandas(**kwargs)
+    @from_pyarrow_table_dispatch.register((geopandas.GeoDataFrame,))
+    def get_geopandas_geodataframe_from_pyarrow(meta, table, **kwargs):
+        # `kwargs` must be supported by `pyarrow.Table.to_pandas`
+        if Version(geopandas.__version__).major < 1:
+            df = table.to_pandas(**kwargs)
 
-        for col in meta.columns[meta.dtypes == "geometry"]:
-            df[col] = geopandas.GeoSeries.from_wkb(df[col], crs=meta[col].crs)
+            for col in meta.columns[meta.dtypes == "geometry"]:
+                df[col] = geopandas.GeoSeries.from_wkb(df[col], crs=meta[col].crs)
 
-        return df
+            return df
 
-    else:
-        # TODO handle kwargs?
-        return geopandas.GeoDataFrame.from_arrow(table)
+        else:
+            # TODO handle kwargs?
+            return geopandas.GeoDataFrame.from_arrow(table)
