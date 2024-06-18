@@ -1,3 +1,5 @@
+from packaging.version import Version
+
 import pytest
 
 import geopandas
@@ -13,6 +15,10 @@ from distributed import LocalCluster, Client
 # from distributed.utils_test import gen_cluster
 
 
+@pytest.mark.skipif(
+    Version(geopandas.__version__) < Version("0.13"),
+    reason="geopandas < 0.13 does not implement sorting geometries",
+)
 def test_spatial_shuffle(naturalearth_cities):
     df_points = geopandas.read_file(naturalearth_cities)
 
