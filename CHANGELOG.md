@@ -1,13 +1,22 @@
 Changelog
 =========
 
-Version 0.4.0 (March ??, 2024)
-------------------------------
+Version 0.4.0 (June 24, 2024)
+-----------------------------
 
-- Removed support for PyGEOS, now requiring Shapely >= 2
+Enhancements:
 
-Updated minimum supported versions of dependencies, now requiring Python 3.9,
-GeoPandas 0.12, numpy 1.23 and dask/distributed 2022.06.0.
+- Added preliminary support for dask's new query planning (dask >= 2024.3.0) (#285).
+- Added support for using dask-geopandas with distributed's P2P shuffle (this
+  requires the latest distributed>=2024.6.0 to work) (#295).
+- Added new `from_wkb()` and `from_wkt()` functions to convert a dask Series of
+  WKB or WKT values into a dask-geopandas GeoSeries (#293).
+
+Notes on dependencies:
+
+- Removed support for PyGEOS, now requiring Shapely >= 2 (#280).
+- Updated minimum supported versions of dependencies, now requiring Python 3.9,
+  GeoPandas 0.12, numpy 1.23 and dask/distributed 2022.06.0.
 
 Version 0.3.1 (April 28, 2023)
 ------------------------------
