@@ -1,6 +1,7 @@
 import uuid
 from packaging.version import Version
 
+import dask
 from dask import config
 
 # Check if dask-dataframe is using dask-expr (default of None means True as well)
@@ -88,8 +89,8 @@ def get_pyarrow_schema_geopandas(obj):
 
 if Version(dask.__version__) >= Version("2023.6.1"):
     from dask.dataframe.dispatch import (
-        to_pyarrow_table_dispatch,
         from_pyarrow_table_dispatch,
+        to_pyarrow_table_dispatch,
     )
 
     @to_pyarrow_table_dispatch.register((geopandas.GeoDataFrame,))

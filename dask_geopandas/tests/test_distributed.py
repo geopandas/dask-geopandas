@@ -1,16 +1,16 @@
 from packaging.version import Version
 
-import pytest
-
 import geopandas
+
 import dask_geopandas
 
+import pytest
 from geopandas.testing import assert_geodataframe_equal
 
 distributed = pytest.importorskip("distributed")
 
 
-from distributed import LocalCluster, Client
+from distributed import Client, LocalCluster
 
 # from distributed.utils_test import gen_cluster
 
