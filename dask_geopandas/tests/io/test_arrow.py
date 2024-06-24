@@ -1,11 +1,12 @@
-import geopandas
-import dask_geopandas
 import dask.dataframe as dd
+
+import geopandas
+
+import dask_geopandas
 
 import pytest
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 from pandas.testing import assert_index_equal
-
 
 pa = pytest.importorskip("pyarrow")
 ds = pytest.importorskip("pyarrow.dataset")

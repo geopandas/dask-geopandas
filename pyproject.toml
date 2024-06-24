@@ -49,3 +49,113 @@ Home = "https://geopandas.org"
 Documentation = "https://dask-geopandas.readthedocs.io/"
 Repository = "https://github.com/geopandas/dask-geopandas"
 "Issue Tracker" = "https://github.com/geopandas/dask-geopandas/issues"
+
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+line-length = 88
+extend-exclude = ["doc/*", "versioneer.py", "dask_geopandas/_version.py"]
+
+[tool.ruff.lint]
+select = [
+    # pyflakes
+    "F",
+    # pycodestyle
+    "E",
+    "W",
+    # pyupgrade
+    # "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-debugger
+    "T10",
+    # flake8-simplify
+    # "SIM",
+    # pylint
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
+    # misc lints
+    "PIE",
+    # implicit string concatenation
+    "ISC",
+    # type-checking imports
+    "TCH",
+    # comprehensions
+    "C4",
+    # Ruff-specific rules
+    "RUF",
+    # isort
+    "I",
+]
+
+ignore = [
+    ### Intentionally disabled
+    # module level import not at top of file
+    "E402",
+    # do not assign a lambda expression, use a def
+    "E731",
+    # mutable-argument-default
+    "B006",
+    # unused-loop-control-variable
+    "B007",
+    # get-attr-with-constant
+    "B009",
+    # Only works with python >=3.10
+    "B905",
+    # dict literals
+    "C408",
+    # Too many arguments to function call
+    "PLR0913",
+    # Too many returns
+    "PLR0911",
+    # Too many branches
+    "PLR0912",
+    # Too many statements
+    "PLR0915",
+    # Magic number
+    "PLR2004",
+    # Redefined loop name
+    "PLW2901",
+    # Global statements are discouraged
+    "PLW0603",
+    # compare-to-empty-string
+    "PLC1901",
+
+    ### Additional checks that don't pass yet
+    # Useless statement
+    "B018",
+    # Within an except clause, raise exceptions with ...
+    "B904",
+    # Consider `elif` instead of `else` then `if` to remove indentation level
+    "PLR5501",
+    # collection-literal-concatenation
+    "RUF005",
+    # Mutable class attributes should be annotated with `typing.ClassVar`,
+    "RUF012"
+]
+
+[tool.ruff.lint.per-file-ignores]
+"dask_geopandas/__init__.py" = ["F401", "I"]
+
+[tool.ruff.lint.isort]
+extra-standard-library = ["packaging"]
+
+section-order = [
+  "future",
+  "standard-library",
+  "third-party",
+  "dask",
+  "geo",
+  "first-party",
+  "local-folder",
+  "testing"
+]
+
+[tool.ruff.lint.isort.sections]
+"dask" = ["dask", "dask_expr"]
+"geo" = ["geopandas", "shapely", "pyproj"]
+"testing" = ["pytest", "pandas.testing", "numpy.testing", "geopandas.tests", "geopandas.testing"]

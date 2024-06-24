@@ -1,10 +1,10 @@
-import os
-from contextlib import contextmanager
-import subprocess
-import shlex
 import logging
-import time
+import os
+import shlex
+import subprocess
 import sys
+import time
+from contextlib import contextmanager
 
 import pytest
 

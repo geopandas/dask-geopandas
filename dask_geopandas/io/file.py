@@ -1,9 +1,10 @@
 from math import ceil
 
-from dask.base import tokenize
-from dask.highlevelgraph import HighLevelGraph
-from dask.dataframe.core import new_dd_object
 from pandas import RangeIndex
+
+from dask.base import tokenize
+from dask.dataframe.core import new_dd_object
+from dask.highlevelgraph import HighLevelGraph
 
 from .. import backends
 
@@ -83,7 +84,7 @@ def read_file(
         raise ImportError(
             "The 'read_file' function requires the 'pyogrio' package, but it is "
             "not installed or does not import correctly."
-            f"\nImporting pyogrio resulted in: {str(err)}"
+            f"\nImporting pyogrio resulted in: {err}"
         )
 
     from dask.layers import DataFrameIOLayer

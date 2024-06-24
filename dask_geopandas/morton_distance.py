@@ -1,6 +1,7 @@
 import warnings
 
 import pandas as pd
+
 from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
 
 

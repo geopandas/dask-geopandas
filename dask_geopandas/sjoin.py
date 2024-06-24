@@ -1,10 +1,11 @@
 import warnings
 
 import numpy as np
-import geopandas
 
 from dask.base import tokenize
 from dask.highlevelgraph import HighLevelGraph
+
+import geopandas
 
 from . import backends
 
@@ -87,19 +88,19 @@ def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
 
     dsk = {}
     new_spatial_partitions = []
-    for i, (l, r) in enumerate(zip(parts_left, parts_right)):
+    for i, (part_left, part_right) in enumerate(zip(parts_left, parts_right)):
         dsk[(name, i)] = (
             geopandas.sjoin,
-            (left._name, l),
-            (right._name, r),
+            (left._name, part_left),
+            (right._name, part_right),
             how,
             predicate,
         )
         # TODO preserve spatial partitions of the output if only left has spatial
         # partitions
         if using_spatial_partitions:
-            lr = left.spatial_partitions.iloc[l]
-            rr = right.spatial_partitions.iloc[r]
+            lr = left.spatial_partitions.iloc[part_left]
+            rr = right.spatial_partitions.iloc[part_right]
             # extent = lr.intersection(rr).buffer(buffer).intersection(lr.union(rr))
             extent = lr.intersection(rr)
             new_spatial_partitions.append(extent)

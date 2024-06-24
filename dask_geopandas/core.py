@@ -1,29 +1,27 @@
 import warnings
-
 from packaging.version import Version
 
 import numpy as np
 import pandas as pd
 
 import dask
-import dask.dataframe as dd
 import dask.array as da
-from dask.dataframe.core import _emulate, map_partitions, elemwise, new_dd_object
+import dask.dataframe as dd
+from dask.base import tokenize
+from dask.dataframe.core import _emulate, elemwise, map_partitions, new_dd_object
 from dask.highlevelgraph import HighLevelGraph
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
-from dask.base import tokenize
 
 import geopandas
 import shapely
-from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
-
-from .hilbert_distance import _hilbert_distance
-from .morton_distance import _morton_distance
-from .geohash import _geohash
+from shapely.geometry.base import BaseGeometry
 
 import dask_geopandas
 
+from .geohash import _geohash
+from .hilbert_distance import _hilbert_distance
+from .morton_distance import _morton_distance
 
 DASK_2022_8_1 = Version(dask.__version__) >= Version("2022.8.1")
 GEOPANDAS_0_12 = Version(geopandas.__version__) >= Version("0.12.0")
@@ -155,7 +153,7 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         def meth(self, other, *args, **kwargs):
             meta = _emulate(op, self, other)
             return map_partitions(
-                op, self, other, meta=meta, enforce_metadata=False, *args, **kwargs
+                op, self, other, *args, meta=meta, enforce_metadata=False, **kwargs
             )
 
         meth.__name__ = name

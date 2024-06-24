@@ -1,8 +1,11 @@
 import geopandas
-from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
-import pytest
+
 import dask_geopandas
+
 from .test_core import geodf_points  # noqa: F401
+
+import pytest
+from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 
 
 def test_clip(naturalearth_lowres, naturalearth_cities):

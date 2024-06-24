@@ -1,9 +1,9 @@
-import pytest
-
 import geopandas
-from geopandas.testing import assert_geodataframe_equal
 
 import dask_geopandas
+
+import pytest
+from geopandas.testing import assert_geodataframe_equal
 
 
 def test_sjoin_dask_geopandas(naturalearth_lowres, naturalearth_cities):
