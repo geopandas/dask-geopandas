@@ -923,10 +923,10 @@ def from_wkt(wkt, crs=None):
     wkt: dask Series
         A dask Series containing WKT objects.
     crs: value, optional
-            Coordinate Reference System of the geometry objects. Can be anything
-            accepted by
-            :meth:`pyproj.CRS.from_user_input() <pyproj.crs.CRS.from_user_input>`,
-            such as an authority string (eg "EPSG:4326") or a WKT string.
+        Coordinate Reference System of the geometry objects.
+        Can be anything accepted by
+        :meth:`pyproj.CRS.from_user_input() <pyproj.crs.CRS.from_user_input>`,
+        such as an authority string (eg "EPSG:4326") or a WKT string.
 
     Returns
     -------
@@ -948,10 +948,10 @@ def from_wkb(wkb, crs=None):
     wkb: dask Series
         A dask Series containing WKB objects.
     crs: value, optional
-            Coordinate Reference System of the geometry objects. Can be anything
-            accepted by
-            :meth:`pyproj.CRS.from_user_input() <pyproj.crs.CRS.from_user_input>`,
-            such as an authority string (eg "EPSG:4326") or a WKT string.
+        Coordinate Reference System of the geometry objects.
+        Can be anything accepted by
+        :meth:`pyproj.CRS.from_user_input() <pyproj.crs.CRS.from_user_input>`,
+        such as an authority string (eg "EPSG:4326") or a WKT string.
 
     Returns
     -------
