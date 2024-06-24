@@ -1,25 +1,31 @@
 import pickle
 from packaging.version import Version
-import pytest
-import pandas as pd
+
 import numpy as np
-import geopandas
-from shapely.geometry import Polygon, Point, LineString, MultiPoint
+import pandas as pd
+
 import dask
 import dask.dataframe as dd
+
+import geopandas
+from shapely.geometry import LineString, MultiPoint, Point, Polygon
+
 import dask_geopandas
+
+import pytest
 
 if dask_geopandas.backends.QUERY_PLANNING_ON:
     from dask_expr._collection import Scalar
 else:
     from dask.dataframe.core import Scalar
 
-from pandas.testing import assert_frame_equal, assert_series_equal
-from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
+from dask_geopandas.core import GEOPANDAS_1_0, PANDAS_2_0_0
+from dask_geopandas.geohash import _geohash
 from dask_geopandas.hilbert_distance import _hilbert_distance
 from dask_geopandas.morton_distance import _morton_distance
-from dask_geopandas.geohash import _geohash
-from dask_geopandas.core import PANDAS_2_0_0, GEOPANDAS_1_0
+
+from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 
 @pytest.fixture

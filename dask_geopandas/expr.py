@@ -1,36 +1,34 @@
-from packaging.version import Version
 import warnings
+from packaging.version import Version
 
 import numpy as np
 import pandas as pd
 
 import dask
-import dask.dataframe as dd
 import dask.array as da
+import dask.dataframe as dd
+import dask_expr as dx
+from dask.base import tokenize
 from dask.dataframe import map_partitions
 from dask.highlevelgraph import HighLevelGraph
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
-from dask.base import tokenize
-
-import dask_expr as dx
 from dask_expr import (
     elemwise,
     from_graph,
     get_collection_type,
 )
 from dask_expr._collection import new_collection
-from dask_expr._expr import _emulate, ApplyConcatApply
+from dask_expr._expr import ApplyConcatApply, _emulate
 
 import geopandas
 import shapely
 from shapely.geometry import box
 
-from .hilbert_distance import _hilbert_distance
-from .morton_distance import _morton_distance
-from .geohash import _geohash
-
 import dask_geopandas
 
+from .geohash import _geohash
+from .hilbert_distance import _hilbert_distance
+from .morton_distance import _morton_distance
 
 DASK_2022_8_1 = Version(dask.__version__) >= Version("2022.8.1")
 GEOPANDAS_0_12 = Version(geopandas.__version__) >= Version("0.12.0")
@@ -217,7 +215,7 @@ class _Frame(dx.FrameBase, OperatorMethodMixin):
         def meth(self, other, *args, **kwargs):
             meta = _emulate(op, self, other)
             return map_partitions(
-                op, self, other, meta=meta, enforce_metadata=False, *args, **kwargs
+                op, self, other, *args, meta=meta, enforce_metadata=False, **kwargs
             )
 
         meth.__name__ = name
@@ -301,7 +299,7 @@ class _Frame(dx.FrameBase, OperatorMethodMixin):
         graph = total_bounds.lower_completely().__dask_graph__()
         return da.Array(
             graph,
-            list(graph.keys())[0][0],
+            next(iter((graph.keys())))[0],
             chunks=((4,),),
             dtype=np.dtype("float64"),
         )

@@ -1,14 +1,15 @@
 import json
 
-import geopandas
-import dask_geopandas
 import dask.dataframe as dd
+
+import geopandas
 import shapely
+
+import dask_geopandas
 
 import pytest
 from geopandas.testing import assert_geodataframe_equal
 from pandas.testing import assert_series_equal
-
 
 pa = pytest.importorskip("pyarrow")
 
@@ -227,8 +228,9 @@ def test_no_gather_spatial_partitions(tmp_path, naturalearth_lowres):
 
 def test_read_parquet_default_crs(tmp_path):
     pyproj = pytest.importorskip("pyproj")
-    from geopandas.io.arrow import _geopandas_to_arrow
     import pyarrow.parquet as pq
+
+    from geopandas.io.arrow import _geopandas_to_arrow
 
     gdf = geopandas.GeoDataFrame(geometry=[shapely.box(0, 0, 10, 10)])
     gdf["other_geom"] = gdf["geometry"].centroid

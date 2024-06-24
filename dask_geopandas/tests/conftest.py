@@ -1,11 +1,11 @@
 import os.path
 from packaging.version import Version
 
-import pytest
-
-import geopandas
 import dask
 
+import geopandas
+
+import pytest
 
 # TODO update version once geopandas has a proper tag for 1.0
 GEOPANDAS_GE_10 = (Version(geopandas.__version__) >= Version("0.14.0+70")) and (

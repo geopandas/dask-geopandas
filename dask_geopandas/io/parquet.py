@@ -1,8 +1,8 @@
 from functools import partial
 
-import geopandas
-
 import dask.dataframe as dd
+
+import geopandas
 
 from .. import backends
 from .arrow import (
