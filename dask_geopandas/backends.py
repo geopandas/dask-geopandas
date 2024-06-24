@@ -3,7 +3,6 @@ from packaging.version import Version
 
 from dask import config
 
-
 # Check if dask-dataframe is using dask-expr (default of None means True as well)
 QUERY_PLANNING_ON = config.get("dataframe.query-planning", False)
 if QUERY_PLANNING_ON is None:
@@ -15,20 +14,19 @@ if QUERY_PLANNING_ON is None:
         QUERY_PLANNING_ON = True
 
 
-from dask.dataframe.core import get_parallel_type
-from dask.dataframe.utils import meta_nonempty
-from dask.dataframe.extensions import make_array_nonempty, make_scalar
 from dask.base import normalize_token
-from dask.dataframe.dispatch import make_meta_dispatch, pyarrow_schema_dispatch
 from dask.dataframe.backends import _nonempty_index, meta_nonempty_dataframe
+from dask.dataframe.core import get_parallel_type
+from dask.dataframe.dispatch import make_meta_dispatch, pyarrow_schema_dispatch
+from dask.dataframe.extensions import make_array_nonempty, make_scalar
+from dask.dataframe.utils import meta_nonempty
 
-import shapely.geometry
-from shapely.geometry.base import BaseGeometry
 import geopandas
+import shapely.geometry
 from geopandas.array import GeometryArray, GeometryDtype, from_shapely
+from shapely.geometry.base import BaseGeometry
 
-from .core import GeoSeries, GeoDataFrame
-
+from .core import GeoDataFrame, GeoSeries
 
 get_parallel_type.register(geopandas.GeoDataFrame, lambda _: GeoDataFrame)
 get_parallel_type.register(geopandas.GeoSeries, lambda _: GeoSeries)
@@ -79,8 +77,8 @@ def tokenize_geometryarray(x):
 
 @pyarrow_schema_dispatch.register((geopandas.GeoDataFrame,))
 def get_pyarrow_schema_geopandas(obj):
-    import pyarrow as pa
     import pandas as pd
+    import pyarrow as pa
 
     df = pd.DataFrame(obj.copy())
     for col in obj.columns[obj.dtypes == "geometry"]:

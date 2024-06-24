@@ -1,15 +1,17 @@
 import random
 
-import geopandas
-from shapely.geometry import Polygon
-import dask.dataframe as dd
-import dask_geopandas
 import pandas as pd
 
-import pytest
-from pandas.testing import assert_series_equal, assert_frame_equal
-from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
+import dask.dataframe as dd
 
+import geopandas
+from shapely.geometry import Polygon
+
+import dask_geopandas
+
+import pytest
+from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 pytest.importorskip("pyogrio")
 

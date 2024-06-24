@@ -1,11 +1,14 @@
-import pytest
 import pandas as pd
-from pandas.testing import assert_index_equal, assert_series_equal
-from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
-from dask_geopandas import from_geopandas
+
 import geopandas
-from shapely.geometry import Point, LineString, Polygon
+from shapely.geometry import LineString, Point, Polygon
 from shapely.wkt import loads
+
+from dask_geopandas import from_geopandas
+from dask_geopandas.hilbert_distance import _continuous_to_discrete_coords
+
+import pytest
+from pandas.testing import assert_index_equal, assert_series_equal
 
 
 @pytest.fixture

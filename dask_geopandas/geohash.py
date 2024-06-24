@@ -8,6 +8,7 @@ The vectorized implementation for quantization and bit interleaving is in turn b
 "Geohash in Golang Assembly" blog (https://mmcloughlin.com/posts/geohash-assembly).
 
 """
+
 import warnings
 
 import numpy as np
