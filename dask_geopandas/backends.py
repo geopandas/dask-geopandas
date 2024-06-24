@@ -8,7 +8,7 @@ from dask import config
 
 # Check if dask-dataframe is using dask-expr (mimix the logic of dask.dataframe
 # _dask_expr_enabled() - default of None means True as well if dask-expr is available)
-QUERY_PLANNING_ON = config.get("dataframe.query-planning")
+QUERY_PLANNING_ON = config.get("dataframe.query-planning", False)
 if QUERY_PLANNING_ON is None:
     if Version(pd.__version__).major < 2:
         QUERY_PLANNING_ON = False
