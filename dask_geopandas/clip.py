@@ -1,9 +1,10 @@
 import numpy as np
-import geopandas
 
+from dask.base import tokenize
 from dask.highlevelgraph import HighLevelGraph
 from dask.utils import derived_from
-from dask.base import tokenize
+
+import geopandas
 
 from . import backends
 
@@ -39,8 +40,8 @@ def clip(gdf, mask, keep_geom_type=False):
 
     name = f"clip-{tokenize(gdf, mask, keep_geom_type)}"
     dsk = {
-        (name, i): (geopandas.clip, (gdf._name, l), mask, keep_geom_type)
-        for i, l in enumerate(intersecting_partitions)
+        (name, i): (geopandas.clip, (gdf._name, part), mask, keep_geom_type)
+        for i, part in enumerate(intersecting_partitions)
     }
     divisions = [None] * (len(dsk) + 1)
     graph = HighLevelGraph.from_collections(name, dsk, dependencies=[gdf])

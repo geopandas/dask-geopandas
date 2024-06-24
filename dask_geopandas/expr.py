@@ -1,39 +1,38 @@
-from packaging.version import Version
 import warnings
+from packaging.version import Version
 
 import numpy as np
 import pandas as pd
 
 import dask
-import dask.dataframe as dd
 import dask.array as da
+import dask.dataframe as dd
+import dask_expr as dx
+from dask.base import tokenize
 from dask.dataframe import map_partitions
 from dask.highlevelgraph import HighLevelGraph
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
-from dask.base import tokenize
-
-import dask_expr as dx
 from dask_expr import (
     elemwise,
     from_graph,
     get_collection_type,
 )
 from dask_expr._collection import new_collection
-from dask_expr._expr import _emulate, ApplyConcatApply
+from dask_expr._expr import ApplyConcatApply, _emulate
 
 import geopandas
 import shapely
 from shapely.geometry import box
 
-from .hilbert_distance import _hilbert_distance
-from .morton_distance import _morton_distance
-from .geohash import _geohash
-
 import dask_geopandas
 
+from .geohash import _geohash
+from .hilbert_distance import _hilbert_distance
+from .morton_distance import _morton_distance
 
 DASK_2022_8_1 = Version(dask.__version__) >= Version("2022.8.1")
 GEOPANDAS_0_12 = Version(geopandas.__version__) >= Version("0.12.0")
+GEOPANDAS_1_0 = Version(geopandas.__version__) >= Version("1.0.0a0")
 PANDAS_2_0_0 = Version(pd.__version__) >= Version("2.0.0")
 
 
@@ -54,6 +53,17 @@ class UnaryUnion(ApplyConcatApply):
     def aggregate(cls, inputs, **kwargs):
         s = geopandas.GeoSeries(inputs)
         return s.unary_union
+
+
+class UnionAll(ApplyConcatApply):
+    @classmethod
+    def chunk(cls, df, **kwargs):
+        return df.union_all()
+
+    @classmethod
+    def aggregate(cls, inputs, **kwargs):
+        s = geopandas.GeoSeries(inputs)
+        return s.union_all()
 
 
 class TotalBounds(ApplyConcatApply):
@@ -205,7 +215,7 @@ class _Frame(dx.FrameBase, OperatorMethodMixin):
         def meth(self, other, *args, **kwargs):
             meta = _emulate(op, self, other)
             return map_partitions(
-                op, self, other, meta=meta, enforce_metadata=False, *args, **kwargs
+                op, self, other, *args, meta=meta, enforce_metadata=False, **kwargs
             )
 
         meth.__name__ = name
@@ -289,7 +299,7 @@ class _Frame(dx.FrameBase, OperatorMethodMixin):
         graph = total_bounds.lower_completely().__dask_graph__()
         return da.Array(
             graph,
-            list(graph.keys())[0][0],
+            next(iter((graph.keys())))[0],
             chunks=((4,),),
             dtype=np.dtype("float64"),
         )
@@ -302,7 +312,22 @@ class _Frame(dx.FrameBase, OperatorMethodMixin):
     @property
     @derived_from(geopandas.base.GeoPandasBase)
     def unary_union(self):
-        return new_collection(UnaryUnion(self.expr))
+        warnings.warn(
+            "The 'unary_union' attribute is deprecated, "
+            "use the 'union_all()' method instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        if GEOPANDAS_1_0:
+            return new_collection(UnionAll(self.expr))
+        else:
+            return new_collection(UnaryUnion(self.expr))
+
+    def union_all(self):
+        if GEOPANDAS_1_0:
+            return new_collection(UnionAll(self.expr))
+        else:
+            return new_collection(UnaryUnion(self.expr))
 
     @derived_from(geopandas.base.GeoPandasBase)
     def representative_point(self):
@@ -568,6 +593,15 @@ class GeoSeries(_Frame, dd.Series):
 
     _partition_type = geopandas.GeoSeries
 
+    @derived_from(geopandas.GeoSeries)
+    def explode(self, ignore_index=False, index_parts=None):
+        return self.map_partitions(
+            M.explode,
+            ignore_index=ignore_index,
+            index_parts=index_parts,
+            enforce_metadata=False,
+        )
+
 
 class GeoDataFrame(_Frame, dd.DataFrame):
     """Parallel GeoPandas GeoDataFrame
@@ -684,7 +718,10 @@ class GeoDataFrame(_Frame, dd.DataFrame):
 
         def union(block):
             block = geopandas.GeoSeries(block)
-            merged_geom = block.unary_union
+            if GEOPANDAS_1_0:
+                merged_geom = block.union_all()
+            else:
+                merged_geom = block.unary_union
             return merged_geom
 
         merge_geometries = dd.Aggregation(
@@ -821,6 +858,16 @@ class GeoDataFrame(_Frame, dd.DataFrame):
 
         return sorted_ddf
 
+    @derived_from(geopandas.GeoDataFrame)
+    def explode(self, column=None, ignore_index=False, index_parts=None):
+        return self.map_partitions(
+            M.explode,
+            column=column,
+            ignore_index=ignore_index,
+            index_parts=index_parts,
+            enforce_metadata=False,
+        )
+
 
 from_geopandas = dx.from_pandas
 
@@ -865,6 +912,56 @@ def points_from_xy(df, x="x", y="y", z="z", crs=None):
     return df.map_partitions(
         func, x, y, z, meta=geopandas.GeoSeries(), token="points_from_xy"
     )
+
+
+def from_wkt(wkt, crs=None):
+    """
+    Convert dask.dataframe.Series of WKT objects to a GeoSeries.
+
+    Parameters
+    ----------
+    wkt: dask Series
+        A dask Series containing WKT objects.
+    crs: value, optional
+            Coordinate Reference System of the geometry objects. Can be anything
+            accepted by
+            :meth:`pyproj.CRS.from_user_input() <pyproj.crs.CRS.from_user_input>`,
+            such as an authority string (eg "EPSG:4326") or a WKT string.
+
+    Returns
+    -------
+    GeoSeries
+    """
+
+    def func(data):
+        return geopandas.GeoSeries.from_wkt(data, index=data.index, crs=crs)
+
+    return wkt.map_partitions(func, meta=geopandas.GeoSeries(), token="from_wkt")
+
+
+def from_wkb(wkb, crs=None):
+    """
+    Convert dask.dataframe.Series of WKB objects to a GeoSeries.
+
+    Parameters
+    ----------
+    wkb: dask Series
+        A dask Series containing WKB objects.
+    crs: value, optional
+            Coordinate Reference System of the geometry objects. Can be anything
+            accepted by
+            :meth:`pyproj.CRS.from_user_input() <pyproj.crs.CRS.from_user_input>`,
+            such as an authority string (eg "EPSG:4326") or a WKT string.
+
+    Returns
+    -------
+    GeoSeries
+    """
+
+    def func(data):
+        return geopandas.GeoSeries.from_wkb(data, index=data.index, crs=crs)
+
+    return wkb.map_partitions(func, meta=geopandas.GeoSeries(), token="from_wkb")
 
 
 for name in [

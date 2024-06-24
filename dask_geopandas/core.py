@@ -1,30 +1,31 @@
+import warnings
 from packaging.version import Version
 
 import numpy as np
 import pandas as pd
 
 import dask
-import dask.dataframe as dd
 import dask.array as da
-from dask.dataframe.core import _emulate, map_partitions, elemwise, new_dd_object
+import dask.dataframe as dd
+from dask.base import tokenize
+from dask.dataframe.core import _emulate, elemwise, map_partitions, new_dd_object
 from dask.highlevelgraph import HighLevelGraph
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
-from dask.base import tokenize
 
 import geopandas
 import shapely
-from shapely.geometry.base import BaseGeometry
 from shapely.geometry import box
-
-from .hilbert_distance import _hilbert_distance
-from .morton_distance import _morton_distance
-from .geohash import _geohash
+from shapely.geometry.base import BaseGeometry
 
 import dask_geopandas
 
+from .geohash import _geohash
+from .hilbert_distance import _hilbert_distance
+from .morton_distance import _morton_distance
 
 DASK_2022_8_1 = Version(dask.__version__) >= Version("2022.8.1")
 GEOPANDAS_0_12 = Version(geopandas.__version__) >= Version("0.12.0")
+GEOPANDAS_1_0 = Version(geopandas.__version__) >= Version("1.0.0a0")
 PANDAS_2_0_0 = Version(pd.__version__) >= Version("2.0.0")
 
 
@@ -147,11 +148,12 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @classmethod
     def _bind_elemwise_operator_method(cls, name, op, original, *args, **kwargs):
         """bind operator method like GeoSeries.distance to this class"""
+
         # name must be explicitly passed for div method whose name is truediv
         def meth(self, other, *args, **kwargs):
             meta = _emulate(op, self, other)
             return map_partitions(
-                op, self, other, meta=meta, enforce_metadata=False, *args, **kwargs
+                op, self, other, *args, meta=meta, enforce_metadata=False, **kwargs
             )
 
         meth.__name__ = name
@@ -264,6 +266,18 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
     @property
     @derived_from(geopandas.base.GeoPandasBase)
     def unary_union(self):
+        warnings.warn(
+            "The 'unary_union' attribute is deprecated, "
+            "use the 'union_all()' method instead.",
+            FutureWarning,
+            stacklevel=2,
+        )
+        if GEOPANDAS_1_0:
+            return self.union_all()
+        else:
+            return self._unary_union()
+
+    def _unary_union(self):
         attr = "unary_union"
         meta = BaseGeometry()
 
@@ -271,6 +285,20 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             lambda x: getattr(x, attr),
             token=attr,
             aggregate=lambda x: getattr(geopandas.GeoSeries(x), attr),
+            meta=meta,
+        )
+
+    def union_all(self):
+        if not GEOPANDAS_1_0:
+            return self._unary_union()
+
+        attr = "union_all"
+        meta = BaseGeometry()
+
+        return self.reduction(
+            lambda x: x.union_all(),
+            token=attr,
+            aggregate=lambda x: geopandas.GeoSeries(x).union_all(),
             meta=meta,
         )
 
@@ -357,10 +385,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
             use_radians=use_radians,
             enforce_metadata=False,
         )
-
-    @derived_from(geopandas.geodataframe.GeoDataFrame)
-    def explode(self):
-        return self.map_partitions(self._partition_type.explode, enforce_metadata=False)
 
     @property
     @derived_from(geopandas.geodataframe.GeoDataFrame)
@@ -474,7 +498,6 @@ class _Frame(dd.core._Frame, OperatorMethodMixin):
         return distances
 
     def geohash(self, as_string=True, precision=12):
-
         """
         Calculate geohash based on the middle points of the geometry bounds
         for a given precision.
@@ -536,6 +559,15 @@ class GeoSeries(_Frame, dd.core.Series):
     """
 
     _partition_type = geopandas.GeoSeries
+
+    @derived_from(geopandas.GeoSeries)
+    def explode(self, ignore_index=False, index_parts=None):
+        return self.map_partitions(
+            M.explode,
+            ignore_index=ignore_index,
+            index_parts=index_parts,
+            enforce_metadata=False,
+        )
 
 
 class GeoDataFrame(_Frame, dd.core.DataFrame):
@@ -654,7 +686,10 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
             drop = [by, self.geometry.name]
 
         def union(block):
-            merged_geom = block.unary_union
+            if GEOPANDAS_1_0:
+                merged_geom = block.union_all()
+            else:
+                merged_geom = block.unary_union
             return merged_geom
 
         merge_geometries = dd.Aggregation(
@@ -791,6 +826,16 @@ class GeoDataFrame(_Frame, dd.core.DataFrame):
 
         return sorted_ddf
 
+    @derived_from(geopandas.GeoDataFrame)
+    def explode(self, column=None, ignore_index=False, index_parts=None):
+        return self.map_partitions(
+            M.explode,
+            column=column,
+            ignore_index=ignore_index,
+            index_parts=index_parts,
+            enforce_metadata=False,
+        )
+
 
 from_geopandas = dd.from_pandas
 
@@ -835,6 +880,56 @@ def points_from_xy(df, x="x", y="y", z="z", crs=None):
     return df.map_partitions(
         func, x, y, z, meta=geopandas.GeoSeries(), token="points_from_xy"
     )
+
+
+def from_wkt(wkt, crs=None):
+    """
+    Convert dask.dataframe.Series of WKT objects to a GeoSeries.
+
+    Parameters
+    ----------
+    wkt: dask Series
+        A dask Series containing WKT objects.
+    crs: value, optional
+            Coordinate Reference System of the geometry objects. Can be anything
+            accepted by
+            :meth:`pyproj.CRS.from_user_input() <pyproj.crs.CRS.from_user_input>`,
+            such as an authority string (eg "EPSG:4326") or a WKT string.
+
+    Returns
+    -------
+    GeoSeries
+    """
+
+    def func(data):
+        return geopandas.GeoSeries.from_wkt(data, index=data.index, crs=crs)
+
+    return wkt.map_partitions(func, meta=geopandas.GeoSeries(), token="from_wkt")
+
+
+def from_wkb(wkb, crs=None):
+    """
+    Convert dask.dataframe.Series of WKB objects to a GeoSeries.
+
+    Parameters
+    ----------
+    wkb: dask Series
+        A dask Series containing WKB objects.
+    crs: value, optional
+            Coordinate Reference System of the geometry objects. Can be anything
+            accepted by
+            :meth:`pyproj.CRS.from_user_input() <pyproj.crs.CRS.from_user_input>`,
+            such as an authority string (eg "EPSG:4326") or a WKT string.
+
+    Returns
+    -------
+    GeoSeries
+    """
+
+    def func(data):
+        return geopandas.GeoSeries.from_wkb(data, index=data.index, crs=crs)
+
+    return wkb.map_partitions(func, meta=geopandas.GeoSeries(), token="from_wkb")
 
 
 for name in [

@@ -4,19 +4,18 @@ import math
 from packaging.version import Version
 from typing import TYPE_CHECKING
 
-import dask
+import pandas as pd
+from fsspec.core import get_fs_token_paths
 
+import dask
 from dask.base import compute_as_if_collection, tokenize
-from dask.dataframe.core import new_dd_object, Scalar
+from dask.dataframe.core import Scalar, new_dd_object
 from dask.highlevelgraph import HighLevelGraph
 from dask.layers import DataFrameIOLayer
-from dask.utils import natural_sort_key, apply
+from dask.utils import apply, natural_sort_key
 
-import pandas as pd
 import geopandas
 import shapely.geometry
-
-from fsspec.core import get_fs_token_paths
 
 from .. import backends
 
@@ -35,7 +34,7 @@ def _update_meta_to_geodataframe(meta, schema_metadata):
     if schema_metadata and b"geo" in schema_metadata:
         geo_meta = json.loads(schema_metadata[b"geo"])
         geometry_column_name = geo_meta["primary_column"]
-        crs = geo_meta["columns"][geometry_column_name]["crs"]
+        crs = geo_meta["columns"][geometry_column_name].get("crs", "OGC:CRS84")
         geometry_columns = geo_meta["columns"]
     else:
         # TODO we could allow the user to pass those explicitly if not
@@ -49,7 +48,7 @@ def _update_meta_to_geodataframe(meta, schema_metadata):
     meta = geopandas.GeoDataFrame(meta, geometry=geometry_column_name, crs=crs)
     for col, item in geometry_columns.items():
         if not col == meta._geometry_column_name:
-            meta[col] = geopandas.GeoSeries(meta[col], crs=item["crs"])
+            meta[col] = geopandas.GeoSeries(meta[col], crs=item.get("crs", "OGC:CRS84"))
 
     return meta
 
@@ -152,7 +151,8 @@ class ArrowDatasetEngine:
             from dask.dataframe.io.parquet.arrow import PYARROW_NULLABLE_DTYPE_MAPPING
 
             if "types_mapper" in _kwargs:
-                # User-provided entries take priority over PYARROW_NULLABLE_DTYPE_MAPPING
+                # User-provided entries take priority over
+                # PYARROW_NULLABLE_DTYPE_MAPPING
                 types_mapper = _kwargs["types_mapper"]
 
                 def _types_mapper(pa_type):
@@ -210,7 +210,8 @@ class GeoDatasetEngine:
             from dask.dataframe.io.parquet.arrow import PYARROW_NULLABLE_DTYPE_MAPPING
 
             if "types_mapper" in _kwargs:
-                # User-provided entries take priority over PYARROW_NULLABLE_DTYPE_MAPPING
+                # User-provided entries take priority over
+                # PYARROW_NULLABLE_DTYPE_MAPPING
                 types_mapper = _kwargs["types_mapper"]
 
                 def _types_mapper(pa_type):

@@ -5,6 +5,8 @@ from . import backends
 if backends.QUERY_PLANNING_ON:
     from .expr import (
         points_from_xy,
+        from_wkt,
+        from_wkb,
         GeoDataFrame,
         GeoSeries,
         from_geopandas,
@@ -13,6 +15,8 @@ if backends.QUERY_PLANNING_ON:
 else:
     from .core import (
         points_from_xy,
+        from_wkt,
+        from_wkb,
         GeoDataFrame,
         GeoSeries,
         from_geopandas,
@@ -30,6 +34,8 @@ del get_versions
 
 __all__ = [
     "points_from_xy",
+    "from_wkt",
+    "from_wkb",
     "GeoDataFrame",
     "GeoSeries",
     "from_geopandas",

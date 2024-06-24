@@ -1,25 +1,31 @@
 import pickle
 from packaging.version import Version
-import pytest
-import pandas as pd
+
 import numpy as np
-import geopandas
-from shapely.geometry import Polygon, Point, LineString, MultiPoint
+import pandas as pd
+
 import dask
 import dask.dataframe as dd
+
+import geopandas
+from shapely.geometry import LineString, MultiPoint, Point, Polygon
+
 import dask_geopandas
+
+import pytest
 
 if dask_geopandas.backends.QUERY_PLANNING_ON:
     from dask_expr._collection import Scalar
 else:
     from dask.dataframe.core import Scalar
 
-from pandas.testing import assert_frame_equal, assert_series_equal
-from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
+from dask_geopandas.core import GEOPANDAS_1_0, PANDAS_2_0_0
+from dask_geopandas.geohash import _geohash
 from dask_geopandas.hilbert_distance import _hilbert_distance
 from dask_geopandas.morton_distance import _morton_distance
-from dask_geopandas.geohash import _geohash
-from dask_geopandas.core import PANDAS_2_0_0
+
+from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 
 @pytest.fixture
@@ -107,10 +113,26 @@ def test_geoseries_properties(geoseries_polygons, attr):
 
 
 def test_geoseries_unary_union(geoseries_points):
-    original = getattr(geoseries_points, "unary_union")
+    if GEOPANDAS_1_0:
+        original = geoseries_points.union_all()
+    else:
+        original = geoseries_points.unary_union
 
     dask_obj = dask_geopandas.from_geopandas(geoseries_points, npartitions=2)
-    daskified = dask_obj.unary_union
+    with pytest.warns(FutureWarning):
+        daskified = dask_obj.unary_union
+    assert isinstance(daskified, Scalar)
+    assert original.equals(daskified.compute())
+
+
+def test_geoseries_union_all(geoseries_points):
+    if GEOPANDAS_1_0:
+        original = geoseries_points.union_all()
+    else:
+        original = geoseries_points.unary_union
+
+    dask_obj = dask_geopandas.from_geopandas(geoseries_points, npartitions=2)
+    daskified = dask_obj.union_all()
     assert isinstance(daskified, Scalar)
     assert original.equals(daskified.compute())
 
@@ -157,6 +179,32 @@ def test_points_from_xy_with_crs():
     actual = dask_geopandas.points_from_xy(
         ddf, "longitude", "latitude", crs="EPSG:4326"
     )
+    assert isinstance(actual, dask_geopandas.GeoSeries)
+    assert_geoseries_equal(actual.compute(), expected)
+
+
+def test_from_wkt():
+    wkt = [
+        "POLYGON ((-64.8 32.3, -65.5 18.3, -80.3 25.2, -64.8 32.3))",
+        "POLYGON ((-81.079102 35.496456, -81.166992 31.914868, -75.541992 31.914868, -75.629883 35.675147, -81.079102 35.496456))",  # noqa E501
+    ]
+    expected = geopandas.GeoSeries.from_wkt(wkt, crs="EPSG:4326")
+    df = pd.DataFrame({"wkt": wkt})
+    ddf = dd.from_pandas(df, npartitions=2)
+    actual = dask_geopandas.from_wkt(ddf["wkt"], crs="EPSG:4326")
+    assert isinstance(actual, dask_geopandas.GeoSeries)
+    assert_geoseries_equal(actual.compute(), expected)
+
+
+def test_from_wkb():
+    wkb = [
+        "0103000000010000000400000033333333333350c0666666666626404000000000006050c0cdcccccccc4c324033333333331354c0333333333333394033333333333350c06666666666264040",
+        "0103000000010000000500000016c3d501104554c095f3c5de8bbf414064ac36ffaf4a54c02c280cca34ea3f4064ac36ffafe252c02c280cca34ea3f409c53c90050e852c00b7f86376bd6414016c3d501104554c095f3c5de8bbf4140",
+    ]
+    expected = geopandas.GeoSeries.from_wkb(wkb, crs="EPSG:4326")
+    df = pd.DataFrame({"wkb": wkb})
+    ddf = dd.from_pandas(df, npartitions=2)
+    actual = dask_geopandas.from_wkb(ddf["wkb"], crs="EPSG:4326")
     assert isinstance(actual, dask_geopandas.GeoSeries)
     assert_geoseries_equal(actual.compute(), expected)
 
@@ -320,27 +368,126 @@ def test_meth_with_args_and_kwargs(geoseries_lines, meth, options):
     assert all(original == daskified.compute())
 
 
-def test_explode_geoseries():
+@pytest.mark.parametrize("index_parts", [True, False])
+def test_explode_geoseries(index_parts):
     s = geopandas.GeoSeries(
         [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])]
     )
-    original = s.explode()
+    expected = s.explode(index_parts=index_parts)
     dask_s = dask_geopandas.from_geopandas(s, npartitions=2)
-    daskified = dask_s.explode()
+    daskified = dask_s.explode(index_parts=index_parts)
     assert isinstance(daskified, dask_geopandas.GeoSeries)
-    assert all(original == daskified.compute())
+    assert_geoseries_equal(expected, daskified.compute())
 
 
-def test_explode_geodf():
+@pytest.mark.skipif(
+    Version(dask.__version__) <= Version("2022.06.0"),
+    reason="index not preserved in older dask versions",
+)
+def test_explode_geoseries_ignore_index():
+    s = geopandas.GeoSeries(
+        [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])],
+        # Change index from range index to test ignore index argument
+        index=[3, 4],
+    )
+
+    original = s.explode(ignore_index=True)
+    dask_s = dask_geopandas.from_geopandas(s, npartitions=2)
+    daskified = dask_s.explode(ignore_index=True)
+
+    original_expected = geopandas.GeoSeries(
+        [Point(0, 0), Point(1, 1), Point(2, 2), Point(3, 3), Point(4, 4)],
+        index=[0, 1, 2, 3, 4],
+    )
+
+    dask_expected = geopandas.GeoSeries(
+        [Point(0, 0), Point(1, 1), Point(2, 2), Point(3, 3), Point(4, 4)],
+        index=[0, 1, 0, 1, 2],
+    )
+    assert isinstance(daskified, dask_geopandas.GeoSeries)
+    assert_geoseries_equal(daskified.compute(), dask_expected)
+    assert_geoseries_equal(original, original_expected)
+
+
+@pytest.mark.parametrize("index_parts", [True, False])
+def test_explode_geodf(index_parts):
     s = geopandas.GeoSeries(
         [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])]
     )
     df = geopandas.GeoDataFrame({"col": [1, 2], "geometry": s})
-    original = df.explode()
+    original = df.explode(index_parts=index_parts)
     dask_s = dask_geopandas.from_geopandas(df, npartitions=2)
-    daskified = dask_s.explode()
+    daskified = dask_s.explode(index_parts=index_parts)
     assert isinstance(daskified, dask_geopandas.GeoDataFrame)
-    assert all(original == daskified.compute())
+    assert_geodataframe_equal(original, daskified.compute())
+
+
+@pytest.mark.skipif(
+    Version(dask.__version__) <= Version("2022.06.0"),
+    reason="index not preserved in older dask versions",
+)
+def test_explode_geodf_ignore_index():
+    s = geopandas.GeoSeries(
+        [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])],
+        index=[3, 4],
+    )
+    df = geopandas.GeoDataFrame(
+        {
+            "col": [1, 2],
+            "geometry": s,
+        }
+    )
+
+    original = df.explode(ignore_index=True)
+    dask_s = dask_geopandas.from_geopandas(df, npartitions=2)
+    daskified = dask_s.explode(ignore_index=True)
+
+    original_expected = geopandas.GeoDataFrame(
+        {
+            "col": [1, 1, 2, 2, 2],
+            "geometry": [
+                Point(0, 0),
+                Point(1, 1),
+                Point(2, 2),
+                Point(3, 3),
+                Point(4, 4),
+            ],
+        },
+        index=[0, 1, 2, 3, 4],
+    )
+
+    dask_expected = geopandas.GeoDataFrame(
+        {
+            "col": [1, 1, 2, 2, 2],
+            "geometry": [
+                Point(0, 0),
+                Point(1, 1),
+                Point(2, 2),
+                Point(3, 3),
+                Point(4, 4),
+            ],
+        },
+        index=[0, 1, 0, 1, 2],
+    )
+
+    assert isinstance(daskified, dask_geopandas.GeoDataFrame)
+    assert_geodataframe_equal(daskified.compute(), dask_expected)
+    assert_geodataframe_equal(original, original_expected)
+
+
+def test_explode_geodf_column():
+    s = geopandas.GeoSeries(
+        [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])]
+    )
+    s2 = geopandas.GeoSeries(
+        [MultiPoint([(4, 4), (5, 5)]), MultiPoint([(4, 4), (6, 6), (8, 8)])]
+    )
+    df = geopandas.GeoDataFrame({"col": [1, 2], "geometry": s, "other_col": s2})
+    expected = df.explode(index_parts=False, column="other_col")
+    dask_s = dask_geopandas.from_geopandas(df, npartitions=2)
+    daskified = dask_s.explode(index_parts=False, column="other_col")
+    assert isinstance(daskified, dask_geopandas.GeoDataFrame)
+    assert_geodataframe_equal(expected, daskified.compute())
 
 
 def test_get_geometry_property_on_geodf(geodf_points):
