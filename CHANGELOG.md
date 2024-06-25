@@ -1,6 +1,20 @@
 Changelog
 =========
 
+Version 0.4.1 (June 25, 2024)
+-----------------------------
+
+Bug fixes:
+
+- Allow to run dask-geopandas with recent dask versions without using query
+  planning (without dask-expr being installed).
+
+Packaging:
+
+- The `dask` dependency was updated to `dask[dataframe]` in pyproject.toml (when
+  installing from source or binary wheels from PyPI). This ensures dask-expr
+  gets installed automatically for recent versions of dask.
+
 Version 0.4.0 (June 24, 2024)
 -----------------------------
 
