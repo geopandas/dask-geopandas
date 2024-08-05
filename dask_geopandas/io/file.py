@@ -114,7 +114,7 @@ def read_file(
         read_geometry = False
     meta = pyogrio.read_dataframe(
         path, layer=layer, columns=columns, read_geometry=read_geometry, max_features=5
-    )
+    ).head(0)
 
     # Define parts
     parts = []

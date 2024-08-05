@@ -92,6 +92,12 @@ def test_read_file_columns(naturalearth_lowres):
     assert_geoseries_equal(result.compute(), df["geometry"])
 
 
+def test_read_file_meta_is_empty(naturalearth_lowres):
+    path = naturalearth_lowres
+    result = dask_geopandas.read_file(path, npartitions=4)
+    assert len(result._meta) == 0
+
+
 def test_read_file_layer(tmp_path):
     df_points = geopandas.GeoDataFrame(
         {
