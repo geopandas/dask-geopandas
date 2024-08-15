@@ -35,7 +35,6 @@ dependencies = [
     "geopandas>=0.12",
     "shapely>=2.0",
     "dask[dataframe]>=2022.06.0",
-    "distributed>=2022.06.0",
     "packaging",
 ]
 
