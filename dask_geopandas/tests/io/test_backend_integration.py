@@ -22,6 +22,7 @@ def backend(request):
         pytest.skip("Unable to import pyogrio for file backend")
     return param
 
+
 def from_arrow_backend(path, tmp_path, npartitions):
     df = geopandas.read_file(path)
     basedir = tmp_path / "dataset"
