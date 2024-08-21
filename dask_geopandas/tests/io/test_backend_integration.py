@@ -48,11 +48,11 @@ def get_from_backend(backend, data_path, tmp_path, npartitions=4):
     return ddf
 
 
-def test_set_index_integration(backend, naturalearth_lowres, tmp_path):
+def test_spatial_shuffle_integration(backend, naturalearth_lowres, tmp_path):
     ddf = get_from_backend(backend, naturalearth_lowres, tmp_path)
     new_idx = ddf.hilbert_distance()
     expected = ddf.compute().set_index(new_idx.compute())
 
-    result = ddf.set_index(new_idx)
+    result = ddf.spatial_shuffle()
     # Sort because the index is shuffled
     assert_geodataframe_equal(result.compute().sort_index(), expected.sort_index())
