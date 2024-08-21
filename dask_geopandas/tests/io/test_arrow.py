@@ -214,3 +214,15 @@ def test_index(tmp_path, naturalearth_lowres):
     assert "hilbert_distance" not in result.columns
     assert result.index.name is None
     assert result.index.compute()[0] == 0
+
+
+def test_read_meta_is_empty(tmp_path, naturalearth_lowres):
+    df = geopandas.read_file(naturalearth_lowres)
+
+    basedir = tmp_path / "dataset"
+    basedir.mkdir()
+    df.iloc[:100].to_feather(basedir / "data.0.feather")
+    df.iloc[100:].to_feather(basedir / "data.1.feather")
+
+    result = dask_geopandas.read_feather(basedir)
+    assert len(result._meta) == 0

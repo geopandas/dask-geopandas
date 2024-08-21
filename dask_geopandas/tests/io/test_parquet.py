@@ -248,3 +248,15 @@ def test_read_parquet_default_crs(tmp_path):
     result = dask_geopandas.read_parquet(filename)
     assert result.crs.equals(pyproj.CRS("OGC:CRS84"))
     assert result["other_geom"].crs.equals(pyproj.CRS("OGC:CRS84"))
+
+
+def test_read_parquet_meta_is_empty(tmp_path, naturalearth_lowres):
+    # basic roundtrip
+    df = geopandas.read_file(naturalearth_lowres)
+    ddf = dask_geopandas.from_geopandas(df, npartitions=4)
+
+    basedir = tmp_path / "dataset"
+    ddf.to_parquet(basedir)
+
+    result = dask_geopandas.read_parquet(basedir)
+    assert len(result._meta) == 0
