@@ -5,13 +5,22 @@ import dask_geopandas
 import pytest
 from geopandas.testing import assert_geodataframe_equal
 
+try:
+    import pyogrio  # noqa: F401
+
+    PYOGRIO = True
+except ImportError:
+    PYOGRIO = False
+
 BACKENDS = ["arrow", "file", "parquet"]
 
 
 @pytest.fixture(params=BACKENDS)
 def backend(request):
-    return request.param
-
+    param = request.param
+    if not PYOGRIO and param == "file":
+        pytest.skip("Unable to import pyogrio for file backend")
+    return param
 
 def from_arrow_backend(path, tmp_path, npartitions):
     df = geopandas.read_file(path)
