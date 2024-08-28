@@ -1,4 +1,5 @@
 import geopandas
+import shapely
 
 import dask_geopandas
 
@@ -46,3 +47,13 @@ def test_sjoin_dask_geopandas(naturalearth_lowres, naturalearth_cities):
     # check warning
     with pytest.warns(FutureWarning, match="The `op` parameter is deprecated"):
         dask_geopandas.sjoin(df_points, ddf_polygons, op="within", how="inner")
+
+
+def test_no_value_error():
+    # https://github.com/geopandas/dask-geopandas/issues/303
+    shape = shapely.geometry.box(-74.5, -74.0, 4.5, 5.0)
+    df = dask_geopandas.from_geopandas(
+        geopandas.GeoDataFrame(geometry=[shape]), npartitions=1
+    ).spatial_shuffle()
+    # no TypeError
+    df.sjoin(df).compute()

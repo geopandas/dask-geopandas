@@ -62,6 +62,14 @@ def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
     if isinstance(right, geopandas.GeoDataFrame):
         right = from_geopandas(right, npartitions=1)
 
+    if backends.QUERY_PLANNING_ON:
+        # We call optimize on the inputs to ensure that any optimizations
+        # done by dask-expr (which might change the expression, and thus the
+        # name of the DataFrame) *before* we build the HighLevelGraph.
+        # https://github.com/dask/dask-expr/issues/1129
+        left = left.optimize()
+        right = right.optimize()
+
     name = "sjoin-" + tokenize(left, right, how, predicate)
     meta = geopandas.sjoin(left._meta, right._meta, how=how, predicate=predicate)
 
@@ -74,8 +82,8 @@ def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
             how="inner",
             predicate="intersects",
         )
-        parts_left = np.asarray(parts.index)
-        parts_right = np.asarray(parts["index_right"].values)
+        parts_left = np.asarray(parts.index).tolist()
+        parts_right = np.asarray(parts["index_right"].values).tolist()
         using_spatial_partitions = True
     else:
         # Unknown spatial partitions -> full cartesian (cross) product of all
