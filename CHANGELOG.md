@@ -1,6 +1,21 @@
 Changelog
 =========
 
+Version 0.4.2 (September 24, 2024)
+----------------------------------
+
+Bug fixes:
+
+- Ensure `read_file()` produces a correct empty meta object, avoiding later
+  errors in `spatial_shuffle()` (#302).
+- Fix in `sjoin()` to work with GeoDataFrames after a `spatial_shuffle()` (#303).
+
+Packaging:
+
+- `distributed` was dropped as a required dependency, only depending on
+  `dask[dataframe]` (#258).
+
+
 Version 0.4.1 (June 25, 2024)
 -----------------------------
 
