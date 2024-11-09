@@ -181,6 +181,7 @@ def test_points_from_xy_with_crs():
     )
     assert isinstance(actual, dask_geopandas.GeoSeries)
     assert_geoseries_equal(actual.compute(), expected)
+    assert actual.crs == expected.crs
 
 
 def test_from_wkt():
