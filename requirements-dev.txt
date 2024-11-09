@@ -4,3 +4,5 @@ hilbertcurve
 pygeohash
 pymorton
 pytest
+bokeh
+distributed
