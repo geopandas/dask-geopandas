@@ -878,7 +878,7 @@ def points_from_xy(df, x="x", y="y", z="z", crs=None):
         )
 
     return df.map_partitions(
-        func, x, y, z, meta=geopandas.GeoSeries(), token="points_from_xy"
+        func, x, y, z, meta=geopandas.GeoSeries(crs=crs), token="points_from_xy"
     )
 
 
