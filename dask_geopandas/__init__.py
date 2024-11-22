@@ -27,6 +27,7 @@ from .io.parquet import read_parquet, to_parquet
 from .io.arrow import read_feather, to_feather
 from .clip import clip
 from .sjoin import sjoin
+from .overlay import overlay
 
 
 __version__ = get_versions()["version"]
@@ -47,6 +48,7 @@ __all__ = [
     "to_parquet",
     "clip",
     "sjoin",
+    "overlay",
 ]
 
 from . import _version
