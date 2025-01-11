@@ -3,10 +3,10 @@ channels:
   - conda-forge
 dependencies:
   # required dependencies
-  - python=3.9
+  - python=3.10
   - numpy=1.23
-  - dask=2022.06.0
-  - distributed=2022.06.0
+  # - dask=2025.1.0  # TODO: update this once released
+  # - distributed=2025.1.0
   - geopandas=0.12
   - pandas=1.5.3
   - shapely=2.0
@@ -22,3 +22,5 @@ dependencies:
   - pip
   - pip:
       - pymorton
+      - git+https://github.com/dask/dask.git@main
+      - git+https://github.com/dask/distributed.git@main
