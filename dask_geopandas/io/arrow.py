@@ -9,15 +9,14 @@ from fsspec.core import get_fs_token_paths
 
 import dask
 from dask.base import compute_as_if_collection, tokenize
-from dask.dataframe.core import Scalar, new_dd_object
+from dask.dataframe import from_graph
+from dask.dataframe.dask_expr._collection import Scalar
 from dask.highlevelgraph import HighLevelGraph
 from dask.layers import DataFrameIOLayer
 from dask.utils import apply, natural_sort_key
 
 import geopandas
 import shapely.geometry
-
-from .. import backends
 
 DASK_2022_12_0_PLUS = Version(dask.__version__) >= Version("2022.12.0")
 DASK_2023_04_0 = Version(dask.__version__) >= Version("2023.4.0")
@@ -94,7 +93,6 @@ class ArrowDatasetEngine:
 
     @classmethod
     def read_metadata(cls, fs, paths, columns, filters, index):
-
         import pyarrow.dataset as ds
         from pyarrow.parquet import _filters_to_expression
 
@@ -142,7 +140,6 @@ class ArrowDatasetEngine:
     def _arrow_table_to_pandas(
         cls, arrow_table: "pyarrow.Table", categories, **kwargs
     ) -> pd.DataFrame:
-
         _kwargs = kwargs.get("arrow_to_pandas", {})
         _kwargs.update({"use_threads": False, "ignore_metadata": False})
         use_nullable_dtypes = _extract_nullable_dtypes(**kwargs)
@@ -169,7 +166,6 @@ class ArrowDatasetEngine:
 
     @classmethod
     def read_partition(cls, fs, fragment, schema, columns, filter, **kwargs):
-
         table = fragment.to_table(
             schema=schema, columns=columns, filter=filter, use_threads=False
         )
@@ -391,19 +387,13 @@ def read_feather(
         label=label,
     )
     graph = HighLevelGraph({output_name: layer}, {output_name: set()})
-
-    if backends.QUERY_PLANNING_ON:
-        from dask_expr import from_graph
-
-        result = from_graph(
-            graph,
-            meta,
-            [None] * (len(parts) + 1),
-            [(output_name, i) for i in range(len(parts))],
-            "read_feather",
-        )
-    else:
-        result = new_dd_object(graph, output_name, meta, [None] * (len(parts) + 1))
+    result = from_graph(
+        graph,
+        meta,
+        [None] * (len(parts) + 1),
+        [(output_name, i) for i in range(len(parts))],
+        "read_feather",
+    )
 
     result.spatial_partitions = spatial_partitions
     return result

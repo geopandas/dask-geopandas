@@ -34,7 +34,8 @@ requires-python = ">=3.9"
 dependencies = [
     "geopandas>=0.12",
     "shapely>=2.0",
-    "dask[dataframe]>=2022.06.0",
+    # "dask[dataframe]>=2025.1.0",
+    "dask @ git+https://github.com/dask/dask",  # TODO: wait for release.
     "packaging",
 ]
 

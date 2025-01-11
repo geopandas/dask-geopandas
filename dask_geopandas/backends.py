@@ -4,24 +4,6 @@ from packaging.version import Version
 import pandas as pd
 
 import dask
-from dask import config
-
-# Check if dask-dataframe is using dask-expr (mimix the logic of dask.dataframe
-# _dask_expr_enabled() - default of None means True as well if dask-expr is available)
-QUERY_PLANNING_ON = config.get("dataframe.query-planning", False)
-if QUERY_PLANNING_ON is None:
-    if Version(pd.__version__).major < 2:
-        QUERY_PLANNING_ON = False
-    else:
-        try:
-            import dask_expr  # noqa: F401
-        except ImportError:
-            # dask will raise error or warning depending on the config
-            QUERY_PLANNING_ON = False
-        else:
-            QUERY_PLANNING_ON = True
-
-
 from dask.base import normalize_token
 from dask.dataframe.backends import _nonempty_index, meta_nonempty_dataframe
 from dask.dataframe.core import get_parallel_type
@@ -85,7 +67,6 @@ def tokenize_geometryarray(x):
 
 @pyarrow_schema_dispatch.register((geopandas.GeoDataFrame,))
 def get_pyarrow_schema_geopandas(obj):
-    import pandas as pd
     import pyarrow as pa
 
     df = pd.DataFrame(obj.copy())
