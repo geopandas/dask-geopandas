@@ -1,0 +1,13 @@
+name: test
+channels:
+  - conda-forge
+dependencies:
+  # required dependencies
+  - python=3.10
+  - dask
+  - geopandas
+  - pyproj
+  - packaging
+  # test dependencies
+  - pytest
+  - pytest-cov

@@ -29,8 +29,8 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         env:
+          - ci/envs/310-minimal.yaml
           - ci/envs/310-no-optional-deps.yaml
-          - ci/envs/39-minimal.yaml
           - ci/envs/311-no-expr.yaml
           - ci/envs/311-latest.yaml
           - ci/envs/311-latest-no-expr.yaml
