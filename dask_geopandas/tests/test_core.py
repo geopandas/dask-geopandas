@@ -6,7 +6,7 @@ import pandas as pd
 
 import dask
 import dask.dataframe as dd
-from dask.dataframe.dask_expr._collection import Scalar
+from dask.dataframe import Scalar
 
 import geopandas
 from shapely.geometry import LineString, MultiPoint, Point, Polygon

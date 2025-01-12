@@ -9,8 +9,7 @@ from fsspec.core import get_fs_token_paths
 
 import dask
 from dask.base import compute_as_if_collection, tokenize
-from dask.dataframe import from_graph
-from dask.dataframe.dask_expr._collection import Scalar
+from dask.dataframe import Scalar, from_graph
 from dask.highlevelgraph import HighLevelGraph
 from dask.layers import DataFrameIOLayer
 from dask.utils import apply, natural_sort_key
