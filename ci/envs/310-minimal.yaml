@@ -7,8 +7,8 @@ dependencies:
   - numpy=1.23
   # - dask=2025.1.0  # TODO: update this once released
   # - distributed=2025.1.0
-  - geopandas=0.12
-  - pandas=1.5.3
+  - geopandas=0.14.3
+  - pandas=2.0.0
   - shapely=2.0
   - pyproj=3.4
   - packaging

@@ -32,7 +32,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "geopandas>=0.12",
+    "geopandas>=0.14.3",
     "shapely>=2.0",
     # "dask[dataframe]>=2025.1.0",
     "dask @ git+https://github.com/dask/dask",  # TODO: wait for release.

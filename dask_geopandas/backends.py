@@ -16,7 +16,7 @@ import shapely.geometry
 from geopandas.array import GeometryArray, GeometryDtype, from_shapely
 from shapely.geometry.base import BaseGeometry
 
-from .core import GeoDataFrame, GeoSeries
+from .expr import GeoDataFrame, GeoSeries
 
 get_parallel_type.register(geopandas.GeoDataFrame, lambda _: GeoDataFrame)
 get_parallel_type.register(geopandas.GeoSeries, lambda _: GeoSeries)

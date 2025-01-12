@@ -1032,3 +1032,8 @@ def test_compute_empty_partitions():
 
     expected = geopandas.GeoDataFrame({"col": [1, 1], "geometry": [Point(1, 1)] * 2})
     assert_geodataframe_equal(ddf.compute(), expected)
+
+
+def test_core_deprecated():
+    with pytest.warns(FutureWarning, match="dask_geopandas.core"):
+        import dask_geopandas.core  # noqa: F401
