@@ -52,7 +52,7 @@ jobs:
         with:
           environment-file: ${{ matrix.env }}
           miniforge-version: latest
-          miniforge-variant: Mambaforge
+          miniforge-variant: Miniforge3
           use-mamba: true
 
       - name: Check and Log Environment
