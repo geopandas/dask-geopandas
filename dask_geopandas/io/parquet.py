@@ -1,7 +1,6 @@
-from functools import partial
+from functools import cached_property, partial
 
 import dask.dataframe as dd
-
 import geopandas
 
 from .arrow import (
@@ -44,6 +43,18 @@ def _get_partition_bounds_parquet(part, fs):
     return _get_partition_bounds(pq_metadata.metadata)
 
 
+def _convert_to_list(column) -> list | None:
+    if column is None or isinstance(column, list):
+        pass
+    elif isinstance(column, tuple):
+        column = list(column)
+    elif hasattr(column, "dtype"):
+        column = column.tolist()
+    else:
+        column = [column]
+    return column
+
+
 class GeoArrowEngine(GeoDatasetEngine, DaskArrowDatasetEngine):
     """
     Engine for reading geospatial Parquet datasets. Subclasses dask's
@@ -51,12 +62,15 @@ class GeoArrowEngine(GeoDatasetEngine, DaskArrowDatasetEngine):
     correctly read/write GeoDataFrames.
 
     """
-
-    @classmethod
-    def read_metadata(cls, fs, paths, **kwargs):
-        meta, stats, parts, index = super().read_metadata(fs, paths, **kwargs)
-
-        gather_spatial_partitions = kwargs.pop("gather_spatial_partitions", True)
+    @cached_property
+    def _meta(self):
+        meta = super()._meta
+        gather_spatial_partitions = self._dataset_info.get(
+            "gather_spatial_partitions", True
+        )
+        fs = self._dataset_info["fs"]
+        parts = self._dataset_info["parts"]
+        breakpoint()
 
         if gather_spatial_partitions:
             regions = geopandas.GeoSeries(
@@ -67,7 +81,24 @@ class GeoArrowEngine(GeoDatasetEngine, DaskArrowDatasetEngine):
                 # a bit hacky, but this allows us to get this passed through
                 meta.attrs["spatial_partitions"] = regions
 
-        return (meta, stats, parts, index)
+        return meta
+
+    # @classmethod
+    # def read_metadata(cls, fs, paths, **kwargs):
+    #     meta, stats, parts, index = super().read_metadata(fs, paths, **kwargs)
+
+    #     gather_spatial_partitions = kwargs.pop("gather_spatial_partitions", True)
+
+    #     if gather_spatial_partitions:
+    #         regions = geopandas.GeoSeries(
+    #             [_get_partition_bounds_parquet(part, fs) for part in parts],
+    #             crs=meta.crs,
+    #         )
+    #         if regions.notna().all():
+    #             # a bit hacky, but this allows us to get this passed through
+    #             meta.attrs["spatial_partitions"] = regions
+
+    #     return (meta, stats, parts, index)
 
     @classmethod
     def _update_meta(cls, meta, schema):
@@ -77,13 +108,8 @@ class GeoArrowEngine(GeoDatasetEngine, DaskArrowDatasetEngine):
         return _update_meta_to_geodataframe(meta, schema.metadata)
 
     @classmethod
-    def _create_dd_meta(cls, dataset_info, use_nullable_dtypes=False):
-        """Overriding private method for dask >= 2021.10.0"""
-        if DASK_2022_12_0_PLUS and not DASK_2023_04_0:
-            meta = super()._create_dd_meta(dataset_info, use_nullable_dtypes)
-        else:
-            meta = super()._create_dd_meta(dataset_info)
-
+    def _create_dd_meta(cls, dataset_info):
+        meta = super()._create_dd_meta(dataset_info)
         schema = dataset_info["schema"]
         if not schema.names and not schema.metadata:
             if len(list(dataset_info["ds"].get_fragments())) == 0:
@@ -92,6 +118,18 @@ class GeoArrowEngine(GeoDatasetEngine, DaskArrowDatasetEngine):
                     "to read it as an empty DataFrame"
                 )
         meta = cls._update_meta(meta, schema)
+
+        if dataset_info["kwargs"].get("gather_spatial_partitions", True):
+            fs = dataset_info["fs"]
+            parts, _, _ = cls._construct_collection_plan(dataset_info)
+            regions = geopandas.GeoSeries(
+                [_get_partition_bounds_parquet(part, fs) for part in parts],
+                crs=meta.crs,
+            )
+            if regions.notna().all():
+                # a bit hacky, but this allows us to get this passed through
+                meta.attrs["spatial_partitions"] = regions
+
         return meta
 
 
