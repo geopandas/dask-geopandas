@@ -20,14 +20,6 @@ from dask.dataframe.api import (
 from dask.highlevelgraph import HighLevelGraph
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
 
-# from dask_expr import (
-#     elemwise,
-#     from_graph,
-#     get_collection_type,
-# )
-# from dask_expr._collection import new_collection
-# from dask_expr._expr import ApplyConcatApply, _emulate
-# import dask_expr as dx
 import geopandas
 import shapely
 from shapely.geometry import box
