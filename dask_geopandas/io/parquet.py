@@ -42,18 +42,6 @@ def _get_partition_bounds_parquet(part, fs):
     return _get_partition_bounds(pq_metadata.metadata)
 
 
-def _convert_to_list(column) -> list | None:
-    if column is None or isinstance(column, list):
-        pass
-    elif isinstance(column, tuple):
-        column = list(column)
-    elif hasattr(column, "dtype"):
-        column = column.tolist()
-    else:
-        column = [column]
-    return column
-
-
 class GeoArrowEngine(GeoDatasetEngine, DaskArrowDatasetEngine):
     """
     Engine for reading geospatial Parquet datasets. Subclasses dask's
