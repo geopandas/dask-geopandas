@@ -1034,6 +1034,21 @@ def test_compute_empty_partitions():
     assert_geodataframe_equal(ddf.compute(), expected)
 
 
+def test_drop():
+    # https://github.com/geopandas/dask-geopandas/issues/321
+    df = dask_geopandas.from_geopandas(
+        geopandas.GeoDataFrame({"col": [1], "geometry": [Point(1, 1)]}), npartitions=1
+    )
+    result = df.drop(columns="geometry")
+    assert type(result) is dd.DataFrame
+
+    result = df.drop(columns="col")
+    assert type(result) is dask_geopandas.GeoDataFrame
+
+    with pytest.raises(ValueError, match="No axis named x"):
+        df.drop(labels="a", axis="x")
+
+
 def test_core_deprecated():
     with pytest.warns(FutureWarning, match="dask_geopandas.core"):
         import dask_geopandas.core  # noqa: F401

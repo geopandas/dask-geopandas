@@ -26,6 +26,7 @@ from shapely.geometry import box
 
 import dask_geopandas
 
+from ._expr import Drop, _validate_axis
 from .geohash import _geohash
 from .hilbert_distance import _hilbert_distance
 from .morton_distance import _morton_distance
@@ -867,6 +868,25 @@ class GeoDataFrame(_Frame, dd.DataFrame):
             index_parts=index_parts,
             enforce_metadata=False,
         )
+
+    @derived_from(geopandas.GeoDataFrame)
+    def drop(self, labels=None, axis=0, columns=None, errors="raise"):
+        # https://github.com/geopandas/dask-geopandas/issues/321
+        # Override to avoid an inplace drop, since we need
+        # to convert from a GeoDataFrame to a DataFrame when dropping
+        # the geometry column.
+        if columns is None and labels is None:
+            raise TypeError("must either specify 'columns' or 'labels'")
+
+        axis = _validate_axis(axis)
+
+        if axis == 1:
+            columns = labels or columns
+        elif axis == 0 and columns is None:
+            raise NotImplementedError(
+                "Drop currently only works for axis=1 or when columns is not None"
+            )
+        return new_collection(Drop(self, columns=columns, errors=errors))
 
 
 from_geopandas = dd.from_pandas
