@@ -1045,6 +1045,9 @@ def test_drop():
     result = df.drop(columns="col")
     assert type(result) is dask_geopandas.GeoDataFrame
 
+    with pytest.raises(ValueError, match="No axis named x"):
+        df.drop(axis="x")
+
 
 def test_core_deprecated():
     with pytest.warns(FutureWarning, match="dask_geopandas.core"):
