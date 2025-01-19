@@ -9,6 +9,11 @@ Packaging:
 - `dask>=2025.1.0` is now required.
 - `python>=3.10` is now required.
 
+Bug fixes:
+
+- Fixed `GeoDataFrame.drop` returning a `GeoDataFrame`
+  instead of a `DataFrame`, when dropping the geometry
+  column (#321).
 
 Version 0.4.2 (September 24, 2024)
 ----------------------------------
