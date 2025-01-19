@@ -9,15 +9,13 @@ from fsspec.core import get_fs_token_paths
 
 import dask
 from dask.base import compute_as_if_collection, tokenize
-from dask.dataframe.core import Scalar, new_dd_object
+from dask.dataframe import Scalar, from_graph
 from dask.highlevelgraph import HighLevelGraph
 from dask.layers import DataFrameIOLayer
 from dask.utils import apply, natural_sort_key
 
 import geopandas
 import shapely.geometry
-
-from .. import backends
 
 DASK_2022_12_0_PLUS = Version(dask.__version__) >= Version("2022.12.0")
 DASK_2023_04_0 = Version(dask.__version__) >= Version("2023.4.0")
@@ -71,16 +69,6 @@ def _get_partition_bounds(schema_metadata):
     return shapely.geometry.box(*bbox)
 
 
-def _extract_nullable_dtypes(**kwargs):
-    if DASK_2023_04_0:
-        use_nullable_dtypes = kwargs.get("dtype_backend", None) == "numpy_nullable"
-    elif DASK_2022_12_0_PLUS:
-        use_nullable_dtypes = kwargs.get("use_nullable_dtypes", False)
-    else:
-        use_nullable_dtypes = False
-    return use_nullable_dtypes
-
-
 class ArrowDatasetEngine:
     """
     Custom IO engine based on pyarrow.dataset.
@@ -94,7 +82,6 @@ class ArrowDatasetEngine:
 
     @classmethod
     def read_metadata(cls, fs, paths, columns, filters, index):
-
         import pyarrow.dataset as ds
         from pyarrow.parquet import _filters_to_expression
 
@@ -142,34 +129,13 @@ class ArrowDatasetEngine:
     def _arrow_table_to_pandas(
         cls, arrow_table: "pyarrow.Table", categories, **kwargs
     ) -> pd.DataFrame:
-
         _kwargs = kwargs.get("arrow_to_pandas", {})
         _kwargs.update({"use_threads": False, "ignore_metadata": False})
-        use_nullable_dtypes = _extract_nullable_dtypes(**kwargs)
-
-        if use_nullable_dtypes:
-            from dask.dataframe.io.parquet.arrow import PYARROW_NULLABLE_DTYPE_MAPPING
-
-            if "types_mapper" in _kwargs:
-                # User-provided entries take priority over
-                # PYARROW_NULLABLE_DTYPE_MAPPING
-                types_mapper = _kwargs["types_mapper"]
-
-                def _types_mapper(pa_type):
-                    return types_mapper(pa_type) or PYARROW_NULLABLE_DTYPE_MAPPING.get(
-                        pa_type
-                    )
-
-                _kwargs["types_mapper"] = _types_mapper
-
-            else:
-                _kwargs["types_mapper"] = PYARROW_NULLABLE_DTYPE_MAPPING.get
 
         return arrow_table.to_pandas(categories=categories, **_kwargs)
 
     @classmethod
     def read_partition(cls, fs, fragment, schema, columns, filter, **kwargs):
-
         table = fragment.to_table(
             schema=schema, columns=columns, filter=filter, use_threads=False
         )
@@ -204,25 +170,6 @@ class GeoDatasetEngine:
 
         _kwargs = kwargs.get("arrow_to_pandas", {})
         _kwargs.update({"use_threads": False, "ignore_metadata": False})
-        use_nullable_dtypes = _extract_nullable_dtypes(**kwargs)
-
-        if use_nullable_dtypes:
-            from dask.dataframe.io.parquet.arrow import PYARROW_NULLABLE_DTYPE_MAPPING
-
-            if "types_mapper" in _kwargs:
-                # User-provided entries take priority over
-                # PYARROW_NULLABLE_DTYPE_MAPPING
-                types_mapper = _kwargs["types_mapper"]
-
-                def _types_mapper(pa_type):
-                    return types_mapper(pa_type) or PYARROW_NULLABLE_DTYPE_MAPPING.get(
-                        pa_type
-                    )
-
-                _kwargs["types_mapper"] = _types_mapper
-
-            else:
-                _kwargs["types_mapper"] = PYARROW_NULLABLE_DTYPE_MAPPING.get
 
         # TODO support additional keywords
         try:
@@ -391,19 +338,13 @@ def read_feather(
         label=label,
     )
     graph = HighLevelGraph({output_name: layer}, {output_name: set()})
-
-    if backends.QUERY_PLANNING_ON:
-        from dask_expr import from_graph
-
-        result = from_graph(
-            graph,
-            meta,
-            [None] * (len(parts) + 1),
-            [(output_name, i) for i in range(len(parts))],
-            "read_feather",
-        )
-    else:
-        result = new_dd_object(graph, output_name, meta, [None] * (len(parts) + 1))
+    result = from_graph(
+        graph,
+        meta,
+        [None] * (len(parts) + 1),
+        [(output_name, i) for i in range(len(parts))],
+        "read_feather",
+    )
 
     result.spatial_partitions = spatial_partitions
     return result

@@ -6,24 +6,18 @@ import pandas as pd
 
 import dask
 import dask.dataframe as dd
+from dask.dataframe import Scalar
 
 import geopandas
 from shapely.geometry import LineString, MultiPoint, Point, Polygon
 
 import dask_geopandas
-
-import pytest
-
-if dask_geopandas.backends.QUERY_PLANNING_ON:
-    from dask_expr._collection import Scalar
-else:
-    from dask.dataframe.core import Scalar
-
-from dask_geopandas.core import GEOPANDAS_1_0, PANDAS_2_0_0
+from dask_geopandas.expr import GEOPANDAS_1_0, PANDAS_2_0_0
 from dask_geopandas.geohash import _geohash
 from dask_geopandas.hilbert_distance import _hilbert_distance
 from dask_geopandas.morton_distance import _morton_distance
 
+import pytest
 from geopandas.testing import assert_geodataframe_equal, assert_geoseries_equal
 from pandas.testing import assert_frame_equal, assert_series_equal
 
@@ -545,22 +539,15 @@ def test_from_dask_dataframe_with_dask_geoseries():
         dask_obj, geometry=dask_geopandas.points_from_xy(dask_obj, "x", "y")
     )
 
-    if dask_geopandas.backends.QUERY_PLANNING_ON:
-        d0 = dask_obj.expr.dependencies()
-        assert len(d0) == 1  # Assign(frame=df)
+    d0 = dask_obj.expr.dependencies()
+    assert len(d0) == 1  # Assign(frame=df)
 
-        d1 = d0[0].dependencies()
-        assert len(d1) == 2  # [df, MapPartitions]
+    d1 = d0[0].dependencies()
+    assert len(d1) == 2  # [df, MapPartitions]
 
-        # the fact that `geometry` isn't in this map_partitions
-        # should be sufficient to ensure it isn't in the graph twice
-        assert len(d1[1].dependencies()) == 1  # [df]
-    else:
-        # Check that the geometry isn't concatenated and embedded a second time in
-        # the high-level graph. cf. https://github.com/geopandas/dask-geopandas/issues/197
-        k = next(k for k in dask_obj.dask.dependencies if k.startswith("GeoDataFrame"))
-        deps = dask_obj.dask.dependencies[k]
-        assert len(deps) == 1
+    # the fact that `geometry` isn't in this map_partitions
+    # should be sufficient to ensure it isn't in the graph twice
+    assert len(d1[1].dependencies()) == 1  # [df]
 
     expected = df.set_geometry(geopandas.points_from_xy(df["x"], df["y"]))
     assert_geoseries_equal(dask_obj.geometry.compute(), expected.geometry)
@@ -822,7 +809,6 @@ class TestDissolve:
 
     # TODO dissolve with split out is not yet working with expressions
     @pytest.mark.xfail(
-        dask_geopandas.backends.QUERY_PLANNING_ON,
         reason="Need to fix dissolve with split_out",
     )
     def test_split_out(self):
@@ -1046,3 +1032,8 @@ def test_compute_empty_partitions():
 
     expected = geopandas.GeoDataFrame({"col": [1, 1], "geometry": [Point(1, 1)] * 2})
     assert_geodataframe_equal(ddf.compute(), expected)
+
+
+def test_core_deprecated():
+    with pytest.warns(FutureWarning, match="dask_geopandas.core"):
+        import dask_geopandas.core  # noqa: F401

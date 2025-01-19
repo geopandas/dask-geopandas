@@ -3,10 +3,8 @@ from math import ceil
 from pandas import RangeIndex
 
 from dask.base import tokenize
-from dask.dataframe.core import new_dd_object
+from dask.dataframe import from_graph
 from dask.highlevelgraph import HighLevelGraph
-
-from .. import backends
 
 
 class FileFunctionWrapper:
@@ -141,16 +139,11 @@ def read_file(
     )
     graph = HighLevelGraph({output_name: layer}, {output_name: set()})
 
-    if backends.QUERY_PLANNING_ON:
-        from dask_expr import from_graph
-
-        result = from_graph(
-            graph,
-            meta,
-            divs,
-            [(output_name, i) for i in range(len(divs) - 1)],
-            "read_file",
-        )
-        return result
-    else:
-        return new_dd_object(graph, output_name, meta, divs)
+    result = from_graph(
+        graph,
+        meta,
+        divs,
+        [(output_name, i) for i in range(len(divs) - 1)],
+        "read_file",
+    )
+    return result

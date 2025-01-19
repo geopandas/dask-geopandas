@@ -3,16 +3,12 @@ import warnings
 import numpy as np
 
 from dask.base import tokenize
+from dask.dataframe import from_graph
 from dask.highlevelgraph import HighLevelGraph
 
 import geopandas
 
-from . import backends
-
-if backends.QUERY_PLANNING_ON:
-    from .expr import from_geopandas
-else:
-    from .core import from_geopandas
+from .expr import from_geopandas
 
 
 def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
@@ -62,13 +58,12 @@ def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
     if isinstance(right, geopandas.GeoDataFrame):
         right = from_geopandas(right, npartitions=1)
 
-    if backends.QUERY_PLANNING_ON:
-        # We call optimize on the inputs to ensure that any optimizations
-        # done by dask-expr (which might change the expression, and thus the
-        # name of the DataFrame) *before* we build the HighLevelGraph.
-        # https://github.com/dask/dask-expr/issues/1129
-        left = left.optimize()
-        right = right.optimize()
+    # We call optimize on the inputs to ensure that any optimizations
+    # done by dask-expr (which might change the expression, and thus the
+    # name of the DataFrame) *before* we build the HighLevelGraph.
+    # https://github.com/dask/dask-expr/issues/1129
+    left = left.optimize()
+    right = right.optimize()
 
     name = "sjoin-" + tokenize(left, right, how, predicate)
     meta = geopandas.sjoin(left._meta, right._meta, how=how, predicate=predicate)
@@ -122,13 +117,6 @@ def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
     else:
         new_spatial_partitions = None
 
-    if backends.QUERY_PLANNING_ON:
-        from dask_expr import from_graph
-
-        result = from_graph(graph, meta, divisions, dsk.keys(), "sjoin")
-        result.spatial_partitions = new_spatial_partitions
-        return result
-    else:
-        from .core import GeoDataFrame
-
-        return GeoDataFrame(graph, name, meta, divisions, new_spatial_partitions)
+    result = from_graph(graph, meta, divisions, dsk.keys(), "sjoin")
+    result.spatial_partitions = new_spatial_partitions
+    return result
