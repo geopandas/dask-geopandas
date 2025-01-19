@@ -6,19 +6,19 @@ import pandas as pd
 
 import dask
 import dask.array as da
+import dask.dataframe
 import dask.dataframe as dd
-import dask_expr as dx
 from dask.base import tokenize
-from dask.dataframe import map_partitions
+from dask.dataframe import from_graph, get_collection_type, map_partitions
+from dask.dataframe.api import (
+    ApplyConcatApply,
+    FrameBase,
+    elemwise,
+    emulate,
+    new_collection,
+)
 from dask.highlevelgraph import HighLevelGraph
 from dask.utils import M, OperatorMethodMixin, derived_from, ignore_warning
-from dask_expr import (
-    elemwise,
-    from_graph,
-    get_collection_type,
-)
-from dask_expr._collection import new_collection
-from dask_expr._expr import ApplyConcatApply, _emulate
 
 import geopandas
 import shapely
@@ -103,7 +103,7 @@ def _set_crs(df, crs, allow_override):
     return df.set_crs(crs, allow_override=allow_override)
 
 
-class _Frame(dx.FrameBase, OperatorMethodMixin):
+class _Frame(FrameBase, OperatorMethodMixin):
     """Superclass for DataFrame and Series
 
     Parameters
@@ -214,7 +214,7 @@ class _Frame(dx.FrameBase, OperatorMethodMixin):
 
         # name must be explicitly passed for div method whose name is truediv
         def meth(self, other, *args, **kwargs):
-            meta = _emulate(op, self, other)
+            meta = emulate(op, self, other)
             return map_partitions(
                 op, self, other, *args, meta=meta, enforce_metadata=False, **kwargs
             )
@@ -889,7 +889,7 @@ class GeoDataFrame(_Frame, dd.DataFrame):
         return new_collection(Drop(self, columns=columns, errors=errors))
 
 
-from_geopandas = dx.from_pandas
+from_geopandas = dd.from_pandas
 
 
 def from_dask_dataframe(df, geometry=None):
@@ -909,7 +909,7 @@ def from_dask_dataframe(df, geometry=None):
     # it via a keyword-argument due to https://github.com/dask/dask/issues/8308.
     # Instead, we assign the geometry column using regular dataframe operations,
     # then refer to that column by name in `map_partitions`.
-    if isinstance(geometry, dx.Series):
+    if isinstance(geometry, dask.dataframe.Series):
         name = geometry.name if geometry.name is not None else "geometry"
         return df.assign(**{name: geometry}).map_partitions(
             geopandas.GeoDataFrame, geometry=name

@@ -1,6 +1,15 @@
 Changelog
 =========
 
+Version 0.4.3 (January, 2025)
+----------------------------------
+
+Packaging:
+
+- `dask>=2025.1.0` is now required.
+- `python>=3.10` is now required.
+
+
 Version 0.4.2 (September 24, 2024)
 ----------------------------------
 

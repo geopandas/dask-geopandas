@@ -3,12 +3,12 @@ channels:
   - conda-forge
 dependencies:
   # required dependencies
-  - python=3.9
-  - numpy=1.23
-  - dask=2022.06.0
-  - distributed=2022.06.0
-  - geopandas=0.12
-  - pandas=1.5.3
+  - python=3.10
+  - numpy=1.24
+  - dask=2025.1.0
+  - distributed=2025.1.0
+  - geopandas=0.14.3
+  - pandas=2.0.0
   - shapely=2.0
   - pyproj=3.4
   - packaging
