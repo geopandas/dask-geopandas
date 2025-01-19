@@ -4,7 +4,7 @@ channels:
 dependencies:
   # required dependencies
   - python=3.10
-  - numpy=1.23
+  - numpy=1.24
   - dask=2025.1.0
   - distributed=2025.1.0
   - geopandas=0.14.3
