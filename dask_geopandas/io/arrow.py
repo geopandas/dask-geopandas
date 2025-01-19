@@ -69,16 +69,6 @@ def _get_partition_bounds(schema_metadata):
     return shapely.geometry.box(*bbox)
 
 
-def _extract_nullable_dtypes(**kwargs):
-    if DASK_2023_04_0:
-        use_nullable_dtypes = kwargs.get("dtype_backend", None) == "numpy_nullable"
-    elif DASK_2022_12_0_PLUS:
-        use_nullable_dtypes = kwargs.get("use_nullable_dtypes", False)
-    else:
-        use_nullable_dtypes = False
-    return use_nullable_dtypes
-
-
 class ArrowDatasetEngine:
     """
     Custom IO engine based on pyarrow.dataset.
@@ -141,25 +131,6 @@ class ArrowDatasetEngine:
     ) -> pd.DataFrame:
         _kwargs = kwargs.get("arrow_to_pandas", {})
         _kwargs.update({"use_threads": False, "ignore_metadata": False})
-        use_nullable_dtypes = _extract_nullable_dtypes(**kwargs)
-
-        if use_nullable_dtypes:
-            from dask.dataframe.io.parquet.arrow import PYARROW_NULLABLE_DTYPE_MAPPING
-
-            if "types_mapper" in _kwargs:
-                # User-provided entries take priority over
-                # PYARROW_NULLABLE_DTYPE_MAPPING
-                types_mapper = _kwargs["types_mapper"]
-
-                def _types_mapper(pa_type):
-                    return types_mapper(pa_type) or PYARROW_NULLABLE_DTYPE_MAPPING.get(
-                        pa_type
-                    )
-
-                _kwargs["types_mapper"] = _types_mapper
-
-            else:
-                _kwargs["types_mapper"] = PYARROW_NULLABLE_DTYPE_MAPPING.get
 
         return arrow_table.to_pandas(categories=categories, **_kwargs)
 
@@ -199,25 +170,6 @@ class GeoDatasetEngine:
 
         _kwargs = kwargs.get("arrow_to_pandas", {})
         _kwargs.update({"use_threads": False, "ignore_metadata": False})
-        use_nullable_dtypes = _extract_nullable_dtypes(**kwargs)
-
-        if use_nullable_dtypes:
-            from dask.dataframe.io.parquet.arrow import PYARROW_NULLABLE_DTYPE_MAPPING
-
-            if "types_mapper" in _kwargs:
-                # User-provided entries take priority over
-                # PYARROW_NULLABLE_DTYPE_MAPPING
-                types_mapper = _kwargs["types_mapper"]
-
-                def _types_mapper(pa_type):
-                    return types_mapper(pa_type) or PYARROW_NULLABLE_DTYPE_MAPPING.get(
-                        pa_type
-                    )
-
-                _kwargs["types_mapper"] = _types_mapper
-
-            else:
-                _kwargs["types_mapper"] = PYARROW_NULLABLE_DTYPE_MAPPING.get
 
         # TODO support additional keywords
         try:
