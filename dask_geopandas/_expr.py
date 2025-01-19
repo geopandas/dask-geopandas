@@ -1,6 +1,6 @@
 from typing import Literal
 
-import dask_expr as dx
+import dask.dataframe.dask_expr as dx
 
 import geopandas
 
