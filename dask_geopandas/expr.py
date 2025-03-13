@@ -1023,7 +1023,6 @@ for name in [
 for name in [
     "contains",
     "geom_equals",
-    "geom_almost_equals",
     "crosses",
     "disjoint",
     "intersects",

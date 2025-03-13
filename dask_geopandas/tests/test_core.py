@@ -282,7 +282,6 @@ def test_project(geoseries_lines):
     [
         "contains",
         "geom_equals",
-        "geom_almost_equals",
         "crosses",
         "disjoint",
         "intersects",

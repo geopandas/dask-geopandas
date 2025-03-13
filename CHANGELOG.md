@@ -1,8 +1,16 @@
 Changelog
 =========
 
+Version 0.5.0 (upcoming)
+------------------------
+
+Deprecations and compatibility notes:
+
+- The deprecated `geom_almost_equals` method has been removed. Use `geom_equals_exact` instead.
+
+
 Version 0.4.3 (January, 2025)
-----------------------------------
+-----------------------------
 
 Packaging:
 
