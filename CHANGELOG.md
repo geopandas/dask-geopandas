@@ -1,11 +1,12 @@
 Changelog
 =========
 
-Version 0.5.0 (upcoming)
-------------------------
+Version 0.5.0 (June 2, 2025)
+----------------------------
 
 Deprecations and compatibility notes:
 
+- Ensured compatibility with geopandas 1.1.0.
 - The deprecated `geom_almost_equals` method has been removed. Use `geom_equals_exact` instead (#326).
 
 Bug fixes:
