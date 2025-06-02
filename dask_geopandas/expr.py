@@ -233,7 +233,7 @@ class _Frame(FrameBase, OperatorMethodMixin):
                 )
             ).compute(),
             crs=self.crs,
-        )
+        ).reset_index(drop=True)
         self.spatial_partitions = parts
 
     def _propagate_spatial_partitions(self, new_object):
