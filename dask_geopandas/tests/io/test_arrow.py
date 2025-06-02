@@ -92,7 +92,10 @@ def test_roundtrip(tmp_path, naturalearth_lowres):
     assert_geodataframe_equal(result_gpd, df)
     # reading back also populates the spatial partitioning property
     ddf.calculate_spatial_partitions()
-    assert_geoseries_equal(result.spatial_partitions, ddf.spatial_partitions.envelope)
+    assert_geoseries_equal(
+        result.spatial_partitions,
+        ddf.spatial_partitions.envelope,
+    )
 
 
 def test_roundtrip_s3(s3_resource, s3_storage_options, naturalearth_lowres):
