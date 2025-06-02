@@ -24,7 +24,6 @@ jobs:
     defaults:
       run:
         shell: bash -l {0}
-    continue-on-error: true
     strategy:
       matrix:
         os: [ubuntu-latest]
