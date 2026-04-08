@@ -4,7 +4,6 @@ channels:
 dependencies:
   # required dependencies
   - python=3.11
-  - dask-core
   - geopandas
   - pyproj=3.4
   - packaging
@@ -21,4 +20,5 @@ dependencies:
   - pygeohash
   - pip
   - pip:
+      - dask[dataframe]>=2025.1.0
       - pymorton
