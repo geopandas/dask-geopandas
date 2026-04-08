@@ -49,6 +49,57 @@ def test_sjoin_dask_geopandas(naturalearth_lowres, naturalearth_cities):
         dask_geopandas.sjoin(df_points, ddf_polygons, op="within", how="inner")
 
 
+def test_sjoin_lsuffix_rsuffix():
+    left_gdf = geopandas.GeoDataFrame(
+        {"dup_col": [1], "geometry": [shapely.geometry.box(0, 0, 1, 1)]},
+    )
+    right_gdf = geopandas.GeoDataFrame(
+        {"dup_col": [2], "geometry": [shapely.geometry.box(0.5, 0.5, 1.5, 1.5)]},
+    )
+    lsuffix, rsuffix = "_L", "_R"
+    expected = geopandas.sjoin(
+        left_gdf,
+        right_gdf,
+        how="inner",
+        predicate="intersects",
+        lsuffix=lsuffix,
+        rsuffix=rsuffix,
+    ).sort_index()
+
+    ddf_left = dask_geopandas.from_geopandas(left_gdf, npartitions=2)
+    ddf_right = dask_geopandas.from_geopandas(right_gdf, npartitions=2)
+
+    kw = dict(
+        how="inner",
+        predicate="intersects",
+        lsuffix=lsuffix,
+        rsuffix=rsuffix,
+    )
+
+    # dask / geopandas
+    result = dask_geopandas.sjoin(ddf_left, right_gdf, **kw)
+    got = result.compute().sort_index()
+    assert list(got.columns) == list(expected.columns)
+    assert_geodataframe_equal(expected, got)
+
+    # geopandas / dask
+    result = dask_geopandas.sjoin(left_gdf, ddf_right, **kw)
+    got = result.compute().sort_index()
+    assert list(got.columns) == list(expected.columns)
+    assert_geodataframe_equal(expected, got)
+
+    # dask / dask
+    result = dask_geopandas.sjoin(ddf_left, ddf_right, **kw)
+    got = result.compute().sort_index()
+    assert list(got.columns) == list(expected.columns)
+    assert_geodataframe_equal(expected, got)
+
+    assert_geodataframe_equal(
+        expected,
+        ddf_left.sjoin(ddf_right, **kw).compute().sort_index(),
+    )
+
+
 def test_no_value_error():
     # https://github.com/geopandas/dask-geopandas/issues/303
     shape = shapely.geometry.box(-74.5, -74.0, 4.5, 5.0)

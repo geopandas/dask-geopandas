@@ -742,7 +742,9 @@ class GeoDataFrame(_Frame, dd.DataFrame):
         )
         return aggregated.set_crs(self.crs)
 
-    def sjoin(self, df, how="inner", predicate="intersects"):
+    def sjoin(
+        self, df, how="inner", predicate="intersects", lsuffix="left", rsuffix="right"
+    ):
         """
         Spatial join of two GeoDataFrames.
 
@@ -759,6 +761,12 @@ class GeoDataFrame(_Frame, dd.DataFrame):
             GeoDataFrame. Possible values: 'contains', 'contains_properly',
             'covered_by', 'covers', 'crosses', 'intersects', 'overlaps',
             'touches', 'within'.
+        lsuffix : string, default 'left'
+            Suffix to apply to overlapping column names (excluding geometry) from
+            the left frame.
+        rsuffix : string, default 'right'
+            Suffix to apply to overlapping column names (excluding geometry) from
+            the right frame.
 
         Returns
         -------
@@ -773,7 +781,9 @@ class GeoDataFrame(_Frame, dd.DataFrame):
         all combinations (cartesian/cross product) of all input partition
         of the left and right GeoDataFrame.
         """
-        return dask_geopandas.sjoin(self, df, how=how, predicate=predicate)
+        return dask_geopandas.sjoin(
+            self, df, how=how, predicate=predicate, lsuffix=lsuffix, rsuffix=rsuffix
+        )
 
     def spatial_shuffle(
         self,

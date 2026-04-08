@@ -11,7 +11,26 @@ import geopandas
 from .expr import from_geopandas
 
 
-def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
+def _sjoin_partition(left_df, right_df, how, predicate, lsuffix, rsuffix):
+    return geopandas.sjoin(
+        left_df,
+        right_df,
+        how=how,
+        predicate=predicate,
+        lsuffix=lsuffix,
+        rsuffix=rsuffix,
+    )
+
+
+def sjoin(
+    left,
+    right,
+    how="inner",
+    predicate="intersects",
+    lsuffix="left",
+    rsuffix="right",
+    **kwargs,
+):
     """
     Spatial join of two GeoDataFrames.
 
@@ -28,6 +47,12 @@ def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
         GeoDataFrame. Possible values: 'contains', 'contains_properly',
         'covered_by', 'covers', 'crosses', 'intersects', 'overlaps',
         'touches', 'within'.
+    lsuffix : string, default 'left'
+        Suffix to apply to overlapping column names (excluding geometry) from
+        ``left``.
+    rsuffix : string, default 'right'
+        Suffix to apply to overlapping column names (excluding geometry) from
+        ``right``.
 
     Returns
     -------
@@ -65,8 +90,15 @@ def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
     left = left.optimize()
     right = right.optimize()
 
-    name = "sjoin-" + tokenize(left, right, how, predicate)
-    meta = geopandas.sjoin(left._meta, right._meta, how=how, predicate=predicate)
+    name = "sjoin-" + tokenize(left, right, how, predicate, lsuffix, rsuffix)
+    meta = geopandas.sjoin(
+        left._meta,
+        right._meta,
+        how=how,
+        predicate=predicate,
+        lsuffix=lsuffix,
+        rsuffix=rsuffix,
+    )
 
     if left.spatial_partitions is not None and right.spatial_partitions is not None:
         # Spatial partitions are known -> use them to trim down the list of
@@ -93,11 +125,13 @@ def sjoin(left, right, how="inner", predicate="intersects", **kwargs):
     new_spatial_partitions = []
     for i, (part_left, part_right) in enumerate(zip(parts_left, parts_right)):
         dsk[(name, i)] = (
-            geopandas.sjoin,
+            _sjoin_partition,
             (left._name, part_left),
             (right._name, part_right),
             how,
             predicate,
+            lsuffix,
+            rsuffix,
         )
         # TODO preserve spatial partitions of the output if only left has spatial
         # partitions
