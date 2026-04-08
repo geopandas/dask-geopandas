@@ -4,6 +4,7 @@ channels:
 dependencies:
   # required dependencies
   - python=3.12
+  - dask>=2025.1.0
   - distributed
   - geopandas
   - shapely >= 2
@@ -22,5 +23,4 @@ dependencies:
   - pygeohash
   - pip
   - pip:
-      - dask[dataframe]>=2025.1.0
       - pymorton

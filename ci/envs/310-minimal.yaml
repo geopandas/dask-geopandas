@@ -5,6 +5,7 @@ dependencies:
   # required dependencies
   - python=3.10
   - numpy=1.24
+  - dask=2025.1.0
   - distributed=2025.1.0
   - geopandas=0.14.3
   - pandas=2.0.0
@@ -20,5 +21,4 @@ dependencies:
   - pyarrow
   - pip
   - pip:
-      - dask[dataframe]>=2025.1.0
       - pymorton

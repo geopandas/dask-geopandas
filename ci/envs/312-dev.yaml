@@ -4,6 +4,7 @@ channels:
 dependencies:
   # required dependencies
   - python=3.12
+  - dask>=2025.1.0
   - distributed
   - pandas
   - geos  # for shapely main
@@ -27,4 +28,3 @@ dependencies:
       - pymorton
       - git+https://github.com/shapely/shapely.git@main
       - git+https://github.com/geopandas/geopandas.git@main
-      - git+https://github.com/dask/dask.git@main

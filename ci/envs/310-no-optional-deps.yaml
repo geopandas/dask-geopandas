@@ -4,12 +4,10 @@ channels:
 dependencies:
   # required dependencies
   - python=3.10
+  - dask>=2025.1.0
   - geopandas
   - pyproj
   - packaging
   # test dependencies
   - pytest
   - pytest-cov
-  - pip
-  - pip:
-      - dask[dataframe]>=2025.1.0
