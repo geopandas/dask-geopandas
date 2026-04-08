@@ -1,6 +1,13 @@
 Changelog
 =========
 
+Development version
+---------------------
+
+Enhancements:
+
+- Forward `lsuffix` and `rsuffix` in `dask_geopandas.sjoin` and `GeoDataFrame.sjoin` for parity with GeoPandas.
+
 Version 0.5.0 (June 2, 2025)
 ----------------------------
 
