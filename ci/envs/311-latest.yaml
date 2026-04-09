@@ -4,7 +4,7 @@ channels:
 dependencies:
   # required dependencies
   - python=3.11
-  - dask
+  - dask=2025.1.0
   - distributed
   - geopandas
   - pyproj=3.4
