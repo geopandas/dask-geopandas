@@ -4,12 +4,11 @@ channels:
 dependencies:
   # required dependencies
   - python=3.12
-  - dask
-  - distributed
+  - dask>=2025.5.1
+  - distributed>=2025.5.1
   - geopandas
   - shapely >= 2
   - pyproj
-  - packaging
   # test dependencies
   - pytest
   - pytest-cov

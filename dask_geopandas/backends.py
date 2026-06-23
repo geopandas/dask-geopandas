@@ -1,13 +1,16 @@
 import uuid
-from packaging.version import Version
 
 import pandas as pd
 
-import dask
 from dask.base import normalize_token
 from dask.dataframe.backends import _nonempty_index, meta_nonempty_dataframe
 from dask.dataframe.core import get_parallel_type
-from dask.dataframe.dispatch import make_meta_dispatch, pyarrow_schema_dispatch
+from dask.dataframe.dispatch import (
+    from_pyarrow_table_dispatch,
+    make_meta_dispatch,
+    pyarrow_schema_dispatch,
+    to_pyarrow_table_dispatch,
+)
 from dask.dataframe.extensions import make_array_nonempty, make_scalar
 from dask.dataframe.utils import meta_nonempty
 
@@ -75,34 +78,15 @@ def get_pyarrow_schema_geopandas(obj):
     return pa.Schema.from_pandas(df)
 
 
-if Version(dask.__version__) >= Version("2023.6.1"):
-    from dask.dataframe.dispatch import (
-        from_pyarrow_table_dispatch,
-        to_pyarrow_table_dispatch,
-    )
+@to_pyarrow_table_dispatch.register((geopandas.GeoDataFrame,))
+def get_pyarrow_table_from_geopandas(obj, **kwargs):
+    # TODO handle kwargs?
+    import pyarrow as pa
 
-    @to_pyarrow_table_dispatch.register((geopandas.GeoDataFrame,))
-    def get_pyarrow_table_from_geopandas(obj, **kwargs):
-        # `kwargs` must be supported by `pyarrow.Table.from_pandas`
-        import pyarrow as pa
+    return pa.table(obj.to_arrow())
 
-        if Version(geopandas.__version__).major < 1:
-            return pa.Table.from_pandas(obj.to_wkb(), **kwargs)
-        else:
-            # TODO handle kwargs?
-            return pa.table(obj.to_arrow())
 
-    @from_pyarrow_table_dispatch.register((geopandas.GeoDataFrame,))
-    def get_geopandas_geodataframe_from_pyarrow(meta, table, **kwargs):
-        # `kwargs` must be supported by `pyarrow.Table.to_pandas`
-        if Version(geopandas.__version__).major < 1:
-            df = table.to_pandas(**kwargs)
-
-            for col in meta.columns[meta.dtypes == "geometry"]:
-                df[col] = geopandas.GeoSeries.from_wkb(df[col], crs=meta[col].crs)
-
-            return df
-
-        else:
-            # TODO handle kwargs?
-            return geopandas.GeoDataFrame.from_arrow(table)
+@from_pyarrow_table_dispatch.register((geopandas.GeoDataFrame,))
+def get_geopandas_geodataframe_from_pyarrow(meta, table, **kwargs):
+    # TODO handle kwargs?
+    return geopandas.GeoDataFrame.from_arrow(table)

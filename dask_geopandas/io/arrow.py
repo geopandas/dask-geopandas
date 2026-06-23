@@ -1,13 +1,11 @@
 import copy
 import json
 import math
-from packaging.version import Version
 from typing import TYPE_CHECKING
 
 import pandas as pd
 from fsspec.core import get_fs_token_paths
 
-import dask
 from dask.base import compute_as_if_collection, tokenize
 from dask.dataframe import Scalar, from_graph
 from dask.highlevelgraph import HighLevelGraph
@@ -16,10 +14,6 @@ from dask.utils import apply, natural_sort_key
 
 import geopandas
 import shapely.geometry
-
-DASK_2022_12_0_PLUS = Version(dask.__version__) >= Version("2022.12.0")
-DASK_2023_04_0 = Version(dask.__version__) >= Version("2023.4.0")
-
 
 if TYPE_CHECKING:
     import pyarrow

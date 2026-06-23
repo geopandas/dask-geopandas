@@ -1,5 +1,4 @@
 import pickle
-from packaging.version import Version
 
 import numpy as np
 import pandas as pd
@@ -12,7 +11,6 @@ import geopandas
 from shapely.geometry import LineString, MultiPoint, Point, Polygon
 
 import dask_geopandas
-from dask_geopandas.expr import GEOPANDAS_1_0, PANDAS_2_0_0
 from dask_geopandas.geohash import _geohash
 from dask_geopandas.hilbert_distance import _hilbert_distance
 from dask_geopandas.morton_distance import _morton_distance
@@ -107,10 +105,7 @@ def test_geoseries_properties(geoseries_polygons, attr):
 
 
 def test_geoseries_unary_union(geoseries_points):
-    if GEOPANDAS_1_0:
-        original = geoseries_points.union_all()
-    else:
-        original = geoseries_points.unary_union
+    original = geoseries_points.union_all()
 
     dask_obj = dask_geopandas.from_geopandas(geoseries_points, npartitions=2)
     with pytest.warns(FutureWarning):
@@ -120,10 +115,7 @@ def test_geoseries_unary_union(geoseries_points):
 
 
 def test_geoseries_union_all(geoseries_points):
-    if GEOPANDAS_1_0:
-        original = geoseries_points.union_all()
-    else:
-        original = geoseries_points.unary_union
+    original = geoseries_points.union_all()
 
     dask_obj = dask_geopandas.from_geopandas(geoseries_points, npartitions=2)
     daskified = dask_obj.union_all()
@@ -374,10 +366,6 @@ def test_explode_geoseries(index_parts):
     assert_geoseries_equal(expected, daskified.compute())
 
 
-@pytest.mark.skipif(
-    Version(dask.__version__) <= Version("2022.06.0"),
-    reason="index not preserved in older dask versions",
-)
 def test_explode_geoseries_ignore_index():
     s = geopandas.GeoSeries(
         [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])],
@@ -416,10 +404,6 @@ def test_explode_geodf(index_parts):
     assert_geodataframe_equal(original, daskified.compute())
 
 
-@pytest.mark.skipif(
-    Version(dask.__version__) <= Version("2022.06.0"),
-    reason="index not preserved in older dask versions",
-)
 def test_explode_geodf_ignore_index():
     s = geopandas.GeoSeries(
         [MultiPoint([(0, 0), (1, 1)]), MultiPoint([(2, 2), (3, 3), (4, 4)])],
@@ -679,10 +663,6 @@ def test_propagate_on_set_crs(geodf_points):
     assert_geoseries_equal(result, expected)
 
 
-@pytest.mark.skipif(
-    Version(geopandas.__version__) <= Version("0.8.1"),
-    reason="geopandas 0.8 has bug in apply",
-)
 def test_geoseries_apply(geoseries_polygons):
     # https://github.com/jsignell/dask-geopandas/issues/18
     ds = dask_geopandas.from_geopandas(geoseries_polygons, npartitions=2)
@@ -799,12 +779,7 @@ class TestDissolve:
     def test_sum(self):
         gpd_sum = self.world.dissolve("continent", aggfunc="sum")
         dd_sum = self.ddf.dissolve("continent", aggfunc="sum").compute()
-        # drop due to https://github.com/geopandas/geopandas/issues/1999
-        if not PANDAS_2_0_0:
-            drop = ["name", "iso_a3"]
-        else:
-            drop = []
-        assert_geodataframe_equal(gpd_sum, dd_sum.drop(columns=drop), check_like=True)
+        assert_geodataframe_equal(gpd_sum, dd_sum, check_like=True)
 
     # TODO dissolve with split out is not yet working with expressions
     @pytest.mark.xfail(

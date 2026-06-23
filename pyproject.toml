@@ -30,12 +30,11 @@ classifiers = [
     "Topic :: Scientific/Engineering :: GIS",
     "Topic :: System :: Distributed Computing",
 ]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-    "geopandas>=0.14.3",
-    "shapely>=2.0",
+    "geopandas>=1.0.0",
+    "shapely>=2.1",
     "dask[dataframe]>=2025.1.0",
-    "packaging",
 ]
 
 [project.optional-dependencies]
@@ -141,8 +140,6 @@ ignore = [
 "dask_geopandas/__init__.py" = ["F401", "I"]
 
 [tool.ruff.lint.isort]
-extra-standard-library = ["packaging"]
-
 section-order = [
   "future",
   "standard-library",
