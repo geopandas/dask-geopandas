@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   # required dependencies
-  - python=3.10
+  - python=3.11
   - dask>=2025.5.1
   - geopandas
   - pyproj

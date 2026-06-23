@@ -28,8 +28,8 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         env:
-          - ci/envs/310-minimal.yaml
-          - ci/envs/310-no-optional-deps.yaml
+          - ci/envs/311-minimal.yaml
+          - ci/envs/311-no-optional-deps.yaml
           - ci/envs/311-latest.yaml
           - ci/envs/312-latest.yaml
           - ci/envs/313-latest.yaml
