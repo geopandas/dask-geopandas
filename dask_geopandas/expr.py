@@ -1,10 +1,8 @@
 import warnings
-from packaging.version import Version
 
 import numpy as np
 import pandas as pd
 
-import dask
 import dask.array as da
 import dask.dataframe
 import dask.dataframe as dd
@@ -30,30 +28,6 @@ from ._expr import Drop, _validate_axis
 from .geohash import _geohash
 from .hilbert_distance import _hilbert_distance
 from .morton_distance import _morton_distance
-
-DASK_2022_8_1 = Version(dask.__version__) >= Version("2022.8.1")
-GEOPANDAS_0_12 = Version(geopandas.__version__) >= Version("0.12.0")
-GEOPANDAS_1_0 = Version(geopandas.__version__) >= Version("1.0.0a0")
-PANDAS_2_0_0 = Version(pd.__version__) >= Version("2.0.0")
-
-
-if Version(shapely.__version__) < Version("2.0"):
-    raise ImportError(
-        "Running dask-geopandas requires Shapely >= 2.0 to be "
-        "installed. However, Shapely is only at "
-        f"version {shapely.__version__}"
-    )
-
-
-class UnaryUnion(ApplyConcatApply):
-    @classmethod
-    def chunk(cls, df, **kwargs):
-        return df.unary_union
-
-    @classmethod
-    def aggregate(cls, inputs, **kwargs):
-        s = geopandas.GeoSeries(inputs)
-        return s.unary_union
 
 
 class UnionAll(ApplyConcatApply):
@@ -319,16 +293,10 @@ class _Frame(FrameBase, OperatorMethodMixin):
             FutureWarning,
             stacklevel=2,
         )
-        if GEOPANDAS_1_0:
-            return new_collection(UnionAll(self.expr))
-        else:
-            return new_collection(UnaryUnion(self.expr))
+        return new_collection(UnionAll(self.expr))
 
     def union_all(self):
-        if GEOPANDAS_1_0:
-            return new_collection(UnionAll(self.expr))
-        else:
-            return new_collection(UnaryUnion(self.expr))
+        return new_collection(UnionAll(self.expr))
 
     @derived_from(geopandas.base.GeoPandasBase)
     def representative_point(self):
@@ -719,11 +687,7 @@ class GeoDataFrame(_Frame, dd.DataFrame):
 
         def union(block):
             block = geopandas.GeoSeries(block)
-            if GEOPANDAS_1_0:
-                merged_geom = block.union_all()
-            else:
-                merged_geom = block.unary_union
-            return merged_geom
+            return block.union_all()
 
         merge_geometries = dd.Aggregation(
             "merge_geometries", lambda s: s.agg(union), lambda s0: s0.agg(union)
@@ -731,14 +695,10 @@ class GeoDataFrame(_Frame, dd.DataFrame):
         if isinstance(aggfunc, dict):
             data_agg = aggfunc
         else:
-            data_agg = {col: aggfunc for col in self.columns.drop(drop)}
+            data_agg = dict.fromkeys(self.columns.drop(drop), aggfunc)
         data_agg[self.geometry.name] = merge_geometries
-        # dask 2022.8.1 added shuffle keyword, enabled by default if split_out > 1
-        # starting with dask 2022.9.1, but geopandas doesn't yet work with shuffle
-        # https://github.com/geopandas/dask-geopandas/pull/229
-        agg_kwargs = {"shuffle": False} if DASK_2022_8_1 else {}
         aggregated = self.groupby(by=by, **kwargs).agg(
-            data_agg, split_out=split_out, **agg_kwargs
+            data_agg, split_out=split_out, shuffle=False
         )
         return aggregated.set_crs(self.crs)
 

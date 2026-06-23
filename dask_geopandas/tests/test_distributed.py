@@ -1,5 +1,3 @@
-from packaging.version import Version
-
 import geopandas
 
 import dask_geopandas
@@ -13,15 +11,6 @@ distributed = pytest.importorskip("distributed")
 from distributed import Client, LocalCluster
 
 
-@pytest.mark.skipif(
-    Version(distributed.__version__) < Version("2024.6.0"),
-    reason="distributed < 2024.6 has a wrong assertion",
-    # https://github.com/dask/distributed/pull/8667
-)
-@pytest.mark.skipif(
-    Version(distributed.__version__) < Version("0.13"),
-    reason="geopandas < 0.13 does not implement sorting geometries",
-)
 def test_spatial_shuffle(naturalearth_cities):
     df_points = geopandas.read_file(naturalearth_cities)
 

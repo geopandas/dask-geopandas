@@ -8,7 +8,6 @@ dependencies:
   - distributed>=2025.5.1
   - geopandas
   - pyproj=3.4
-  - packaging
   # test dependencies
   - pytest
   - pytest-cov

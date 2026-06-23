@@ -9,7 +9,6 @@ dependencies:
   - geopandas
   - shapely >= 2
   - pyproj
-  - packaging
   # test dependencies
   - pytest
   - pytest-cov
