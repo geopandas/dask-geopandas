@@ -7,7 +7,7 @@ dependencies:
   - dask>=2025.5.1
   - distributed>=2025.5.1
   - geopandas
-  - pyproj=3.4
+  - pyproj
   # test dependencies
   - pytest
   - pytest-cov
