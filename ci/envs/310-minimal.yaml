@@ -9,7 +9,7 @@ dependencies:
   - distributed=2025.1.0
   - geopandas=0.14.3
   - pandas=2.0.0
-  - shapely=2.0
+  - shapely=2.1
   - pyproj=3.4
   - packaging
   # test dependencies
