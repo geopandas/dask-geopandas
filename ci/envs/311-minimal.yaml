@@ -4,13 +4,13 @@ channels:
 dependencies:
   # required dependencies
   - python=3.11
-  - numpy=1.24
+  - numpy=2.0
   - dask=2025.1.0
   - distributed=2025.1.0
   - geopandas=1.0.0
-  - pandas=2.0.0
+  - pandas=2.2.0
   - shapely=2.1
-  - pyproj=3.4
+  - pyproj=3.7
   - packaging
   # test dependencies
   - pytest
