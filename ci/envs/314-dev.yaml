@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   # required dependencies
-  - python=3.12
+  - python=3.14
   - distributed
   - pandas
   - geos  # for shapely main

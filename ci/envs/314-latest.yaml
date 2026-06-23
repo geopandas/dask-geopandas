@@ -3,11 +3,12 @@ channels:
   - conda-forge
 dependencies:
   # required dependencies
-  - python=3.11
+  - python=3.13
   - dask>=2025.5.1
   - distributed>=2025.5.1
   - geopandas
-  - pyproj=3.4
+  - shapely >= 2
+  - pyproj
   - packaging
   # test dependencies
   - pytest
@@ -18,7 +19,7 @@ dependencies:
   - flask # needed for moto server
   # optional dependencies
   - pyarrow
-  - pyogrio>=0.4
+  - pyogrio
   - pygeohash
   - pip
   - pip:

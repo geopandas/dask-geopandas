@@ -32,32 +32,35 @@ jobs:
           - ci/envs/310-no-optional-deps.yaml
           - ci/envs/311-latest.yaml
           - ci/envs/312-latest.yaml
+          - ci/envs/313-latest.yaml
+          - ci/envs/314-latest.yaml
 
         include:
-          - env: ci/envs/311-latest.yaml
+          - env: ci/envs/314-latest.yaml
             os: macos-latest
-          - env: ci/envs/311-latest.yaml
+          - env: ci/envs/314-latest.yaml
             os: windows-latest
-          - env: ci/envs/312-dev.yaml
+          - env: ci/envs/314-dev.yaml
             os: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup Conda
-        uses: conda-incubator/setup-miniconda@v4
+      - name: Install Conda environment with Micromamba
+        uses: mamba-org/setup-micromamba@v3
         with:
           environment-file: ${{ matrix.env }}
-          miniforge-version: latest
-          miniforge-variant: Miniforge3
-          use-mamba: true
+
+      - name: Install package
+        # install without deps to avoid installing default but optional pyproj/pyogrio
+        run: pip install -e . --no-deps
 
       - name: Check and Log Environment
         run: |
           python -V
           python -c "import geopandas; geopandas.show_versions();"
-          conda info
-          conda list
+          micromamba info
+          micromamba list
 
       - name: Test
         run: |
